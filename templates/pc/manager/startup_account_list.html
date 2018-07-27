@@ -1,0 +1,289 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/_sb_manage_list.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/search_support.css" %}">
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <script>
+        var em;
+        $(document).ready(function () {
+
+            try {
+                var filter_url_list = getParameter("filter").split(",")
+                $("#filter_list").val(getParameter("filter"))
+                em = (getParameter("em"))
+                if (em == "undefined") em = 0
+
+                for (var k = 0; k < filter_url_list.length; k++) {
+                    $("span[data-id='" + filter_url_list[k] + "']").addClass("on");
+                }
+            }
+
+            catch (e) {
+                console.log(e)
+            }
+     $("td > .tag").on("click", function () {
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    if ($(".on:eq(" + k + ")").attr("data-id") != "" && $(".on:eq(" + k + ")").attr("data-id") != undefined)
+                        filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter_list").val(filter_list.join(","))
+            })
+
+
+
+
+
+
+
+
+
+
+
+            $("#search_btn_f").on("click", function () {
+                location.href = "{% url "startup_sb_manage" %}" + "?filter=" + $("#filter_list").val() + "&em=" + em
+
+            })
+
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $(".sb_" + getParameter("cat")).removeClass("hidden");
+            if (getParameter("cat") === "all") {
+                $(".sm_l_a").removeClass("hidden")
+            }
+            $('#sort_tbl').DataTable({
+                 "iDisplayLength": 50,
+                "order": [[1, "desc"]],
+                "columnDefs": [{orderable: false, targets: [0]},],
+            });
+if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+
+            }
+            console.log($("body").css("height"))
+            $("#get_down").on("click", function () {
+                var allVals = [];
+                $(".check_target").each(function () {
+                    if ($(this).is(":checked")) allVals.push($(this).val());
+                });
+                console.log(allVals);
+                if (allVals.length != 0)
+                location.href = "/get_sbtl_excel/?id=" + allVals.join(",") + "/"
+                else{
+                    alert("체크 항목이 없습니다. ")
+                }
+
+            })
+
+        })
+
+        function get_repre(id) {
+            $.ajax({
+                url: '{% url "get_repre" %}',
+                method: "post",
+                data: {
+                    "id": id,
+                },
+                success: function (data) {
+                    console.log(data)
+                    $('#repre').removeClass('hidden')
+                    $("#repre_name").text(data.fields.name)
+                    $("#repre_id").text(data.id)
+                    $("#repre_tel").text(data.fields.tel)
+                    $("#repre_additional_email").text(data.fields.additional_email)
+
+
+                }
+                ,
+                error: function (e) {
+                    console.log(e)
+                }
+            })
+        }
+
+    </script>
+        <style>
+        #select_filter{
+            width:1000px;
+        }
+        #filter_con{
+            width:827px!important;
+        }
+    </style>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <style>
+            .sorting {
+                padding-left: 0px !important;
+            }
+
+            table.dataTable tbody th, table.dataTable tbody td {
+                padding: 3px 8px !important;
+            }
+
+            #filter_tbl_ {
+                width: 1000px !important;
+            }
+
+            td.sorting_1 {
+                background-color: rgba(27, 102, 239, 0.2);
+            }
+        </style>
+        {% include "pc/manager/common/list_tab.html" %}
+        {% include "pc/common/search_all_sb_filter.html" %}
+        <script>
+            $("#seach_text").css("display", "none")
+            $("#top_con").css("display", "none")
+        </script>
+       <script>
+                function set_all(target) {
+                    if ($(target).prop("checked") === false) {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+                    }
+
+                }
+            </script>
+        <div id="sb_con" style="margin-top: 20px; width: 1000px">
+            <div id="get_down" style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer">선택한 리스트
+                다운로드
+            </div>
+            <input type="hidden" id="filter_list">
+            <table id="sort_tbl" style="width: 1000px; border: none; table-layout: fixed!important;">
+                <thead>
+                <tr>
+                    <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                          <div class="checkbox checkbox-primary" style="width: 30px;">
+                                <input type="checkbox" id="all_check"   onclick="set_all(this)">
+                                <label></label>
+                            </div>
+                    </th>
+                    <th style="width: 90px; padding: 0px!important; font-size: 13px;">기업명</th>
+                    <th style="width: 90px; padding: 0px!important; font-size: 13px;">공고마감일</th>
+                    <th style="width: 400px; padding: 0px!important; font-size: 13px;">지원사업명</th>
+                    <th style="width: 100px; padding: 0px!important; font-size: 13px;">대표자명</th>
+                    <th style="width: 100px; padding: 0px!important; font-size: 13px;">소재지</th>
+                    <th style="width: 100px; padding: 0px!important; font-size: 13px;">선정여부</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for q in qs %}
+                    {% if q.appliance_set.last %}
+                        <tr>
+                            <td style="width: 20px; padding: 0px!important; font-size: 13px;">
+                                <div class="checkbox checkbox-primary" style="width: 30px;">
+                                    <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                           value="{{ q.id }}"
+                                           aria-label="Single checkbox Two">
+                                    <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                                </div>
+                            </td>
+                            <td style="cursor: pointer;" onclick="window.open('{% url "startup_detail" id=q.id %}')">
+                                {{ q.name }}
+                            </td>
+                            <td>
+                                {{ q.appliance_set.last.sb.apply_end|date:"Y" }}
+                            </td>
+                            <td style="cursor: pointer;"
+                                onclick="window.open('{% url  "support" id=q.appliance_set.last.sb.id %}')">
+                                {{ q.appliance_set.last.sb.title }}
+                            </td>
+                            <td onclick="get_repre({{ q.user.additionaluserinfo.id }})" style="cursor: pointer">
+                                {{ q.user.additionaluserinfo.name }}
+                            </td>
+                            <td>
+                                {{ q.address_0|local_first|default:"" }}
+                            </td>
+                            <td>
+                                {% if q.appliance_set.last.is_awarded %} Y {% else %} N {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <style>
+        li {
+            list-style: none;
+            line-height: 30px;
+        }
+
+        #repre_ul > li > label {
+            width: 80px;
+            font-weight: normal;
+            text-align: center;
+            margin-right: 20px;
+        }
+
+    </style>
+    <div id="repre" class="hidden"
+         style="width: 400px; height: 240px; position: absolute; margin-left: -200px; left: 50%; border: 1px solid #ddd; top: 400px; background-color: #fff">
+        <div id="repre_hd"
+             style="width: 399px; height: 30px; border-bottom: 1px solid #ddd ; padding-top: 5px; padding-left: 10px;">
+            대표자 정보
+            <img src="{% static "img/icon-del-fill@2x.png" %}"
+                 style="float: right;  margin-right: 5px;width: 20px; cursor: pointer"
+                 onclick="$('#repre').addClass('hidden')">
+        </div>
+        <div id="repre_con" style="width:399px; height :210px; padding-left: 50px;padding-top: 30px;">
+            <ul id="repre_ul">
+                <li>
+                    <label>대표자 명 </label> <span id="repre_name"></span>
+                </li>
+                <li>
+                    <label>ID</label> <span id="repre_id"></span>
+                </li>
+                <li>
+                    <label>핸드폰 번호 </label> <span id="repre_tel"></span>
+                </li>
+                <li>
+                    <label>추가 이메일 </label> <span id="repre_additional_email"></span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+{% endblock %}

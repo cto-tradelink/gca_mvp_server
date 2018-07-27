@@ -1,0 +1,153 @@
+#left_col {
+  height: 100%;
+  width: 327px;
+  float: left;
+  background-color: #f3f3f3;
+}
+#left_col ul li {
+  font-size: 20px;
+  list-style: none;
+  margin-top: 40px;
+}
+#body_content {
+  width: 900px;
+  height: 100%;
+  float: left;
+}
+body,
+html {
+  height: 100%;
+}
+.input_form {
+  min-height: 40px;
+  margin-top: 35px;
+  margin-left: 35px;
+  overflow: auto;
+}
+.input_form .input_label {
+  float: left;
+  width: 200px;
+  font-size: 15px;
+  font-weight: normal;
+}
+.input_form #id_title {
+  border: none;
+  width: 523px;
+  border-bottom: 1px solid #868686;
+}
+.input_form #id_title:focus {
+  outline: none;
+}
+.input_form table {
+  width: 850px;
+  margin-top: 40px;
+  border: 1px solid #dddddd;
+}
+.input_form table tr {
+  border-bottom: 1px solid #dddddd;
+  min-height: 40px;
+}
+.input_form table tr th {
+  padding-left: 20px;
+  min-height: 40px;
+}
+.input_form table tr td {
+  min-height: 40px;
+  line-height: 25px;
+  padding: 5px;
+}
+.input_form table tr td .tag {
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background-color: #e6e6e6;
+}
+.input_form textarea {
+  padding: 10px;
+  width: 850px;
+  min-height: 160px;
+  margin-top: 20px;
+  resize: vertical;
+}
+#btn_group {
+  margin-left: 300px;
+}
+#btn_group #reserve,
+#btn_group #register {
+  width: 132px;
+  height: 30px;
+  border: solid 1px #5c20e6;
+  border-radius: 20px;
+  color: #5c20e6;
+  background-color: #fff;
+  line-height: 30px;
+}
+.cat_label {
+  width: 100px;
+  display: inline-block;
+  margin-left: 10px;
+}
+.on {
+  background-color: #5c20e6 !important;
+  color: #fff !important;
+}
+#content {
+  height: 100%;
+}
+.sp_seg {
+  margin: 10px;
+  width: 1196px;
+  height: 199px;
+  background-color: #ffffff;
+  border: solid 1px #dddddd;
+  position: relative;
+}
+.sp_seg .status {
+  position: absolute;
+  top: 19px;
+  left: 24px;
+}
+.sp_seg .create_date {
+  position: absolute;
+  right: 17px;
+  top: 19px;
+}
+.sp_seg .sp_category {
+  top: 57px;
+  left: 23px;
+  position: absolute;
+  font-weight: bold;
+}
+.sp_seg .sp_title {
+  top: 77px;
+  left: 23px;
+  position: absolute;
+}
+.sp_seg .view {
+  position: absolute;
+  top: 75px;
+  left: 937px;
+}
+.sp_seg .applier {
+  position: absolute;
+  top: 75px;
+  left: 1061px;
+}
+.sp_seg .due {
+  position: absolute;
+  top: 117px;
+  left: 21px;
+}
+.sp_seg .btn_group {
+  position: absolute;
+  top: 134px;
+  right: 23px;
+}
+.sp_seg .btn_group .sp_btn {
+  width: 204px;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #e9e9e9;
+  border: none;
+}

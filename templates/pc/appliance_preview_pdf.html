@@ -1,0 +1,1219 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/preview.css" %}"/>
+
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+
+
+    <style>
+        input[type=file] {
+            border: none;
+            float: right;
+            width: 300px;
+        }
+
+        .input_txt_con > input[type=checkbox] {
+            width: 13px;
+            height: inherit;
+        }
+
+        input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            cursor: default !important;
+        }
+
+        textarea {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            cursor: default !important;
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            $("input").prop("readonly", true)
+            $("input").prop("disabled", true)
+            $("textarea").prop("readonly", true)
+            console.log("start")
+            var filter_string = "{{ filter_string }}"
+            console.log(filter_string)
+
+            $("#open_sp").on("click", function () {
+                if ($("#sp_detail_con").hasClass("hidden")) {
+                    $("#sp_detail_con").removeClass("hidden")
+                    $("#arrow").attr("src", "{% static "img/arrow-up.png" %}")
+                } else {
+                    $("#sp_detail_con").addClass("hidden")
+                    $("#arrow").attr("src", "{% static "img/arrow-down.png" %}")
+                }
+            })
+
+            $(".opt").each(function () {
+                if ($(this).html().trim() === "") {
+                    $(this).parent().remove()
+                }
+            })
+            $("#header, #rate, #ch-plugin").css("display", "none")
+        })
+
+    </script>
+    <div class="container">
+
+
+        <a class="sm_l_a ">
+            <div class="sm_l">
+                <div class="sm_f">
+                    <div class="int" data-id="{{ support.id }}">
+                        {% if support in recent_ap.first.startup.interest.all %}
+                            <img
+                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% else %}
+                            <img
+                                    src="{% static "img/icon-fav-none.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% endif %}</div>
+
+
+                    <div class="l_cp">
+                        <img class="sm_img"
+                             src="{% static "img/icon-main-"|add:support.icon_set|add:"-sp.png" %}">
+
+                        <div>
+                            {{ support.short_desc }}
+                        </div>
+                    </div>
+                    <div class="view_cnt">
+                        <img class="view_cnt_ic"
+                             src="{% static "img/ic_visibility.png" %}"> {{ support.hit }}
+                    </div>
+                </div>
+                <div class="sm_s" style="width: 674px;">
+                    <div class="sb_title">{{ support.title }}</div>
+                    <div class="sb_due">{{ support.apply_end|date:"Y n d"|calc_day }}
+                        <span>{{ support.is_past_due }} </span>
+                    </div>
+                    <div class="filter_con">
+                        {% for f in support.filter.all|slice:":8" %}
+                            <span class="filter">{{ f.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="sm_t">
+                    {{ support.user.department }}
+                </div>
+            </div>
+        </a>
+        <div id="open_sp"
+             style="cursor: pointer;width:1020px; height: 50px; border: 1px solid #ddd; line-height: 30px; padding: 10px;padding-left: 20px; margin-bottom: 20px;">
+            공고문 펼쳐보기
+            <img id="arrow" style="float: right; margin: 10px;" src="{% static "img/arrow-down.png" %}">
+        </div>
+        <div id="sp_detail_con" class="hidden">
+            <div class="detail_seg">
+                <div class="detail_ttl">지원사업명</div>
+                <div class="desc">
+                    {{ support.title | linebreaks }}
+                </div>
+            </div>
+
+            {% if support.title_sub != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">지원사업명(하위)
+                    </div>
+                    <div class="desc">
+                        {{ support.title_sub| default:"" | linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl">진행 기간</div>
+                <div class="desc">
+                    {{ support.business_period_start|date:"Y-m-d" }} ~ {{ support.business_period_end|date:"Y-m-d" }}
+                </div>
+            </div>
+
+
+            {% if "place" in support.meta and support.place != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">진행 장소</div>
+                    <div class="desc">
+                        {{ support.place| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            {% if "subject" in support.meta and support.subject != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">사업목적</div>
+                    <div class="desc">
+                        {{ support.subject|linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "detail" in support.meta and support.business_detail != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">사업내용</div>
+                    <div class="desc">
+                        {{ support.business_detail | linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail_seg">
+                <div class="detail_ttl">모집기간</div>
+                <div class="desc">
+                    {{ support.apply_start|date:"Y m d" }} 부터 ~ {{ support.apply_end|date:"Y m d" }} 까지
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집대상</div>
+                <div class="desc">
+                    {{ support.object | linebreaks }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집조건</div>
+                <div class="desc">
+                    {{ support.condition| linebreaks }}
+                </div>
+
+                {% if "con0" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 연차</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "업력" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con1" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 구성원</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "구성원" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con2" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 주소지</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "소재지" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con3" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 형태</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "기업형태" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con4" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 제품단계</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "기업단계" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if "con5" in support.meta and support.condition_etc|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 모집조건 - 기타</div>
+                    <div class="desc">
+                        {{ support.condition_etc| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집분야</div>
+                <div class="desc">
+                    {{ support.object_span| linebreaks }}
+                </div>
+
+                {% if "kind0" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 기본장르</div>
+                        <div class="desc">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_0 == "기본장르" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "kind1" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 특수장르</div>
+                        <div class="desc">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_0 == "영역" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "kind2" in support.meta and support.kind2_text != "" %}
+                    <div class="" style="margin-left: 10px;"> 기타</div>
+                    <div class="desc">
+                        {{ support.kind2_text }}
+                    </div>
+                {% endif %}
+
+
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집규모</div>
+                <div class="desc p">
+                    {{ support.recruit_size| default:""| linebreaks }} 팀
+                </div>
+            </div>
+            <style>
+                .p p {
+                    display: inline-block;
+                }
+            </style>
+
+
+            {% if "prefer" in support.meta and support.prefer|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 우대사항</div>
+                    <div class="desc">
+                        {{ support.prefer| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "constraint" in support.meta and support.constraint|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 제한사항
+                    </div>
+                    <div class="desc">
+                        {{ support.constraint| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 선정 방법
+                </div>
+                <div class="desc">
+                    {{ support.pro_0_choose| linebreaks }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 심사 일정</div>
+                <div class="desc">
+                    {{ support.pro_0_start|date:"Y-m-d" }} ~ {{ support.pro_0_end|date:"Y-m-d" }}
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 발표 일정</div>
+                <div class="desc">
+                    {{ support.pro_0_open|date:"Y-m-d" }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 심사기준
+                </div>
+                <div class="desc">
+                    {{ support.pro_0_criterion| linebreaks }}
+                </div>
+            </div>
+
+            {% if "pro_1" in support.meta and support.pro_1_choose|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 선정 방법</div>
+                    <div class="desc">
+                        {{ support.pro_1_choose| linebreaks }}
+                    </div>
+                </div>
+
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 심사 일정</div>
+                    <div class="desc">
+                        {{ support.pro_1_start|date:"Y-m-d" }} ~ {{ support.pro_1_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 발표 일정</div>
+                    <div class="desc">
+                        {{ support.pro_1_open|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 심사기준</div>
+                    <div class="desc">
+                        {{ support.pro_1_criterion| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "pro_2" in support.meta and support.pro_2_choose|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 선정 방법</div>
+                    <div class="desc">
+                        {{ support.pro_2_choose| linebreaks }}
+                    </div>
+                </div>
+
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 심사 일정</div>
+                    <div class="desc">
+                        {{ support.pro_2_start|date:"Y-m-d" }} ~ {{ support.pro_2_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 발표 일정</div>
+                    <div class="desc">
+                        {{ support.pro_2_open|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 심사기준</div>
+                    <div class="desc">
+                        {{ support.pro_2_criterion| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 지원내용
+                </div>
+                <div class="desc">
+                    {{ support.supply_content| linebreaks }}
+                </div>
+            </div>
+
+            {% if "supply_condition" in support.meta and support.supply_condition|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 지원 조건</div>
+                    <div class="desc">
+                        {{ support.supply_condition| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "ceremony" in support.meta and support.ceremony_start|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">행사일정</div>
+                    <div class="desc">
+                        {{ support.ceremony_start|date:"Y-m-d" }} ~ {{ support.ceremony_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "faq" in support.meta and  support.faq|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> FAQ</div>
+                    <div class="desc">
+                        {{ support.faq| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "additional_faq" in support.meta and support.additional_faq|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 추가문의처</div>
+                    <div class="desc">
+                        {{ support.additional_faq| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 주관기관 담당부서 및 담당자</div>
+                <div class="desc">
+                    <table>
+                        <tr>
+                            <th>
+                                주관기관
+                            </th>
+                            <td>
+                                {{ support.user.department }}
+                            </td>
+                            <th>
+                                담당부서
+                            </th>
+                            <td>
+                                {{ support.user.belong_to }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                전화번호
+                            </th>
+                            <td>
+                                {{ support.user.tel }}
+                            </td>
+                            <th>
+                                담당자 메일
+                            </th>
+                            <td>
+                                {{ support.user.user.username }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                담당자명
+                            </th>
+                            <td>
+                                {{ support.user.name }}
+                            </td>
+                            <th>
+                                홈페이지URL
+                            </th>
+                            <td>
+                                {{ support.user.web }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if support.end|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 기타</div>
+                    <div class="desc">
+                        {{ support.etc }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+        </div>
+        <div id="apppliance_form3" style="padding: 10px; border: 1px solid #ddd;">
+
+            {% csrf_token %}
+            <input type="hidden" id="filter" name="filter">
+            <input type="hidden" id="is_submit" name="is_submit" value="false">
+            <div id="apppliance_form" style="padding-bottom: 35px;">
+                <div class="ttl2" style="margin-top: 20px; border-bottom: 1px solid #ced4da;  "> 기본정보</div>
+                <table class="dfl" style="width: 900px; ">
+                    <tr>
+                        <th>
+                            기업명
+                        </th>
+                        <td>
+                            {{ form.name }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            사업자 등록번호
+                        </th>
+                        <td>
+                            {{ form.business_number }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>사업자유형</th>
+                        <td>
+                            {% for filter in form.startup.filter.all %}
+                              {% if filter.cat_1 == "기업형태" %}
+                                    <span class="filter">{{ filter.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            설립일
+                        </th>
+                        <td>
+                            {{ form.found_date | date:"Y m d" }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            주소
+                        </th>
+                        <td>
+                            {{ form.address }}
+                        </td>
+                    </tr>
+                </table>
+
+
+                <div class="ttl2" style="margin-top: 20px; border-bottom: 1px solid #ced4da"> 대표자 정보</div>
+                <div class="ps_tbl" style="display: inline-block">
+                    <table>
+                        <tr>
+                            <td colspan="2"
+                                style="border: none; background-color: #fff; text-align: left; padding-left: 0px; font-size: 15px;">
+                                대표자 정보
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <th>
+                                대표자 명
+                            </th>
+                            <td>
+                                {{ form.repre_name }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                전화번호
+                            </th>
+                            <td>
+                                {{ form.repre_tel }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                E-mail
+                            </th>
+                            <td>
+                                {{ form.repre_email }}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table>
+                        <tr>
+                            <td colspan="2"
+                                style="border: none; background-color: #fff; text-align: left; padding-left: 0px; font-size: 15px;">
+                                담당자 정보
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                담당자 명
+                            </th>
+                            <td>
+                                {{ form.mark_name }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                전화번호
+                            </th>
+                            <td>
+                                {{ form.mark_tel }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                E-mail
+                            </th>
+                            <td>
+                                {{ form.mark_email }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="ttl2" style="margin-top: 20px; border-bottom: 1px solid #ced4da"> 기업정보</div>
+                <table id="online_info" style="width: 900px;">
+                    <tr>
+                        <th>홈페이지</th>
+                        <td colspan="2">
+                            {{ form.website }}
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <th rowspan="2">
+                            sns
+                        </th>
+                        <th style="font-weight: normal">facebook</th>
+                        <td>{{ form.facebook_address }}</td>
+                    </tr>
+                    <tr>
+                        <th style="font-weight: normal">instagram</th>
+                        <td>{{ form.insta_address }}</td>
+                    </tr>
+                </table>
+                <table class="additional_info" style="width: 900px;margin-top: 15px;">
+                    <tr>
+                        <th rowspan="4">
+                            고용현황
+                        </th>
+                        <th style="font-weight: normal">명</th>
+                        <td>  {{ form.total_employ }}</td>
+                    </tr>
+                    <tr>
+                        <th style="font-weight: normal">총</th>
+                        <td>
+                            {{ form.total_employ }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="font-weight: normal">
+                            상주직원 기준
+                        </th>
+                        <td>
+                            {{ form.hold_employ }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="font-weight: normal">
+                            고용보험 등록기준
+                        </th>
+                        <td>
+                            {{ form.assurance_employ }}
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="ttl3" style="margin-top: 20px;"> 매출액</div>
+                <table class="common" style="">
+                    <tr>
+                        <th style="width:200px; border-right: none">연도</th>
+                        <th style="width: 700px; border-left: none">금액</th>
+                    </tr>
+
+                    {% if form.revenue_before_0 != "" and form.revenue_before_0 != None %}
+                        <tr>
+                            <td>
+                                {{ form.revenue_before_year_0 }}
+                            </td>
+                            <td>
+                                {{ form.revenue_before_0 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.revenue_before_1 != "" and form.revenue_before_1 != None %}
+                        <tr>
+                            <td>
+                                {{ form.revenue_before_year_1 }}
+                            </td>
+                            <td>
+                                {{ form.revenue_before_1 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.revenue_before_2 != "" and form.revenue_before_2 != None %}
+                        <tr>
+                            <td>
+                                {{ form.revenue_before_year_2 }}
+                            </td>
+                            <td>
+                                {{ form.revenue_before_2 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                </table>
+
+
+                <div class="ttl3" style="margin-top: 20px;"> 수출액</div>
+                <table class="common">
+                    <tr>
+                        <th style="width:200px; border-right: none">연도</th>
+                        <th style="width: 700px; border-left: none">금액</th>
+                    </tr>
+                    {% if form.export_before_0 != "" and form.export_before_0 != None %}
+                        <tr>
+                            <td>
+                                {{ form.export_before_year_0 }}
+                            </td>
+                            <td>
+                                {{ form.export_before_0 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.export_before_1 != "" and form.export_before_1 != None %}
+                        <tr>
+                            <td>
+                                {{ form.export_before_year_1 }}
+                            </td>
+                            <td>
+                                {{ form.export_before_1 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.export_before_2 != "" and form.export_before_2 != None %}
+                        <tr>
+                            <td>
+                                {{ form.export_before_year_2 }}
+                            </td>
+                            <td>
+                                {{ form.export_before_2 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                </table>
+
+
+                <div class="ttl3" style="margin-top: 20px;">투자유치</div>
+                <table class="common">
+                    <tr>
+                        <th style="width:200px; border-right: none">연도</th>
+                        <th style="width: 200px; border-left: none; border-right: none">금액</th>
+                        <th style="width: 500px; border-left: none;">투자자/투자기관</th>
+                    </tr>
+
+                    {% if form.fund_before_0 != "" and form.fund_before_0 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_0 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_0 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_0 }}
+                            </td>
+
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_1 != "" and form.fund_before_1 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_1 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_1 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_1 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_2 != "" and form.fund_before_2 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_2 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_2 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_2 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_3 != "" and form.fund_before_3 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_3 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_3 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_3 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_4 != "" and form.fund_before_4 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_4 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_4 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_4 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_5 != "" and form.fund_before_5 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_5 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_5 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_5 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_6 != "" and form.fund_before_6 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_6 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_6 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_6 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_7 != "" and form.fund_before_7 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_7 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_7 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_7 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_8 != "" and form.fund_before_8 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_8 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_8 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_8 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if form.fund_before_9 != "" and form.fund_before_9 != None %}
+                        <tr>
+                            <td>
+                                {{ form.fund_before_year_9 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_9 }}
+                            </td>
+                            <td>
+                                {{ form.fund_before_agent_9 }}
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                </table>
+
+
+                <div class="ttl2" style="margin-top: 20px;">사업분야</div>
+                <table class="dfl" style="width: 900px;">
+                    <tr>
+                        <th>기본장르</th>
+                        <td>
+                            {% for filter in form.startup.filter.all %}
+                                {% if filter.cat_0 == "기본장르" %}
+                                    <span class="filter">{{ filter.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            특수영역
+                        </th>
+                        <td>
+                            {% for filter in form.startup.filter.all %}
+                                {% if filter.cat_0 == "영역" %}
+                                    <span class="filter">{{ filter.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            사업자 유형
+                        </th>
+                        <td>
+                            {% for filter in form.startup.filter.all %}
+
+                                {% if filter.cat_1 == "기업형태" %}
+                                    <span class="filter">{{ filter.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>설립일</th>
+                        <td>{{ form.startup.established_date|date:"Y m d" }}</td>
+                    </tr>
+                    <tr>
+                        <th>주소</th>
+                        <td>
+                            {{ form.startup.address_0 }} &nbsp; {{ form.startup.address_detail_0 }}
+                        </td>
+                    </tr>
+                </table>
+                <div class="ttl2" style="margin-top: 20px;">해외 진출여부</div>
+                <table class="dfl" style="width:900px;">
+                    <tr>
+                        <th>국가</th>
+                        <td>
+                            {{ form.oversea }}
+                        </td>
+
+                    </tr>
+                    <tr style="height: 80px">
+                        <th>
+                            진출현황
+                        </th>
+                        <td>
+                            {{ form.oversea_status|safe }}
+                        </td>
+                    </tr>
+                </table>
+                <div class="ttl2" style="margin-top: 20px;">주요 경력</div>
+                <div class="text_con">
+                    {{ form.specification|safe }}
+                </div>
+                <div class="ttl2" style="margin-top: 20px;">기업 소개</div>
+                <div class="text_con">
+                    {{ form.intro }}
+                </div>
+                <div class="ttl2" style="margin-top: 20px;">사업 내용</div>
+                <div class="text_con">
+                    {{ form.detail }}
+                </div>
+            </div>
+        </div>
+
+        <div id="file_form" style="margin-bottom: 50px;">
+            <div id="file_title">
+                첨부서류
+            </div>
+            <div class="file_seg">
+                <table>
+                    <tr>
+                        <td class="file_name">
+                            사업계획서
+                        </td>
+                        <td class="file_input">
+                            {% if current_ap.ir_file %}
+                                {{ current_ap.ir_file|filename|truncatechars:20 }}
+                            {% endif %}
+                        </td>
+                        <td class="file_img">
+                            <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                        </td>
+                    </tr>
+                </table>
+                {% if "business_file" in support.meta %}
+                    <table>
+                        <tr>
+
+                            <td class="file_name">
+                                사업자 등록증
+                            </td>
+                            <td class="file_input">
+                                {% if current_ap.business_file %}
+                                    {{ current_ap.business_file|filename|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td class="file_img">
+                                <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                            </td>
+                        </tr>
+                    </table>
+                {% endif %}
+
+                {% if "tax_file" in support.meta %}
+                    <table>
+                        <tr>
+                            <td class="file_name">
+                                국세/지방세 납입증
+                            </td>
+                            <td class="file_input">
+                                {% if current_ap.tax_file %}
+                                    {{ current_ap.tax_file|filename|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td class="file_img">
+                                <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                            </td>
+                        </tr>
+                    </table>
+                {% endif %}
+                {% if "fund_file" in support.meta %}
+                    <table>
+                        <tr>
+                            <td class="file_name">
+                                투자유치 증빙서류
+                            </td>
+                            <td class="file_input">
+                                {% if current_ap.fund_file %}
+                                    {{ current_ap.fund_file|filename|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td class="file_img">
+                                <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                            </td>
+                        </tr>
+                    </table>
+                {% endif %}
+                {% if "ppt_file" in support.meta %}
+                    <table>
+                        <tr>
+
+                            <td class="file_name">
+                                발표 심사 PT 자료
+                            </td>
+                            <td class="file_input">
+                                {% if current_ap.ppt_file %}
+                                    {{ current_ap.ppt_file|filename|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td class="file_img">
+                                <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                            </td>
+                        </tr>
+                    </table>
+                {% endif %}
+                {% if "etc_file" in support.meta %}
+                    <table>
+                        <tr>
+
+                            <td class="file_name">
+
+                                {{ support.etc_file_title }}
+                            </td>
+                            <td class="file_input">
+                                {% if current_ap.etc_file %}
+                                    {{ current_ap.etc_file|filename|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td class="file_img">
+                                <img src="{% static "img/icon-attachment-m-gray@2x.png" %}" style="width:18px;">
+                            </td>
+                        </tr>
+                    </table>
+                {% endif %}
+            </div>
+
+
+        </div>
+        {% if save_status != "true" %}
+            <style>
+                #submit {
+                    cursor: no-drop !important;
+                }
+            </style>
+        {% endif %}
+
+    </div>
+    <style>
+        .txt_txt_con textarea {
+            overflow: visible;
+            height: auto !important;
+            width: 930px !important;
+            background-color: #fff !important;
+        }
+
+        .input_txt_con {
+            margin-top: -1px !important;
+            margin-bottom: 0px !important;
+            border: none;
+            width: 970px !important;
+            background-color: #fff !important;
+        }
+
+        .txt_txt_con {
+            margin-top: -1px !important;
+            margin-bottom: 0px !important;
+            border: none;
+            width: 970px !important;
+            background-color: #fff !important;
+            margin-left: 20px !important;
+        }
+
+        .f_field {
+            border: none !important;
+        }
+
+        .f_field .input_txt_con {
+            width: 964px !important;
+        }
+
+        .homepage input {
+            width: 922px;
+        }
+
+        .m947 input {
+            width: 922px;
+        }
+
+        #ttl2 {
+            clear: both;
+            width: 980px;
+            height: 50px;
+            line-height: 50px;
+            border-bottom: 2px solid #ddd;
+            color: #2b2b2b;
+            font-size: 18px;
+        }
+
+        .cat {
+            font-weight: 600;
+        }
+
+        .ttl {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .file_seg table {
+            margin-top: 20px;
+            width: 1020px;
+        }
+
+        .on {
+            color: #fff !important;
+        }
+    </style>
+{% endblock %}

@@ -1,0 +1,51 @@
+<div id="list_tab" style="width: 1000px">
+    <ul>
+        <li {% if request.resolver_match.url_name == "startup_p_manage_all" %}class="on" {% endif %}>
+
+            <a href="{% url "startup_p_manage_all" %}"> 개인회원<span id="p"></span></a>
+        </li>
+        <li {% if request.resolver_match.url_name == "startup_sb_manage_all" %}class="on" {% endif %}>
+            <a href="/manage/startup_list_manage_all/">기업회원<span id="c"></span></a>
+        </li>
+        <li {% if request.resolver_match.url_name == "startup_sb_manage" %}class="on" {% endif %}>
+            <a href="/manage/startup_list_manage/">지원사업 참가기업<span id="ac"></span></a>
+        </li>
+
+    </ul>
+</div>
+
+<style>
+    a {
+        text-decoration: none !important;
+    }
+
+    #list_tab {
+        width: 1000px;
+        border-bottom: 1px solid #ddd;
+        height: 30px;
+        margin-bottom: 20px;
+    }
+
+    #list_tab > ul {
+        padding-left: 0px;
+
+    }
+
+    #list_tab > ul > li {
+        height: 30px;
+        float: left;
+        margin-right: 20px;
+        list-style: none;
+        line-height: 30px;
+
+        cursor: pointer
+    }
+
+    #list_tab > ul > li:hover, #list_tab > ul > li.on {
+
+        float: left;
+
+        border-bottom: 2px solid #1b66fe;
+    }
+
+</style>

@@ -1,0 +1,1717 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+
+{% block css %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/example.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        $(window).bind("pageshow", function () {
+
+            $("input,textarea").not(".checkbox>input").attr("readonly", true)
+            $("#oversea_info").on("click", function () {
+                if (($("#oversea_info").is(":checked"))) {
+                    $(".oversea_info").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".oversea_info").addClass("hidden")
+                }
+            })
+            $("#mark_infomation1").on("click", function () {
+                if (($("#mark_infomation1").is(":checked"))) {
+                    $(".mark_infomation1").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation1").addClass("hidden")
+                }
+            })
+
+            $("#mark_infomation2").on("click", function () {
+                if (($("#mark_infomation2").is(":checked"))) {
+                    $(".mark_infomation2").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation2").addClass("hidden")
+                }
+            })
+
+            $("#mark_infomation3").on("click", function () {
+                if (($("#mark_infomation3").is(":checked"))) {
+                    $(".mark_infomation3").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation3").addClass("hidden")
+                }
+            })
+
+            $("#mark_infomation4").on("click", function () {
+                if (($("#mark_infomation4").is(":checked"))) {
+                    $(".mark_infomation4").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation4").addClass("hidden")
+                }
+            })
+
+            $("#mark_infomation5").on("click", function () {
+                if (($("#mark_infomation5").is(":checked"))) {
+                    $(".mark_infomation5").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation5").addClass("hidden")
+                }
+            })
+
+
+            $("#mark_infomation6").on("click", function () {
+                if (($("#mark_infomation6").is(":checked"))) {
+                    $(".mark_infomation6").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation6").addClass("hidden")
+                }
+            })
+
+            $("#mark_infomation7").on("click", function () {
+                if (($("#mark_infomation7").is(":checked"))) {
+                    $(".mark_infomation7").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".mark_infomation7").addClass("hidden")
+                }
+            })
+
+            $("#sub_info1").on("click", function () {
+                if (($("#sub_info1").is(":checked"))) {
+                    $(".sub_info1").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".sub_info1").addClass("hidden")
+                }
+            })
+            $("#sub_info2").on("click", function () {
+                if (($("#sub_info2").is(":checked"))) {
+                    $(".sub_info2").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".sub_info2").addClass("hidden")
+                }
+            })
+
+            $("#sub_info3").on("click", function () {
+                if (($("#sub_info3").is(":checked"))) {
+                    $(".sub_info3").removeClass("hidden")
+                    //meta_arr.push("place")
+                } else {
+                    $(".sub_info3").addClass("hidden")
+                }
+            })
+
+            $("input[type='file']").prop("disabled", true)
+
+
+            var options = {
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년'
+            }
+            //$("#date_pick>input").datepicker(options);
+
+            $(".address>input,#find_add").on("click", get_full_add)
+            $("#save").on("click", function () {
+                alert("저장하였습니다.");
+                $("form").submit();
+            })
+            $("#preview").on("click", function () {
+                $("#next_url").val($(this).attr("data-url"))
+                alert("저장하였습니다.");
+                $("#obj").val("preview")
+                $("form").submit();
+            })
+
+            if (getParameter("result") == "preview") {
+                $("#ap_modal").modal("show")
+            }
+
+
+            $("form").submit(function () {
+                    var meta_arr = []
+                    if (($("#mark_infomation1").is(":checked"))) {
+                        meta_arr.push("mark_infomation1")
+                    }
+                    if (($("#mark_infomation2").is(":checked"))) {
+                        meta_arr.push("mark_infomation2")
+                    }
+                    if (($("#mark_infomation3").is(":checked"))) {
+                        meta_arr.push("mark_infomation3")
+                    }
+                    if (($("#mark_infomation4").is(":checked"))) {
+                        meta_arr.push("mark_infomation4")
+                    }
+                    if (($("#mark_infomation5").is(":checked"))) {
+                        meta_arr.push("mark_infomation5")
+                    }
+                    if (($("#mark_infomation6").is(":checked"))) {
+                        meta_arr.push("mark_infomation6")
+                    }
+                    if (($("#mark_infomation7").is(":checked"))) {
+                        meta_arr.push("mark_infomation7")
+                    }
+                    if (($("#sub_info1").is(":checked"))) {
+                        meta_arr.push("sub_info1")
+                    }
+                    if (($("#sub_info2").is(":checked"))) {
+                        meta_arr.push("sub_info2")
+                    }
+                    if (($("#sub_info3").is(":checked"))) {
+                        meta_arr.push("sub_info3")
+                    }
+                    if (($("#oversea_info").is(":checked"))) {
+                        meta_arr.push("oversea_info")
+                    }
+                    $("#meta").val(meta_arr.join(","));
+                }
+            )
+
+            var meta_string = "{{ support.meta_file_info }}"
+            console.log(meta_string)
+            if (meta_string.indexOf("mark_infomation1") != -1) {
+                $("#mark_infomation1").click()
+            }
+            if (meta_string.indexOf("mark_infomation2") != -1) {
+                $("#mark_infomation2").click()
+            }
+            if (meta_string.indexOf("mark_infomation3") != -1) {
+                $("#mark_infomation3").click()
+            }
+            if (meta_string.indexOf("mark_infomation4") != -1) {
+                $("#mark_infomation4").click()
+            }
+            if (meta_string.indexOf("mark_infomation5") != -1) {
+                $("#mark_infomation5").click()
+            }
+            if (meta_string.indexOf("mark_infomation6") != -1) {
+                $("#mark_infomation6").click()
+            }
+            if (meta_string.indexOf("mark_infomation7") != -1) {
+                $("#mark_infomation7").click()
+            }
+            if (meta_string.indexOf("sub_info1") != -1) {
+                $("#sub_info1").click()
+            }
+            if (meta_string.indexOf("sub_info2") != -1) {
+                $("#sub_info2").click()
+            }
+            if (meta_string.indexOf("sub_info3") != -1) {
+                $("#sub_info3").click()
+            }
+            if (meta_string.indexOf("oversea_info") != -1) {
+                $("#oversea_info").click()
+            }
+
+            $("#open").on("click", function () {
+                $("#is_open").val("true")
+
+                $("form").submit();
+                alert("승인 요청 상태로 변경되었습니다.")
+            })
+
+            var next_url = "{{ next_url }}"
+            if (next_url != "") {
+                window.open(next_url, "_blank")
+            }
+        })
+
+        function get_full_add() {
+            new daum.Postcode({
+                oncomplete: function (data) {
+                    var fullAddr = data.address; // 최종 주소 변수
+                    var extraAddr = ''; // 조합형 주소 변수
+                    if (data.addressType === 'R') {
+                        if (data.bname !== '') {
+                            extraAddr += data.bname;
+                        }
+                        if (data.buildingName !== '') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                        }
+                        fullAddr += (extraAddr !== '' ? ' (' + extraAddr + ')' : '');
+                    }
+                    $(".address>input").val(fullAddr)
+                }
+            }).open();
+        }
+    </script>
+    <div class="row">
+        {% include "pc/manager/common/left_nav.html" %}
+        <div class="content" style="margin: 30px ; float: left; ">
+            <div id="hd" style="margin-top: 20px;">
+                <img onclick="location.href = '/manager/support/edit/{{ support.id }}/' " style="cursor: pointer"
+                     src="{% static "img/icon_arrow-left.png" %}">
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="meta" id="meta">
+                <input type="hidden" name="is_open" id="is_open">
+                <div id="apppliance_form">
+                    <div id="ttl">지원서 양식</div>
+                    <div class="ttl2" style="margin-top: 20px;"> 기본정보
+                        <script>
+                            function open_base(num) {
+                                if ($("#base_" + num).hasClass("hidden")) {
+                                    $("#base_" + num).removeClass("hidden")
+                                    $("#ttl_" + num).attr("src", "{% static "img/arrow-up.png" %}")
+                                }
+                                else {
+                                    $("#base_" + num).addClass("hidden")
+                                    $("#ttl_" + num).attr("src", "{% static "img/arrow-down.png" %}")
+                                }
+                            }
+                        </script>
+                        <img id="ttl_0" onclick="open_base(0)" src="{% static "img/arrow-down.png" %}"
+                             style="float: right; cursor: pointer; margin-top: 20px;">
+                    </div>
+                    <div id="base_0" class="hidden">
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                기업명
+                            </div>
+                            {{ form.name }}
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                사업자 등록증 번호
+                            </div>
+                            {{ form.business_number }}
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                형태
+                            </div>
+                            <div class="filter_con">
+                                {% for f in filter_2 %}
+                                    {% if f.cat_1 == "기업형태" %}
+                                        <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+
+                            </div>
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat" style="width:100px; float: left; margin-top: 5px;">
+                                설립일
+                            </div>
+                            <div id="date_pick">
+                                <img src="{% static "img/icon_cal.png" %}">
+                                {{ form.found_date }}
+                            </div>
+                        </div>
+                        <div class="input_txt_con address">
+                            <div class="cat" style="width: 300px;">
+                                주소
+                                <div id="find_add">주소 찾기</div>
+                            </div>
+                            {{ form.address }}
+                        </div>
+                    </div>
+
+
+                    <div class="ttl2" style="margin-top: 20px;"> 대표자 정보
+                        <img id="ttl_1" onclick="open_base(1)" src="{% static "img/arrow-down.png" %}"
+                             style="float: right; cursor: pointer; margin-top: 20px;">
+                    </div>
+                    <div id="base_1" class="hidden">
+                        <div class="input_txt_con name">
+                            <div class="cat">
+                                대표자 명
+                            </div>
+                            {{ form.repre_name }}
+                        </div>
+                        <div class="input_txt_con tel">
+                            <div class="cat">
+                                전화번호
+                            </div>
+                            {{ form.repre_tel }}
+                        </div>
+                        <div class="input_txt_con email">
+                            <div class="cat">
+                                E-mail
+                            </div>
+                            {{ form.repre_email }}
+                        </div>
+                        <div class=" f_field">
+                            <div class="ttl" style="margin-top: 20px; float: left">담당자 정보</div>
+                            {% comment %}    <div class="checkbox checkbox-primary mark_info" style="float: right; margin-top: 20px;">
+                            <input id="mark_info" type="checkbox" checked="false">
+                            <label for="mark_info">
+                                대표자와 동일
+                            </label>
+                        </div>{% endcomment %}
+                            <div class="input_txt_con name">
+                                <div class="cat">
+                                    담당자 명
+                                </div>
+                                {{ form.mark_name }}
+                            </div>
+                            <div class="input_txt_con tel">
+                                <div class="cat">
+                                    전화번호
+                                </div>
+                                {{ form.mark_tel }}
+                            </div>
+                            <div class="input_txt_con email">
+                                <div class="cat">
+                                    E-mail
+                                </div>
+                                {{ form.mark_email }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ttl2" style="margin-top: 20px;"> 사업분야
+                        <img id="ttl_2" onclick="open_base(2)" src="{% static "img/arrow-down.png" %}"
+                             style="float: right; cursor: pointer; margin-top: 20px;"></div>
+                    <div id="base_2" class="hidden">
+                        <div class="input_txt_con" style="position: relative">
+                            <div class="cat">
+                                키워드 입력
+                            </div>
+                            {{ form.keyword }}
+                            <span id="intro_bs" style="font-size:13px;position: absolute;top:15px; right:20px;">사업관련 소개 키워드를 입력해 주세요</span>
+                        </div>
+                        <div class="input_txt_con" style="margin-top: 15px;">
+                            <div class="cat">
+                                기본장르
+                            </div>
+                            <div class="filter_con">
+                                {% for f in filter_0 %}
+                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="input_txt_con" style="margin-top: 15px;">
+                            <div class="title">
+                                특수장르
+                            </div>
+                            <div class="filter_con">
+                                <table>
+                                    <tr>
+                                        <th style="width:57px;">창작</th>
+                                        <td style="width:334px;">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "창작" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>IT 관련</th>
+                                        <td style="width: 171px;">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "IT 관련" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>창업</th>
+                                        <td style="">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "창업" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>제조/융합</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "제조/융합 관련" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>신규산업</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "신규사업" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>기타</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "기타" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="input_txt_con" style="clear:both;">
+                            <div class="cat">
+                                사업(서비스) 카테고리
+                            </div>
+                            {{ form.service_category }}
+                        </div>
+
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                사업(서비스) 명
+                            </div>
+                            {{ form.service_name }}
+                        </div>
+                        <div class="txt_txt_con">
+                            <div class="cat">
+                                사업(서비스 소개) 요약
+                            </div>
+                            {{ form.service_intro }}
+                        </div>
+                    </div>
+
+                    <div class="ttl2" style="margin-top: 20px;"> 기업정보</div>
+                    <div class="f_field"
+                         style="padding-left: 0px; min-height: 57px;padding-right: 0px; padding-bottom: 0px;">
+                        {#<div class="ttl" style="margin-top: 20px;"> 기업정보</div>#}
+                        <style>
+                            .mark_info {
+                                padding-right: 50px;
+                            }
+                        </style>
+                        <div style="width: 100%; height: 57px;">
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left">
+                                <input id="mark_infomation1" type="checkbox">
+                                <label for="mark_infomation1">
+                                    홈페이지
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left;">
+                                <input id="mark_infomation2" type="checkbox">
+                                <label for="mark_infomation2">
+                                    SNS
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left;">
+                                <input id="mark_infomation3" type="checkbox">
+                                <label for="mark_infomation3">
+                                    고용현황
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left;">
+                                <input id="mark_infomation4" type="checkbox">
+                                <label for="mark_infomation4">
+                                    매출액
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left;">
+                                <input id="mark_infomation5" type="checkbox">
+                                <label for="mark_infomation5">
+                                    투자유치
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left;">
+                                <input id="mark_infomation6" type="checkbox">
+                                <label for="mark_infomation6">
+                                    수출액
+                                </label>
+                            </div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="margin-top: 18px; margin-left: 20px; float: left; padding-right: 0px;!important;">
+                                <input id="mark_infomation7" type="checkbox">
+                                <label for="mark_infomation7">
+                                    지적재산권 보유현황
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="input_txt_con homepage mark_infomation1 hidden " style="margin-top: 20px;">
+                            <div class="cat">
+                                홈페이지
+                            </div>
+                            {{ form.website }}
+                        </div>
+                        <div class="bar mark_infomation2  hidden"></div>
+                        <div class="ttl mark_infomation2  hidden"
+                             style="margin-top: 20px; float: left; margin-left:20px; ">SNS
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation2  hidden" style="margin-left: 20px;">
+                            <div class="cat">
+                                Facebook
+                            </div>
+                            {{ form.facebook_address }}
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation2  hidden" style="margin-left: 20px;">
+                            <div class="cat">
+                                Instagram
+                            </div>
+                            {{ form.insta_address }}
+                        </div>
+                        <div class="bar mark_infomation3  hidden"></div>
+
+                        <div class="ttl mark_infomation3  hidden"
+                             style="margin-top: 20px; float: left; margin-left:20px; ">고용현황
+                        </div>
+                        <div class="input_txt_con num mark_infomation3  hidden">
+                            <div class="cat">
+                                총
+                            </div>
+                            {{ form.total_employ }}
+
+                            <span style="color: #2b2b2b; float: right; margin-top: 5px;font-size: 13px;">
+                            ex. 상근/비상근/참여 프리랜서 포함
+                        </span>
+                        </div>
+                        <div class="input_txt_con num mark_infomation3 hidden">
+                            <div class="cat">
+                                상주직원 기준
+                            </div>
+                            {{ form.hold_employ }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation3 hidden">
+                            <div class="cat">
+                                고용보험 등록기준
+                            </div>
+                            {{ form.assurance_employ }}
+                        </div>
+                        <div class="bar mark_infomation4 hidden"></div>
+
+
+                        <div class="ttl mark_infomation4 hidden"
+                             style="margin: 5px;margin-top: 20px;  margin-left:20px; ">
+                            매출액
+                        </div>
+
+                        <div class="input_txt_con num mark_infomation4 hidden" style="margin-top: 21px;">
+                            <div class="cat">
+                                2017
+                            </div>
+                            {{ form.revenue_before_0 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation4 hidden">
+                            <div class="cat">
+                                2016
+                            </div>
+                            {{ form.revenue_before_1 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation4 hidden">
+                            <div class="cat">
+                                2015
+                            </div>
+                            {{ form.revenue_before_2 }}
+                        </div>
+                        <div class="bar mark_infomation5 hidden"></div>
+                        <div class="ttl mark_infomation5 hidden"
+                             style="margin: 5px;margin-top: 20px;  margin-left:20px; ">
+                            투자유치
+                        </div>
+                        <div class="input_txt_con num mark_infomation5 hidden" style="margin-top: 21px;">
+                            <div class="cat">
+                                2017
+                            </div>
+                            {{ form.fund_before_0 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation5 hidden">
+                            <div class="cat">
+                                2016
+                            </div>
+                            {{ form.fund_before_1 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation5 hidden">
+                            <div class="cat">
+                                2015
+                            </div>
+                            {{ form.fund_before_2 }}
+                        </div>
+                        <div class="bar mark_infomation6 hidden"></div>
+
+                        <div class="ttl mark_infomation6 hidden"
+                             style="margin: 5px;margin-top: 20px;  margin-left:20px; ">
+                            수출액
+                        </div>
+                        <div class="input_txt_con num mark_infomation6 hidden" style="margin-top: 21px;">
+                            <div class="cat">
+                                2017
+                            </div>
+                            {{ form.export_before_0 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation6 hidden">
+                            <div class="cat">
+                                2016
+                            </div>
+                            {{ form.export_before_1 }}
+                        </div>
+                        <div class="input_txt_con num mark_infomation6 hidden">
+                            <div class="cat">
+                                2015
+                            </div>
+                            {{ form.export_before_2 }}
+                        </div>
+                        <div class="bar mark_infomation7 mark_infomation7 hidden"></div>
+                        <div class="ttl mark_infomation7 hidden"
+                             style="margin: 5px;margin-top: 20px;  margin-left:20px;">
+                            지적재산권
+                            보유
+                            현황
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation7 hidden" style="margin-top: 21px ">
+                            <div class="cat">
+                                특허권
+                            </div>
+                            {{ form.patent }}
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation7 hidden">
+                            <div class="cat">
+                                상표권
+                            </div>
+                            {{ form.trademark }}
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation7 hidden">
+                            <div class="cat">
+                                실용신안
+                            </div>
+                            {{ form.patent_2 }}
+                        </div>
+                        <div class="input_txt_con m947 mark_infomation7 hidden">
+                            <div class="cat">
+                                디자인
+                            </div>
+                            {{ form.design }}
+                        </div>
+                    </div>
+                    <div class="ttl2" style="margin-top: 30px; ">기업소개</div>
+                    <div class="f_field" style="min-height: 57px;">
+                        <div class="checkbox checkbox-primary oversea "
+                             style=" margin-top: 18px;margin-left: 10px; margin-bottom: 10px; float: left; margin-right: 90px;">
+                            <input id="sub_info1" type="checkbox">
+                            <label for="sub_info1">
+                                주요경력
+                            </label>
+                        </div>
+                        <div class="checkbox checkbox-primary oversea "
+                             style=" margin-top: 18px;margin-left: 10px; margin-bottom: 10px; float: left; margin-right: 90px;">
+                            <input id="sub_info2" type="checkbox">
+                            <label for="sub_info2">
+                                기업소개
+                            </label>
+                        </div>
+                        <div class="checkbox checkbox-primary oversea "
+                             style=" margin-top: 18px;margin-left: 10px; margin-bottom: 10px; float: left; margin-right: 90px;">
+                            <input id="sub_info3" type="checkbox">
+                            <label for="sub_info3">
+                                사업내용
+                            </label>
+                        </div>
+
+                        <div class="checkbox checkbox-primary oversea "
+                             style=" margin-top: 18px;margin-left: 10px; margin-bottom: 10px; float: left; margin-right: 90px;">
+                            <input id="oversea_info" type="checkbox">
+                            <label for="oversea_info">
+                                해외 진출 여부
+                            </label>
+                        </div>
+
+                        <div class="txt_txt_con sub_info1 hidden" style="clear:both;">
+                            <div class="cat">
+                                주요 경력
+                            </div>
+                            {{ form.specification }}
+                        </div>
+                        <div class="txt_txt_con sub_info2 hidden">
+                            <div class="cat">
+                                기업소개
+                            </div>
+                            {{ form.intro }}
+                        </div>
+                        <div class="txt_txt_con sub_info3 hidden">
+                            <div class="cat">
+                                사업내용
+                            </div>
+                            {{ form.detail }}
+                        </div>
+                        <div class="input_txt_con num oversea_info  hidden" style="margin-left: 10px">
+                            <div class="cat">
+                                국가
+                            </div>
+                            {{ form.oversea }}
+                        </div>
+                        <div class="txt_txt_con ov oversea_info hidden" style="width: 984px;">
+                            <div class="cat" style="clear:none; float:left;">
+                                진출현황
+                            </div>
+                            <span style="float: right">진출 단계 ex. 시장 조사 중, 법인 설립 중, 상품 출시, 업무 협약 등</span>
+                            {{ form.oversea_status }}
+                        </div>
+                    </div>
+                    <style>
+                        .oversea_info > textarea {
+                            width: 940px;
+                        }
+                    </style>
+                </div>
+                <div class="f_field">
+                    <div id="file_form" style="margin-top: 10px">
+                        <div id="file_title" style="font-weight: normal;    margin-top: 20px;    margin-left: 10px;">
+                            첨부서류
+                            <span style="display: inline-block; float: right; font-size: 13px; margin-top: 2px; margin-right: 20px">모든 파일은 jpg형식, 압축하여 1개의 파일로 업로드하세요</span>
+                        </div>
+                        <div class="file_seg">
+                            <table style="margin-top: 20px;width: 990px;">
+                                {% if "ir_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업계획서
+                                        </td>
+                                        <td class="file_input">
+                                            <input name="ir_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "business_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업자 등록증
+                                        </td>
+                                        <td class="file_input">
+                                            <input name="business_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "tax_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            국세/지방세 납입증
+                                        </td>
+                                        <td class="file_input">
+                                            <input name="tax_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "fund_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            투자유치 증빙서류
+                                        </td>
+                                        <td class="file_input">
+                                            <input name="fund_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "ppt_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            발표 심사 PT 자료
+                                        </td>
+                                        <td class="file_input">
+                                            <input name="ppt_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "etc_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img" style="border-bottom: none">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name" style="border-bottom: none; padding-top: 10px;">
+                                            {{ support.etc_file_title }}
+                                        </td>
+                                        <td class="file_input" style="border-bottom: none">
+                                            <input name="etc_file" disabled type="file">
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td style="height: 10px;"></td>
+                                        <td colspan="2" style=" color: red ; vertical-align: top; height: 10px;">
+                                            해당 파일은 압축하여 1개의 파일로 업로드 하세요.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="next_url" id="next_url">
+                <input type="hidden" name="obj" id="obj">
+                <div style="width: 1020px; padding-left: 317px; text-align: center; margin-bottom: 200px;">
+                    <div id="save" style="margin-left: 0px;">임시저장</div>
+                    <div id="preview" style=" width: 150px; height: 40px; margin-top: 10px;  text-align: center;    line-height: 40px;    border: 1px solid #1b66f4;    color: #1b66f4;       float: left;    margin-left: 10px;
+    cursor: pointer;">지원서 양식
+                        미리보기
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="ap_modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog"
+         aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width: 1060px">
+            <div class="modal-content">
+                <img src="{% static "img/icon_cancel.png" %}" style="float: right; margin: 20px; cursor: pointer"
+                     onclick="$('#ap_modal').modal('hide')">
+                <div id="apppliance_form" style="margin-left: 20px;padding-bottom: 90px;">
+
+                    {% csrf_token %}
+                    <input type="hidden" id="filter" name="filter">
+                    <input type="hidden" id="is_submit" name="is_submit" value="false">
+                    <div id="apppliance_form" style="padding-top: 20px;">
+                        <div class="ttl2" style="margin-top: 20px;">기본정보</div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                기업명
+                            </div>
+                            {{ form.name }}
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                사업자 등록증 번호
+                            </div>
+                            {{ form.business_number }}
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                형태
+                            </div>
+                            <div class="filter_con">
+                                {% for f in filter_2 %}
+                                    {% if f.cat_1 == "기업형태" %}
+                                        <span class="filter busi_kind" data-id="{{ f.id }}">{{ f.name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+
+                            </div>
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat" style="width:100px; float: left; margin-top: 5px;">
+                                설립일
+                            </div>
+                            <div id="date_pick">
+                                <img src="{% static "img/icon_cal.png" %}">
+                                {{ form.found_date }}
+                            </div>
+                        </div>
+                        <div class="input_txt_con address">
+                            <div class="cat" style="width: 300px;">
+                                주소
+                                <div id="find_add">주소 찾기</div>
+                            </div>
+                            {{ form.address }}
+                        </div>
+                        <div class="ttl2" style="margin-top: 20px;"> 대표자 정보</div>
+                        <div class="input_txt_con name">
+                            <div class="cat">
+                                대표자 명
+                            </div>
+                            {{ form.repre_name }}
+                        </div>
+                        <div class="input_txt_con tel">
+                            <div class="cat">
+                                전화번호
+                            </div>
+                            {{ form.repre_tel }}
+                        </div>
+                        <div class="input_txt_con email">
+                            <div class="cat">
+                                E-mail
+                            </div>
+                            {{ form.repre_email }}
+                        </div>
+                        <div class=" f_field">
+                            <div class="ttl" style="margin-top: 20px; float: left; margin-left: 6px;">담당자 정보</div>
+                            <div class="checkbox checkbox-primary mark_info"
+                                 style="float: right; margin-top: 20px;">
+                                <input id="mark_info2" type="checkbox" disabled>
+                                <label for="mark_info2">
+                                    대표자와 동일
+                                </label>
+                            </div>
+                            <div class="input_txt_con name" style="margin-left:6px ">
+                                <div class="cat">
+                                    담당자 명
+                                </div>
+                                {{ form.mark_name }}
+                            </div>
+                            <div class="input_txt_con tel" style="margin-left:6px ">
+                                <div class="cat">
+                                    전화번호
+                                </div>
+                                {{ form.mark_tel }}
+                            </div>
+                            <div class="input_txt_con email" style="margin-left:6px ">
+                                <div class="cat">
+                                    E-mail
+                                </div>
+                                {{ form.mark_email }}
+                            </div>
+                        </div>
+
+                        <div class="ttl2" style="margin-top: 20px;"> 사업분야</div>
+                        <div class="input_txt_con" style="position: relative">
+                            <div class="cat">
+                                키워드 입력
+                            </div>
+                            {{ form.keyword }}
+                            <span id="intro_bs" style="font-size:13px;position: absolute;top:15px; right:20px;">사업관련 소개 키워드를 입력해 주세요</span>
+                        </div>
+                        <div class="input_txt_con" style="margin-top: 15px;">
+                            <div class="cat">
+                                기본장르
+                            </div>
+                            <div class="filter_con">
+                                {% for f in filter_0 %}
+                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="input_txt_con" style="margin-top: 15px;">
+                            <div class="title">
+                                특수장르
+                            </div>
+                            <div class="filter_con">
+                                <table>
+                                    <tr>
+                                        <th style="width:57px;">창작</th>
+                                        <td style="width:334px;">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "창작" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>IT 관련</th>
+                                        <td style="width: 171px;">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "IT 관련" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>창업</th>
+                                        <td style="">
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "창업" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>제조/융합</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "제조/융합 관련" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>신규산업</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "신규사업" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <th>기타</th>
+                                        <td>
+                                            {% for f in filter_1 %}
+                                                {% if f.cat_1 == "기타" %}
+                                                    <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="input_txt_con" style="clear:both;">
+                            <div class="cat">
+                                사업(서비스) 카테고리
+                            </div>
+                            {{ form.service_category }}
+                        </div>
+                        <div class="input_txt_con">
+                            <div class="cat">
+                                사업(서비스) 명
+                            </div>
+                            {{ form.service_name }}
+                        </div>
+                        <div class="txt_txt_con">
+                            <div class="cat">
+                                사업(서비스 소개)요약
+                            </div>
+                            {{ form.service_intro }}
+                        </div>
+                        <div class="ttl2" style=""> 기업정보</div>
+                        {% if "mark_infomation1" in support.meta_file_info %}
+                            {##}
+                            {% comment %}   <div class="checkbox checkbox-primary mark_info"
+                             style="margin-top: 20px;">
+                            기업정보
+                        </div>{% endcomment %}
+                            <div style="border: 1px solid #ddd; padding-top: ">
+                                <div class="input_txt_con homepage mark_infomation"
+                                     style="border: 1px solid #ddd ; margin-top: 15px;">
+                                    <div class="cat">
+                                        홈페이지
+                                    </div>
+                                    {{ form.website }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if "mark_infomation2" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="ttl m947 mark_infomation"
+                                     style="margin-top: 20px; float: left; margin-left:6px; ">
+                                    SNS
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        Facebook
+                                    </div>
+                                    {{ form.facebook_address }}
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        Instagram
+                                    </div>
+                                    {{ form.insta_address }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        <style>
+                            .reve > table {
+                            }
+
+                            .reve > table > tbody > tr > th {
+                                padding-left: 14px;
+                                min-height: 40px;
+                                font-weight: normal;
+                            }
+
+                            .reve > table > tbody > tr > td {
+                                padding-left: 15px !important;
+                                border-left: none;
+                                border-right: none;
+                                height: 40px;
+                                font-size: 15px;
+                                min-height: 40px;
+                                padding: 5px;
+                                border-bottom: 1px solid #ddd;
+                            }
+                        </style>
+                        {% if "mark_infomation3" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="ttl mark_infomation"
+                                     style="margin-top: 20px; float: left; margin-left:6px; ">
+                                    고용현황(명)
+                                </div>
+                                <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        총
+                                    </div>
+                                    {{ form.total_employ }}
+                                    <span style="color: #2b2b2b; float: right; margin-top: 5px;font-size: 13px;">
+                            ex. 상근/비상근/참여 프리랜서 포함
+                        </span>
+                                </div>
+                                <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        상주직원 기준
+                                    </div>
+                                    {{ form.hold_employ }}
+                                </div>
+                                <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        고용보험 등록기준
+                                    </div>
+                                    {{ form.assurance_employ }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if "mark_infomation4" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="reve" style="margin-top: 30px;">
+                                    <div class="dy_ttl" style="text-align: left; margin-left: 6px;">매출액<img
+                                            onclick="add_revenue(this)"
+                                            src="{% static "img/plus.png" %}"
+                                            style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                    </div>
+                                    <table style="margin-top: 15px;    text-align: left;        width: 987px;   margin-left: 6px; ">
+                                        <tr>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                                연도
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                                금액
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                            </th>
+                                        </tr>
+                                        <tr class="rev_year  {% if form.revenue_before_0.value != "" and  form.revenue_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.revenue_before_year_0|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.revenue_before_0 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class="rev_year  {% if form.revenue_before_1.value != "" and form.revenue_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.revenue_before_year_1|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con"> {{ form.revenue_before_1 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class="rev_year  {% if form.revenue_before_2.value != "" and form.revenue_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.revenue_before_year_2|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con"> {{ form.revenue_before_2 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if "mark_infomation5" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="reve" style="margin-top: 30px;">
+                                    <div class="dy_ttl" style="text-align: left; margin-left: 6px;">투자유치<img
+                                            onclick="add_fund(this)"
+                                            src="{% static "img/plus.png" %}"
+                                            style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                    </div>
+                                    <table style="margin-top: 15px; width: 987px;margin-left: 6px;">
+                                        <tr>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                                날짜
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 200px; ">
+                                                금액
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 500px; ">
+                                                투자자/투자기관
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                            </th>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_0.value != "" and form.fund_before_0.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_0 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_0 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_0 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_1.value != "" and  form.fund_before_1.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_1 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_1 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_1 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_2.value != "" and  form.fund_before_2.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_2 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_2 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_2 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_3.value != "" and form.fund_before_3.value !=  None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_3 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_3 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_3 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_4.value != "" and form.fund_before_4.value !=  None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_4 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_4 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_4 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_5.value != "" and form.fund_before_5.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_5 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_5 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_5 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_6.value != "" and  form.fund_before_6.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_6 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_6 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_6 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_7.value != "" and  form.fund_before_7.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_7 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_7 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_7 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_8.value != "" and form.fund_before_8.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_8 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_8 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_8 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class=" fund_year {% if form.fund_before_9.value != "" and  form.fund_before_9.value != None %} {% else %} hidden {% endif %}">
+                                            <td class="year" style="">
+                                                <div class="em_con fu_y">{{ form.fund_before_year_9 }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.fund_before_9 }}만원</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_agent">{{ form.fund_before_agent_9 }}</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if "mark_infomation6" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="reve" style="margin-top: 30px;">
+                                    <div class="dy_ttl" style="text-align: left; margin-left: 6px;">수출액<img
+                                            onclick="add_export(this)"
+                                            src="{% static "img/plus.png" %}"
+                                            style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                    </div>
+                                    <table style="margin-top: 15px; width:984px; margin-left: 6px;">
+                                        <tr>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                                연도
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                                금액
+                                            </th>
+                                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                            </th>
+                                        </tr>
+                                        <tr>
+                                        <tr class="ex_year  {% if form.export_before_0.value != "" and form.export_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.export_before_year_0|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.export_before_0 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class="ex_year  {% if form.export_before_1.value != "" and  form.export_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.export_before_year_1|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.export_before_1 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                        <tr class="ex_year  {% if form.export_before_2.value != "" and form.export_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                                            <td class="year" style="">
+                                                <div class="em_con">{{ form.export_before_year_2|default:"" }}년</div>
+                                            </td>
+                                            <td>
+                                                <div class="em_con">{{ form.export_before_2 }}만원</div>
+                                            </td>
+                                            <td style="text-align: right">
+                                                <img
+                                                        onclick="clear_row(this)"
+                                                        src="{% static "img/icon-del-fill@2x.png" %}"
+                                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if "mark_infomation7" in support.meta_file_info %}
+                            <div class="f_field">
+                                <div class="ttl mark_infomation"
+                                     style="margin: 5px;margin-top: 20px;  margin-left:6px;">
+                                    지적재산권
+                                    보유
+                                    현황
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation"
+                                     style="margin-top: 21px ; margin-left: 6px;">
+                                    <div class="cat">
+                                        특허권
+                                    </div>
+                                    {{ form.patent }}
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        상표권
+                                    </div>
+                                    {{ form.trademark }}
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        실용신안
+                                    </div>
+                                    {{ form.patent_2 }}
+                                </div>
+                                <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                    <div class="cat">
+                                        디자인
+                                    </div>
+                                    {{ form.design }}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="ttl2" style="margin-top: 30px;">기업소개</div>
+                        {% if "sub_info1" in support.meta_file_info %}
+                            <div class="txt_txt_con" style="clear:both;">
+                                <div class="cat">
+                                    주요 경력
+                                </div>
+                                {{ form.specification }}
+                            </div>
+                        {% endif %}
+                        {% if "sub_info2" in support.meta_file_info %}
+                            <div class="txt_txt_con">
+                                <div class="cat">
+                                    기업소개
+                                </div>
+                                {{ form.intro }}
+                            </div>
+                        {% endif %}
+                        {% if "sub_info3" in support.meta_file_info %}
+                            <div class="txt_txt_con">
+                                <div class="cat">
+                                    사업내용
+                                </div>
+                                {{ form.detail }}
+                            </div>
+                        {% endif %}
+                        {% if "oversea_info" in support.meta_file_info %}
+
+                            <div class="checkbox checkbox-primary oversea hidden"
+                                 style=" margin-top: 20px; margin-bottom: 10px; padding-left: 0px!important;">
+                                해외 진출 여부
+                            </div>
+                            <div class="input_txt_con num oversea_info" style="margin-left: 0px">
+                                <div class="cat">
+                                    국가
+                                </div>
+                                {{ form.oversea }}
+                            </div>
+                            <div class="txt_txt_con ov oversea_info">
+                                <div class="cat" style="clear:none; float:left;">
+                                    진출현황
+                                </div>
+                                <span style="float: right">진출 단계 ex. 시장 조사 중, 법인 설립 중, 상품 출시, 업무 협약 등</span>
+                                {{ form.oversea_status }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <style>
+                        .file_img {
+                            padding-top: 5px;
+                            padding-bottom: 5px;
+                            vertical-align: middle !important;
+                        }
+
+                        .file_name {
+                            padding-top: 5px;
+                            padding-bottom: 0px !important;
+                            vertical-align: middle !important;
+                        }
+
+                        .file_seg > table > tbody > tr > td:nth-child(1) {
+                            padding-left: 10px;
+                            width: 40px;
+                        }
+                    </style>
+                    <div id="file_form" style="margin-top: 46px;">
+                        <div class="f_field">
+                            <div id="file_title"
+                                 style="font-weight: normal;    margin-top: 20px; margin-left: 10px   ">
+                                첨부서류
+
+                            </div>
+                            <div class="file_seg">
+                                <table style="width:990px;">
+                                    {% if "ir_file" in support.meta %}
+                                        <tr>
+                                            <td class="file_img">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name">
+                                                사업계획서
+                                            </td>
+                                            <td class="file_input">
+                                                {{ form.ir_file }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+
+                                    {% if "business_file" in support.meta %}
+                                        <tr>
+                                            <td class="file_img">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name">
+                                                사업자 등록증
+                                            </td>
+                                            <td class="file_input">
+                                                {{ form.business_file }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+
+                                    {% if "tax_file" in support.meta %}
+                                        <tr>
+                                            <td class="file_img">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name">
+                                                국세/지방세 납입증
+                                            </td>
+                                            <td class="file_input">
+                                                {{ form.tax_file }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if "fund_file" in support.meta %}
+                                        <tr>
+                                            <td class="file_img">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name">
+                                                투자유치 증빙서류
+                                            </td>
+                                            <td class="file_input">
+                                                {{ form.fund_file }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if "ppt_file" in support.meta %}
+                                        <tr>
+                                            <td class="file_img">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name">
+                                                발표 심사 PT 자료
+                                            </td>
+                                            <td class="file_input">
+                                                {{ form.ppt_file }}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if "etc_file" in support.meta %}
+                                        <tr style="border-bottom: none">
+                                            <td class="file_img" style="border-bottom: none">
+                                                <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                     style="width:18px;">
+                                            </td>
+                                            <td class="file_name" style="border-bottom: none">
+                                                {{ support.etc_file_title }}
+                                            </td>
+                                            <td class="file_input" style="border-bottom: none">
+                                                {{ form.etc_file }}
+                                            </td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #ddd">
+                                            <td style="height: 10px;"></td>
+                                            <td colspan="2" style=" color: red ; vertical-align: top; height: 10px;">
+                                                해당 파일은 압축하여 1개의 파일로 업로드 하세요.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div onclick="$('#ap_modal').modal('hide');"
+                         style="cursor: pointer;width: 150px; text-align: center; color: #fff; background-color: #1b66fe; height: 40px;font-size: 17px; line-height: 40px; float: left;    margin-left: 354px;
+    margin-top: 30px;">
+                        수정
+                    </div>
+                    <div id="open" onclick="$('#ap_modal').modal('hide');"
+                         style="cursor:pointer; width: 150px; text-align: center; color: #1b66fe; background-color: #fff; height: 40px;font-size: 17px; line-height: 40px;margin-left: 10px; float: left; border: 1px solid #1b66fe;  margin-top: 30px;">
+                        승인 요청
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}

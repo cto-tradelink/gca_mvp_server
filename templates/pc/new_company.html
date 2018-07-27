@@ -1,0 +1,240 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% block css %}
+    <link href="{% static "css/new_company.css" %}" rel="stylesheet/less">
+    <link rel="stylesheet/less" href="{% static "css/app_mypage_menu.css" %}">
+    <script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=37048cf5c0f4f2431d304272b91538d2&libraries=services"></script>
+{% endblock %}
+
+{% block content %}
+    <script>
+        $(document).ready(function () {
+
+            var options = {
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년',
+                yearRange: "1950:2018"
+            }
+            $("#id_established_date").datepicker(options);
+
+            var cert = $("#cert_email").detach();
+            $("#id_email").parent().append(cert);
+            $(".filter").on("click", function () {
+                if ($(this).attr("data-case") != "") {
+                    $("." + $(this).attr("data-case")).removeClass("on")
+                }
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                    console.log($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter_list").val(filter_list.join(","))
+            })
+            var email_confirm = false;
+            $("#cert_email").on("click", function () {
+                if ($("#id_email").val() != "") {
+                    email_string = $("#id_email").val()
+                    var regExp = /[0-9a-zA-Z][_0-9a-zA-Z-]*@[_0-9a-zA-Z-]+(\.[_0-9a-zA-Z-]+){1,2}$/;
+                    if (!email_string.match(regExp)) {
+                        alert("올바른 이메일을 입력해주세요.")
+                    } else {
+                        if ($("#id_website").val().indexOf(email_string.split("@")[1]) == -1) {
+                            alert("홈페이지를 입력하시거나, 홈페이지와 연결된 이메일을 입력해주세요")
+                        } else {
+                            alert("인증되었습니다.")
+                            email_confirm = true;
+                        }
+                    }
+                } else {
+                    alert("이메일을 입력해 주세요.")
+                }
+            })
+            $("form").submit(function () {
+                if (email_confirm == false) {
+                    alert("이메일 인증을 해주세요.")
+                    return false;
+                }
+            })
+            var address = $("#find_address").detach();
+            $("#id_address").parent().append(address);
+            $("#id_address,#find_address").on("click", get_full_add)
+        })
+
+        function get_full_add() {
+            new daum.Postcode({
+                oncomplete: function (data) {
+                    var fullAddr = data.address; // 최종 주소 변수
+                    var extraAddr = ''; // 조합형 주소 변수
+                    if (data.addressType === 'R') {
+                        if (data.bname !== '') {
+                            extraAddr += data.bname;
+                        }
+                        if (data.buildingName !== '') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                        }
+                        fullAddr += (extraAddr !== '' ? ' (' + extraAddr + ')' : '');
+                    }
+                    $("#id_address").val(fullAddr)
+                }
+            }).open();
+        }
+    </script>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="#">홈</a> &gt; <a href="#">마이페이지</a> > <a id="final" href="#">기업 프로필</a>
+        </div>
+        {% include "pc/common/mypage_menu.html" %}
+        <div id="detail_top">
+            <div id="main"></div>
+            <div id="edit_btn">
+                <img src="{% static "img/ic-edit@2x.png" %}">
+            </div>
+            <div id="name_ttl">{{ user.additionaluserinfo.name }}</div>
+            <div id="email_ttl">{{ user.username }}</div>
+            <form method="post" action="{% url "company_profile_new" %}">
+                {% csrf_token %}
+                <input id="filter_list" type="hidden" name="filter_list">
+                <div class="form_ttl">기본 정보</div>
+                <div class="form_seg" id="basic_info">
+                    {{ form_basic.as_ul }}
+                    <div id="cert_email">
+                        인증하기
+                    </div>
+                    <div id="find_address">
+                        주소 찾기
+                    </div>
+                </div>
+                <div class="form_ttl">관심있는 지원사업 종류</div>
+                <div class="y_alert">해당정보는 기업정보페이지 공개되지않고, 지원사업검색시 매칭을위한 필터에 활용됩니다.</div>
+
+                <div class="form_seg" id="basic_info">
+                    {% for filter in  int_sup %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </div>
+                <div class="form_ttl">기업 정보(필터에서 선택)
+                    <span>매칭을 위한 필터 선택</span></div>
+                <table style="clear:both; width: 855px;">
+                    <tr>
+                        <th>
+                            기본장르
+                        </th>
+                        <td colspan="2">
+                            {% for filter in filter_0 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            영역
+                        </th>
+                        <td style="width:383px;">
+                            <span class="cat_label">창작</span>
+                            {% for filter in filter_1 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                            <br>
+                            <span class="cat_label">창업</span>
+                            {% for filter in filter_3 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">신규산업</span>
+                            {% for filter in filter_5 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td style="width:363px;">
+                            <span class="cat_label">IT 관련</span>
+                            {% for filter in filter_2 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">제조/융합</span>
+                            {% for filter in filter_4 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기타</span>
+                            {% for filter in filter_6 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="padding: 0px !important;">
+                            <div class="y_alert">해당정보는 기업정보페이지 공개되지않고, 지원사업검색시 매칭을위한 필터에 활용됩니다.</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            조건
+                        </th>
+                        <td colspan="2">
+                            <span class="cat_label">업력</span>
+                            {% for filter in filter_7 %}
+                                <span class="filter f_sub_y" data-case="f_sub_y"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">소재지</span>
+                            {% for filter in filter_9 %}
+                                <span class="filter f_sub_loc" data-case="f_sub_loc"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업형태</span>
+                            {% for filter in filter_10 %}
+                                <span class="filter f_sub_case" data-case="f_sub_case"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업단계</span>
+                            {% for filter in filter_11 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="padding: 0px!important;background-color: #fdfdfd;">
+                            <div class="input_con_2" style="border: none">
+                                <div class="form_ttl_2">기업 한줄 소개<span>지원사업 리스트와 본문에 가장 강조되어 나타납니다.</span></div>
+                                {{ form_basic_bot.short_desc }}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="input_con_2" style="margin-top: 20px;">
+                    <div class="form_ttl_2">해시태그 입력</div>
+                    {{ form_basic_bot.keyword }}
+                </div>
+                <div class="form_ttl">기업소개</div>
+                <div class="input_con">
+                    {{ form_basic_bot.desc }}
+                </div>
+                <div class="form_ttl">서비스/프로덕트 소개</div>
+                <div class="input_con">
+                    {{ form_basic_bot.service_products }}
+                </div>
+                <div class="form_ttl">투자유치 현황</div>
+                <div class="input_con">
+                    {{ form_basic_bot.fund_status }}
+                </div>
+                <button type="submit" id="register">등록하기</button>
+            </form>
+        </div>
+
+    </div>
+{% endblock %}

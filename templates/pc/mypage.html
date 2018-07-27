@@ -1,0 +1,76 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/mypage.css" %}" rel="stylesheet/less">
+    <link rel="stylesheet/less" href="{% static "css/app_mypage_menu.css" %}">
+
+{% endblock %}
+
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            var cert = $("#cert_email").detach();
+            $("#id_email").parent().append(cert)
+        })
+    </script>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a> &nbsp;&gt;&nbsp; <a id="final" href="#">내프로필</a>
+        </div>
+        {% include "pc/common/mypage_menu.html" %}
+        <div id="detail_top">
+            <div id="main">
+                    {% user_avatar user %}
+            </div>
+
+            <div id="name_ttl">{%if user.additionaluserinfo.name  != "" %}
+                        {{ user.additionaluserinfo.name }}
+                        {% else %}이름을 입력 해주세요.{% endif %}</div>
+          {%  user_social user as test %}
+           {%  if not test  %}
+            <div id="email_ttl">
+
+                {{ user.username }}
+            </div>
+        {% endif %}
+            <form method="post" action="">
+                {% csrf_token %}
+                <div id="profile_up">
+                    <li><label for="id_name">연동된 SNS</label>{% user_social user %}</li>
+                {%  user_social user as test %}
+                    {%  if not test  %}
+                    <li><label for="id_name">ID</label>
+                        {{ user.username }}
+                    </li>
+                    <li><label for="id_name">PW</label> ******</li>
+                    {% endif %}
+                    <li><label for="id_name">이름</label>{%if user.additionaluserinfo.name  != "" %}
+                        {{ user.additionaluserinfo.name }}
+                        {% else %}이름을 입력 해주세요.{% endif %}
+
+                    </li>
+                </div>
+                <div id="profile_bot">
+                    <li><label for="id_name">핸드폰번호</label> {{ user.additionaluserinfo.tel }}</li>
+                    <li><label for="id_name">추가 email</label> {{ user.additionaluserinfo.additional_email }}</li>
+                    <li><label for="id_name">수신동의</label>
+                        {% if user.additionaluserinfo.agreement == True %}
+                        <img src="{% static "img/icon_done.png" %}"
+                             style="width: 16px;margin-top: -3px;margin-right:10px;"> 네
+                        {% else %}
+                        <img src="{% static "img/icon_done.png" %}"
+                             style="width: 16px;margin-top: -3px;margin-right:10px;"> 아니오
+                        {% endif %}
+                    </li>
+                 {% comment %}   <li><label for="id_name">소속기업</label>{{ user.additionaluserinfo.startup }}</li>
+                    <li><label for="id_name">역할</label> {{ user.additionaluserinfo.position }}</li>{% endcomment %}
+                </div>
+                <div onclick="location.href='../../mypage/my_profile/edit'" id="modify"
+                     style="margin-left: 353px;cursor: pointer">수정 하기
+                </div>
+            </form>
+        </div>
+
+    </div>
+{% endblock %}

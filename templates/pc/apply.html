@@ -1,0 +1,1360 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+
+{% block css %}
+
+    <link rel="stylesheet/less" href="{% static "css/example.css" %}"/>
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=37048cf5c0f4f2431d304272b91538d2&libraries=services"></script>
+    <script src="{% static 'js/jquery.loading-indicator.js' %}"></script>
+  <script src="https://cdn.rawgit.com/vast-engineering/jquery-popup-overlay/1.7.13/jquery.popupoverlay.js"></script>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/jquery.loading-indicator.css' %}" />
+    <script>
+
+
+        var save_status =    {{ save_status }}
+
+
+        var check_status =   {% if request.resolver_match.url_name == "apply" %}true{% else %} false{% endif %}
+        $(document).ready(function () {
+            var between = 0
+            $(".ttl2:eq(3)").nextUntil($(".ttl2:eq(4)")).each(function(){ between = between+1})
+         if (between==0)
+         {
+              $(".ttl2:eq(3)").addClass("hidden")
+         }
+         between = 0;
+            $(".ttl2:eq(4)").nextAll().each(function(){ between = between+1})
+          if (between==0)
+         {
+              $(".ttl2:eq(4)").addClass("hidden")
+         }
+
+
+  $('#my_popup').popup();
+
+        $(document).on("change","#id_ir_file", function () {
+            console.log("sd")
+
+            console.log($(this)[0].files[0].size)
+            console.log($(this)[0].files[0].name)
+            if ($(this)[0].files[0].size/(1024*1024) > 20){
+{#                alert("파일의 크기가 최대 전송크기인 20MB 이상입니다. 담당자 분께 직접 이메일로 전송해주세요.")#}
+{#                $(this).val("")#}
+            }
+        })
+
+
+
+        for(var k=0; k<$(".file_input").length; k++){
+
+            $(".file_input").eq(k).html( $(".file_input").eq(k).html().replace("Currently","현재파일") )
+            $(".file_input").eq(k).html( $(".file_input").eq(k).html().replace("Clear","삭제") )
+            $(".file_input").eq(k).html( $(".file_input").eq(k).html().replace("Change","바꾸기") )
+            $(".file_input:eq("+k+")").find("a").last().text( $(".file_input:eq("+k+")").find("a").last().text().split("/")[($(".file_input:eq("+k+")").find("a").text().split("/")).length-1] )
+            console.log($(".file_input:eq("+k+")").find("a").last().text().split("/") )
+        }
+
+
+
+            if (check_status) {
+
+            }
+            if ({{ save_status }} &&  !{{ submit }})
+            {
+
+            }
+            if ({{ submit}}) {
+                var r = confirm("지원서가 제출 되었습니다. 제출한 지원서를 확인하시겠습니까? ");
+                if (r == true) {
+                    location.href = '/mypage/?cat=comp'
+                } else {
+                    location.href = '{% url "support" id=support.id  %}';
+                }
+            }
+            var options = {
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년',
+                yearRange: "1950:2018"
+            }
+            $("#id_found_date").datepicker(options);
+            $(".fu_y>input").datepicker(options);
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            var string = "{{ support.meta }}".split(",")
+
+            if (string.indexOf("base")) $(".f_field:eq(0)").removeClass("hidden")
+            if (string.indexOf("repre")) $(".f_field:eq(1)").removeClass("hidden")
+            if (string.indexOf("mark")) $(".f_field:eq(2)").removeClass("hidden")
+            if (string.indexOf("company")) $(".f_field:eq(3)").removeClass("hidden")
+            if (string.indexOf("business")) $(".f_field:eq(4)").removeClass("hidden")
+            if (string.indexOf("oversea")) $(".f_field:eq(5)").removeClass("hidden")
+            if (string.indexOf("company_etc")) $(".f_field:eq(6)").removeClass("hidden")
+            if (string.indexOf("etc_file")) $(".etc_file").removeClass("hidden")
+            if (string.indexOf("ir_file")) $(".ir_file").removeClass("hidden")
+            if (string.indexOf("tax_file")) $(".tax_file").removeClass("hidden")
+            if (string.indexOf("fund_file")) $(".fund_file").removeClass("hidden")
+            if (string.indexOf("business_file")) $(".business_file").removeClass("hidden")
+            if (string.indexOf("ppt_file")) $(".ppt_file").removeClass("hidden")
+
+            $(".filter").not($(".busi_kind")).on("click", function () {
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter").val(filter_list.join(","))
+            })
+
+            $(".busi_kind").on("click", function () {
+                $(".busi_kind").removeClass("on")
+                $(this).addClass("on")
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter").val(filter_list.join(","))
+            })
+
+            $("#save").on("click", function () {
+                if ($("#id_found_date").val() == "" || $("#id_found_date").val() == undefined) {
+                    alert("설립일/설립희망일을 입력해 주세요.")
+                    return false;
+                }
+
+                if ($("id_revenue_before_0").val() == "") {
+
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_revenue_before_1").val() == "") {
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_revenue_before_2").val() == "") {
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+
+                if ($("id_export_before_0").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_export_before_1").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_export_before_2").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+ var at_file = []
+                $("#file_form").find("input").each(function(){ if($(this).is(":visible")){ at_file.push($(this).parent().prev().text().trim()) } })
+                console.log(at_file)
+                if (at_file.length != 0){
+                    var result = confirm(at_file.join(",") + "파일이 첨부되어있지 않습니다. 계속 진행하시겠습니까?")
+                    if (result == false) {
+                        return false
+                    }
+
+                }
+
+
+
+                alert("입력하신 정보를 토대로 회사 기본정보가 업데이트 됩니다.")
+               // $("form").submit();
+
+$('#my_popup').popup('show');
+                         console.log("THISDFASD")
+                  var form = $('#form')[0];
+
+         var formData = new FormData(form);
+             $.ajax({
+                url: '',
+                processData: false,
+                    contentType: false,
+                data: formData,
+                type: 'POST',
+                success: function(result){
+                    alert("지원서 정보 업로드에 성공하였습니다. 지원서 정보 수정 페이지로 이동합니다.");
+                    location.href = result
+                },
+                error:function (e) {
+                    console.log(e)
+
+                }
+            });
+
+            })
+            $("#submit").on("click", function () {
+                if ($("#id_found_date").val() == "" || $("#id_found_date").val() == undefined) {
+                    alert("설립일/설립희망일 을 입력해 주세요.")
+                    return false;
+                }
+
+                if ($("id_revenue_before_0").val() == "") {
+
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_revenue_before_1").val() == "") {
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_revenue_before_2").val() == "") {
+                    alert("매출액을 입력해 주세요");
+                    return false;
+                }
+
+                if ($("id_export_before_0").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_export_before_1").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+                if ($("id_export_before_2").val() == "") {
+                    alert("수출액을 입력해 주세요");
+                    return false;
+                }
+                var at_file = []
+                $("#file_form").find("input").each(function(){ if($(this).is(":visible")){ at_file.push($(this).parent().prev().text().trim()) } })
+                console.log(at_file)
+                if (at_file.length != 0){
+                    var result = confirm(at_file.join(",") + "파일이 첨부되어있지 않습니다. 계속 진행하시겠습니까?")
+                    if (result == false) {
+                        return false
+                    }
+                }
+                if (!check_status) {
+                    $("#is_submit").val("true");
+                    alert("입력하신 정보를 토대로 회사 기본정보가 업데이트 됩니다.")
+                //    $("form").submit();
+                    $('#my_popup').popup('show');
+                         console.log("THISDFASD")
+                  var form = $('#form')[0];
+
+         var formData = new FormData(form);
+             $.ajax({
+                url: '',
+                processData: false,
+                    contentType: false,
+                data: formData,
+                type: 'POST',
+                success: function(result){
+
+                    alert("지원서가 제출 되었습니다. 제출한 지원서로 이동합니다. ");
+                    location.href = '/mypage/?cat=comp'
+
+                },
+                error:function (e) {
+                    console.log(e)
+
+                }
+            });
+
+                } else {
+                    alert("제출 하기전에 저장 먼저해주세요.")
+                    return false
+                }
+
+
+         });
+
+
+
+            {% if request.resolver_match.url_name != "apply" and request.resolver_match.url_name != "apply_preview_doc" %}
+                $("#preview").on("click", function () {
+                    if (!check_status) {
+                        window.open('{% url "apply_preview"  sbid=support.id id=id %}', "_blank")
+                    } else {
+                        alert("미리보기 전에 저장 먼저해주세요.")
+                    }
+                })
+            {% endif %}
+            $("input").keydown(function () {
+                check_status = true;
+            });
+            $("textarea").keydown(function () {
+                check_status = true;
+            });
+
+
+            $("#mark_info").on("click", function () {
+                if (($("#mark_info").is(":checked"))) {
+                    $("#id_mark_name").val($("#id_repre_name").val());
+                    $("#id_mark_tel").val($("#id_repre_tel").val());
+                    $("#id_mark_email").val($("#id_repre_email").val());
+                }
+                else {
+                    $("#id_mark_name").val("");
+                    $("#id_mark_tel").val("");
+                    $("#id_mark_email").val("");
+                }
+            })
+            $(".address>input,#find_add").on("click", get_full_add)
+            var filter_string = "{{ filter_string }}"
+            console.log(filter_string)
+            for (var k = 0; k < filter_string.split(",").length; k++) {
+                $("span[data-id='" + filter_string.split(",")[k] + "']").addClass("on")
+            }
+            $("#filter").val(filter_string);
+
+            $("#recent_apply").on("change", function () {
+                var val = $(this).val()
+                $.ajax({
+                    url: '{% url "load_recent_appliance" %}',
+                    method: "post",
+                    data: {
+                        "ap": val,
+                    },
+                    success: function (data) {
+                        console.log(data[0].fields)
+                        var obj = data[0].fields
+                        for (var i in obj) {
+                            try {
+                                $("#id_" + i).val(obj[i])
+                            }
+                            catch (e) {
+                                console.log(e)
+                            }
+                        }
+                        for (var k = 0; k < 3; k++) {
+                            if ($("#id_revenue_before_" + k).val() != "") {
+                                $("#id_revenue_before_" + k).parent().parent().parent().removeClass("hidden")
+                            } else {
+                                $("#id_revenue_before_" + k).parent().parent().parent().addClass("hidden")
+                            }
+                        }
+                        for (var k = 0; k < 3; k++) {
+                            if ($("#id_export_before_" + k).val() != "") {
+                                $("#id_export_before_" + k).parent().parent().parent().removeClass("hidden")
+                            } else {
+                                $("#id_export_before_" + k).parent().parent().parent().addClass("hidden")
+                            }
+                        }
+                        for (var k = 0; k < 10; k++) {
+                            if ($("#id_fund_before_" + k).val() != "") {
+                                $("#id_fund_before_" + k).parent().parent().parent().removeClass("hidden")
+                            } else {
+                                $("#id_fund_before_" + k).parent().parent().parent().addClass("hidden")
+                            }
+                        }
+                    },
+                    error: function (e) {
+                        console.log(e)
+                    }
+                })
+            })
+
+            {% if user.additionaluserinfo.auth != "4" and   user.additionaluserinfo.auth != "5" %}
+                $(".int").on("click", function () {
+                    var target = this;
+                    $.ajax({
+                        url: '/add_interest/',
+                        method: "post",
+                        data: {"val": $(target).attr("data-id")},
+                        success: function (data) {
+                            alert("저장하였습니다.");
+                            if (data === "ok-add") {
+                                $("div[data-id='" + $(target).attr("data-id") + "']").find("img").attr("src", "{% static "img/icon-fav-full@2x.png" %}")
+                                alert("관심 목록에 등록되었습니다.");
+                            }
+                            else {
+                                $("div[data-id='" + $(target).attr("data-id") + "']").find("img").attr("src", "{% static "img/icon-fav-none.png" %}")
+                                alert("관심 목록에서 제외되었습니다.");
+                            }
+                            return false;
+                        },
+                        error: function (e) {
+                            console.log(e);
+                        }
+                    })
+                    return false;
+                })
+            {% endif %}
+        })
+
+        function get_full_add() {
+            new daum.Postcode({
+                oncomplete: function (data) {
+                    var fullAddr = data.address; // 최종 주소 변수
+                    var extraAddr = ''; // 조합형 주소 변수
+                    if (data.addressType === 'R') {
+                        if (data.bname !== '') {
+                            extraAddr += data.bname;
+                        }
+                        if (data.buildingName !== '') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                        }
+                        fullAddr += (extraAddr !== '' ? ' (' + extraAddr + ')' : '');
+                    }
+                    $(".address>input").val(fullAddr)
+                }
+            }).open();
+        }
+
+        function add_revenue(target) {
+            if ($("#id_found_date").val() == "" || $("#id_found_date").val() == undefined) {
+                alert("회사 설립일/설립희망일을 먼저 입력해주세요.")
+            } else {
+                var pre_year = parseInt(new Date().getFullYear())
+                var found_year = parseInt($("#id_found_date").val().split("-")[0])
+                var before_y = $(target).parent().parent().find(".rev_year").not(".hidden").last().find(".year").find("input").val()
+                if (before_y == undefined) {
+                    if (pre_year - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(pre_year - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                } else {
+                    if (parseInt(before_y) - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(parseInt(before_y) - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                }
+            }
+        }
+
+        function add_export(target) {
+            if ($("#id_found_date").val() == "" || $("#id_found_date").val() == undefined) {
+                alert("회사 설립일/설립희망일을 먼저 입력해주세요.")
+            } else {
+                var pre_year = parseInt(new Date().getFullYear())
+                var found_year = parseInt($("#id_found_date").val().split("-")[0])
+                var before_y = $(target).parent().parent().find(".ex_year").not(".hidden").last().find(".year").find("input").val()
+                if (before_y == undefined) {
+                    if (pre_year - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(pre_year - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                } else {
+                    if (parseInt(before_y) - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(parseInt(before_y) - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                }
+            }
+        }
+
+        function add_fund(target) {
+            $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+        }
+
+        function clear_row(target) {
+            console.log(target)
+            $(target).parent().parent().find("input:eq(1)").val("")
+            $(target).parent().parent().find("input:eq(2)").val("")
+            if ($(target).parent().parent().hasClass("fund_year")) {
+                $(target).parent().parent().find("input:eq(0)").val("")
+            }
+            $(target).parent().parent().addClass("hidden")
+        }
+
+    </script>
+    <style>
+        input[type=file] {
+            border: none;
+            float: right;
+            width: 300px;
+        }
+
+        .input_txt_con > input[type=checkbox] {
+            width: 13px;
+            height: inherit;
+        }
+    </style>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a>&nbsp;&gt;&nbsp;<a href="{% url "matching_business" %}">지원사업</a> &nbsp;&gt;&nbsp;
+            <a href="{% url "matching_business" %}">지원하기</a>&nbsp;&gt;&nbsp;<a
+                id="final" href="#">{{ support.title }}</a>
+        </div>
+        <a class="sm_l_a ">
+            <div class="sm_l">
+                <div class="sm_f">
+                    <div data-id="{{ support.id }}" class="int">
+                        {% if support in user.additionaluserinfo.interest.all %}
+                            <img
+                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% else %}
+                            <img
+                                    src="{% static "img/icon-fav-none.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% endif %}</div>
+                    <div class="l_cp">
+                        <img class="sm_img" src="{% static "img/icon-main-"|add:support.icon_set|add:"-sp.png" %}">
+                        <div>
+                            {{ support.short_desc }}
+                        </div>
+                    </div>
+                    <div class="view_cnt">
+                        <img class="view_cnt_ic"
+                             src="{% static "img/ic_visibility.png" %}"> {{ support.hit }}
+                    </div>
+                </div>
+                <div class="sm_s">
+                    <div class="sb_title">{{ support.title }}</div>
+                    <div class="sb_due">{{ support.end_date|date:"Y-m-d" }} <span>{{ support.is_past_due }} </span>
+                    </div>
+                    <div class="filter_con">
+                        {% for f in support.filter.all|slice:":8" %}
+                            <span class="filter">{{ f.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="sm_t">
+                    {{ support.user.department }}
+                </div>
+            </div>
+        </a>
+        <div id="apppliance_form">
+            <form action="" method="post" id="form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" id="filter" name="filter">
+                <input type="hidden" id="is_submit" name="is_submit" value="false">
+                <div id="apppliance_form" style="padding-top: 20px;">
+                    <select id="recent_apply" data-width="fit" title="이전에 작성한 지원사업지원서를 선택해서 불러오세요." class="selectpicker"
+                            style="margin-top: 20px;">
+                        {% for ap in recent_ap %}
+                            <option value="{{ ap.id }}"
+                                    data-content="<span class='label label-success'>{{ ap.update_at|date:" Y m d" }}</span>&nbsp;{{ ap.sb.title }}"></option>
+                        {% endfor %}
+                    </select>
+                    <div class="ttl2" style="margin-top: 20px;">기본정보</div>
+                    <div class="input_txt_con">
+                        <div class="cat">
+                            기업명
+                        </div>
+                        {{ form.name }}
+                    </div>
+                    <div class="input_txt_con">
+                        <div class="cat">
+                            사업자 등록증 번호
+                        </div>
+                        {{ form.business_number }}
+                    </div>
+                    <div class="input_txt_con">
+                        <div class="cat">
+                            형태
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_2 %}
+                                {% if f.cat_1 == "기업형태" %}
+                                    <span class="filter busi_kind" data-id="{{ f.id }}">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                    <div class="input_txt_con">
+                        <div class="cat" style="width:100px; float: left; height: auto">
+                            설립일/<br>설립 희망일
+                        </div>
+                        <div id="date_pick" style="margin-top: 7px;">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.found_date }}
+                        </div>
+                    </div>
+                    <div class="input_txt_con address">
+                        <div class="cat" style="width: 300px;">
+                            주소
+                            <div id="find_add">주소 찾기</div>
+                        </div>
+                        {{ form.address }}
+                    </div>
+                    <div class="ttl2" style="margin-top: 20px;"> 대표자 정보</div>
+                    <div class="input_txt_con name">
+                        <div class="cat">
+                            대표자 명
+                        </div>
+                        {{ form.repre_name }}
+                    </div>
+                    <div class="input_txt_con tel">
+                        <div class="cat">
+                            전화번호
+                        </div>
+                        {{ form.repre_tel }}
+                    </div>
+                    <div class="input_txt_con email">
+                        <div class="cat">
+                            E-mail
+                        </div>
+                        {{ form.repre_email }}
+                    </div>
+                    <div class=" f_field">
+                        <div class="ttl" style="margin-top: 20px; float: left; margin-left: 6px;">담당자 정보</div>
+                        <div class="checkbox checkbox-primary mark_info" style="float: right; margin-top: 20px;">
+                            <input id="mark_info" type="checkbox">
+                            <label for="mark_info">
+                                대표자와 동일
+                            </label>
+                        </div>
+                        <div class="input_txt_con name" style="margin-left:6px ">
+                            <div class="cat">
+                                담당자 명
+                            </div>
+                            {{ form.mark_name }}
+                        </div>
+                        <div class="input_txt_con tel" style="margin-left:6px ">
+                            <div class="cat">
+                                전화번호
+                            </div>
+                            {{ form.mark_tel }}
+                        </div>
+                        <div class="input_txt_con email" style="margin-left:6px ">
+                            <div class="cat">
+                                E-mail
+                            </div>
+                            {{ form.mark_email }}
+                        </div>
+                    </div>
+
+                    <div class="ttl2" style="margin-top: 20px;"> 사업분야</div>
+                    <div class="input_txt_con" style="position: relative">
+                        <div class="cat">
+                            키워드 입력
+                        </div>
+                        {{ form.keyword }}
+                        <span id="intro_bs" style="font-size:13px;position: absolute;top:15px; right:20px;">사업관련 소개 키워드를 입력해 주세요</span>
+                    </div>
+                    <div class="input_txt_con" style="margin-top: 15px;">
+                        <div class="cat">
+                            기본장르
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_0 %}
+                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="input_txt_con" style="margin-top: 15px;">
+                        <div class="title">
+                            특수장르
+                        </div>
+                        <div class="filter_con">
+                            <table>
+                                <tr>
+                                    <th style="width:57px;">창작</th>
+                                    <td style="width:334px;">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "창작" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>IT 관련</th>
+                                    <td style="width: 171px;">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "IT 관련" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>창업</th>
+                                    <td style="">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "창업" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>제조/융합</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "제조/융합 관련" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>신규산업</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "신규사업" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>기타</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "기타" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>기
+                            </table>
+                        </div>
+                    </div>
+                    <div class="input_txt_con" style="clear:both;">
+                        <div class="cat">
+                            사업(서비스) 카테고리
+                        </div>
+                        {{ form.service_category }}
+                    </div>
+                    <div class="input_txt_con">
+                        <div class="cat">
+                            사업(서비스) 명
+                        </div>
+                        {{ form.service_name }}
+                    </div>
+                    <div class="txt_txt_con">
+                        <div class="cat">
+                            사업(서비스 소개)요약
+                        </div>
+                        {{ form.service_intro }}
+                    </div>
+                    <div class="ttl2" style=""> 기업정보</div>
+                    {% if "mark_infomation1" in support.meta_file_info %}
+                        {##}
+                        {% comment %}   <div class="checkbox checkbox-primary mark_info"
+                             style="margin-top: 20px;">
+                            기업정보
+                        </div>{% endcomment %}
+                        <div style="border: 1px solid #ddd; padding-top: ">
+                            <div class="input_txt_con homepage mark_infomation"
+                                 style="border: 1px solid #ddd ; margin-top: 15px;">
+                                <div class="cat">
+                                    홈페이지
+                                </div>
+                                {{ form.website }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if "mark_infomation2" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="ttl m947 mark_infomation"
+                                 style="margin-top: 20px; float: left; margin-left:6px; ">
+                                SNS
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    Facebook
+                                </div>
+                                {{ form.facebook_address }}
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    Instagram
+                                </div>
+                                {{ form.insta_address }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "mark_infomation3" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="ttl mark_infomation" style="margin-top: 20px; float: left; margin-left:6px; ">
+                                고용현황(명)
+                            </div>
+                            <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    총
+                                </div>
+                                {{ form.total_employ }}
+                                <span style="color: #2b2b2b; float: right; margin-top: 5px;font-size: 13px;">
+                            ex. 상근/비상근/참여 프리랜서 포함
+                        </span>
+                            </div>
+                            <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    상주직원 기준
+                                </div>
+                                {{ form.hold_employ }}
+                            </div>
+                            <div class="input_txt_con m947 num mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    고용보험 등록기준
+                                </div>
+                                {{ form.assurance_employ }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if "mark_infomation4" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="reve" style="margin-top: 30px;">
+                                <div class="dy_ttl" style="text-align: left; margin-left: 6px;">매출액<img
+                                        onclick="add_revenue(this)"
+                                        src="{% static "img/plus.png" %}"
+                                        style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                </div>
+                                <table style="margin-top: 15px;    text-align: left;        width: 987px;   margin-left: 6px; ">
+                                    <tr>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                            연도
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                            금액
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                        </th>
+                                    </tr>
+                                    <tr class="rev_year  {% if form.revenue_before_0.value != "" and  form.revenue_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.revenue_before_year_0|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.revenue_before_0 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class="rev_year  {% if form.revenue_before_1.value != "" and form.revenue_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.revenue_before_year_1|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con"> {{ form.revenue_before_1 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class="rev_year  {% if form.revenue_before_2.value != "" and form.revenue_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.revenue_before_year_2|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con"> {{ form.revenue_before_2 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if "mark_infomation5" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="reve" style="margin-top: 30px;">
+                                <div class="dy_ttl" style="text-align: left; margin-left: 6px;">투자유치<img
+                                        onclick="add_fund(this)"
+                                        src="{% static "img/plus.png" %}"
+                                        style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                </div>
+                                <table style="margin-top: 15px; width: 987px;margin-left: 6px;">
+                                    <tr>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                            날짜
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 200px; ">
+                                            금액
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 500px; ">
+                                            투자자/투자기관
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                        </th>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_0.value != "" and form.fund_before_0.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_0 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_0 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_0 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_1.value != "" and  form.fund_before_1.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_1 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_1 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_1 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_2.value != "" and  form.fund_before_2.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_2 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_2 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_2 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_3.value != "" and form.fund_before_3.value !=  None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_3 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_3 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_3 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_4.value != "" and form.fund_before_4.value !=  None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_4 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_4 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_4 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_5.value != "" and form.fund_before_5.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_5 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_5 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_5 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_6.value != "" and  form.fund_before_6.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_6 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_6 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_6 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_7.value != "" and  form.fund_before_7.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_7 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_7 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_7 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_8.value != "" and form.fund_before_8.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_8 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_8 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_8 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class=" fund_year {% if form.fund_before_9.value != "" and  form.fund_before_9.value != None %} {% else %} hidden {% endif %}">
+                                        <td class="year" style="">
+                                            <div class="em_con fu_y">{{ form.fund_before_year_9 }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.fund_before_9 }}만원</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_agent">{{ form.fund_before_agent_9 }}</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if "mark_infomation6" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="reve" style="margin-top: 30px;">
+                                <div class="dy_ttl" style="text-align: left; margin-left: 6px;">수출액<img
+                                        onclick="add_export(this)"
+                                        src="{% static "img/plus.png" %}"
+                                        style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                                </div>
+                                <table style="margin-top: 15px; width:984px; margin-left: 6px;">
+                                    <tr>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                            연도
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                            금액
+                                        </th>
+                                        <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                    <tr class="ex_year  {% if form.export_before_0.value != "" and form.export_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.export_before_year_0|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.export_before_0 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class="ex_year  {% if form.export_before_1.value != "" and  form.export_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.export_before_year_1|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.export_before_1 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                    <tr class="ex_year  {% if form.export_before_2.value != "" and form.export_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                                        <td class="year" style="">
+                                            <div class="em_con">{{ form.export_before_year_2|default:"" }}년</div>
+                                        </td>
+                                        <td>
+                                            <div class="em_con">{{ form.export_before_2 }}만원</div>
+                                        </td>
+                                        <td style="text-align: right">
+                                            <img
+                                                    onclick="clear_row(this)"
+                                                    src="{% static "img/icon-del-fill@2x.png" %}"
+                                                    style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if "mark_infomation7" in support.meta_file_info %}
+                        <div class="f_field">
+                            <div class="ttl mark_infomation" style="margin: 5px;margin-top: 20px;  margin-left:6px;">
+                                지적재산권
+                                보유
+                                현황
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation"
+                                 style="margin-top: 21px ; margin-left: 6px;">
+                                <div class="cat">
+                                    특허권
+                                </div>
+                                {{ form.patent }}
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    상표권
+                                </div>
+                                {{ form.trademark }}
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    실용신안
+                                </div>
+                                {{ form.patent_2 }}
+                            </div>
+                            <div class="input_txt_con m947 mark_infomation" style="margin-left: 6px;">
+                                <div class="cat">
+                                    디자인
+                                </div>
+                                {{ form.design }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="ttl2" style="margin-top: 30px;">기업소개</div>
+                    {% if "sub_info1" in support.meta_file_info %}
+                        <div class="txt_txt_con" style="clear:both;">
+                            <div class="cat">
+                                주요 경력
+                            </div>
+                            {{ form.specification }}
+                        </div>
+                    {% endif %}
+                    {% if "sub_info2" in support.meta_file_info %}
+                        <div class="txt_txt_con">
+                            <div class="cat">
+                                기업소개
+                            </div>
+                            {{ form.intro }}
+                        </div>
+                    {% endif %}
+                    {% if "sub_info3" in support.meta_file_info %}
+                        <div class="txt_txt_con">
+                            <div class="cat">
+                                사업내용
+                            </div>
+                            {{ form.detail }}
+                        </div>
+                    {% endif %}
+                    {% if "oversea_info" in support.meta_file_info %}
+
+                        <div class="checkbox checkbox-primary oversea hidden"
+                             style=" margin-top: 20px; margin-bottom: 10px; padding-left: 0px!important;">
+                            해외 진출 여부
+                        </div>
+                        <div class="input_txt_con num oversea_info" style="margin-left: 0px">
+                            <div class="cat">
+                                국가
+                            </div>
+                            {{ form.oversea }}
+                        </div>
+                        <div class="txt_txt_con ov oversea_info">
+                            <div class="cat" style="clear:none; float:left;">
+                                진출현황
+                            </div>
+                            <span style="float: right">진출 단계 ex. 시장 조사 중, 법인 설립 중, 상품 출시, 업무 협약 등</span>
+                            {{ form.oversea_status }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div id="file_form" style="margin-top: 46px;">
+                    <div class="f_field">
+                        <div id="file_title" style="font-weight: normal;    margin-top: 20px; margin-left: 10px   ">
+                            첨부서류
+                        </div>
+                        <div class="file_seg">
+                            <table style="width:990px;">
+                                {% if "ir_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업계획서
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.ir_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "business_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업자 등록증
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.business_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "tax_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            국세/지방세 납입증
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.tax_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "fund_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            투자유치 증빙서류
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.fund_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "ppt_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            발표 심사 PT 자료
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.ppt_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "etc_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img" style="border-bottom: none">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}" style="width:18px;">
+                                        </td>
+                                        <td class="file_name" style="border-bottom: none">
+                                            {{ support.etc_file_title }}
+                                        </td>
+                                        <td class="file_input" style="border-bottom: none">
+                                            {{ form.etc_file }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+
+                                        </td>
+                                        <td colspan="2" style=" color: red ; vertical-align: top; height: 10px;">
+                                            해당 파일은 압축하여 1개의 파일로 업로드 하세요.
+                                        </td>
+                                    </tr>
+
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% if request.resolver_match.url_name == "apply" %}
+                    <span id="cp"
+                          style="display: block;margin-top:30px;color:#7a7a7a; margin-left: 429px; ">저장후 제출이 가능합니다.</span>
+                    <div style="background-color: #fff; border: 1px solid #1b66f4; color: #1b66f4" id="save">저장하기</div>
+                {% else %}
+                    {% if request.resolver_match.url_name != "apply_preview" and request.resolver_match.url_name != "apply_preview_doc" %}
+                        <div style="background-color: #fff; border: 1px solid #1b66f4; color: #1b66f4 ; margin-left: 277px;    margin-top: 40px;"
+                             id="save" style=" ">저장하기
+                        </div>
+                        <div style="background-color: #1b66f4;  color: #fff" id="preview">미리보기</div>
+                        <div style="background-color: #1b66f4;  color: #fff" id="submit">제출하기</div>
+                    {% endif %}
+                {% endif %}
+            </form>
+        </div>
+        {% if request.resolver_match.url_name == "apply_preview_doc" %}
+            <div style="width:100px; height: 100px;"></div>
+        {% endif %}
+    </div>
+
+      <div id="my_popup">
+        정보를 업로드 중입니다.잠시만 기다려주세요.
+      </div>
+
+    <style>
+                        .reve > table {
+                        }
+                        .reve > table > tbody > tr > th {
+                            padding-left: 14px;
+                            min-height: 40px;
+                            font-weight: normal;
+                        }
+
+                        .reve > table > tbody > tr > td {
+                            padding-left: 15px !important;
+                            border-left: none;
+                            border-right: none;
+                            height: 40px;
+                            font-size: 15px;
+                            min-height: 40px;
+                            padding: 5px;
+                            border-bottom: 1px solid #ddd;
+                        }
+                    </style>
+{% endblock %}

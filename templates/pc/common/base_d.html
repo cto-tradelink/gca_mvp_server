@@ -1,0 +1,554 @@
+{% load staticfiles %}
+{% load custom_filter %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>{% block title %}G-connect{% endblock %}</title>
+    <meta name="title" content="{% block meta_title %} {% endblock %} "/>
+    <meta name="copyright" content="  "/>
+    <meta name="description" content="{% block meta_description %} {% endblock %} }"/>
+    <meta name="keyword" content="{% block meta_keyword %} {% endblock %} }"/>
+    <meta property="og:title"/>
+    <link href="{% static "css/normalize.css" %}" rel="stylesheet">
+    <link href="{% static "css/common.css" %}" rel="stylesheet">
+    <link href="{% static "css/bootstrap/bootstrap.css" %}" rel="stylesheet">
+    <link href='//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSans-kr.css' rel='stylesheet' type='text/css'>
+    <link href='//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSans-jp.css' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/css/bootstrap-select.min.css">
+
+
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+    <style>
+        * {
+            font-family: 'Spoqa Han Sans', 'Sans-serif';
+        }
+
+        .row {
+            margin-right: 0px !important;
+            margin-left: 0px !important;
+        }
+
+        body {
+            position: relative;
+        }
+
+        .container {
+            width: 1020px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .view_cnt {
+            font-size: 13px;
+        }
+  .hGoYNN {
+    position: fixed;
+       right: 20px!important;
+    bottom: 41px!important;
+    display: block;
+    overflow: initial;
+    z-index: 10000000;
+}
+
+    </style>
+    {% block css %}{% endblock %}
+    <script
+            src="http://code.jquery.com/jquery-2.2.4.js"
+            integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="
+            crossorigin="anonymous"></script>
+    <script
+            src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"
+            integrity="sha256-0YPKAwZP7Mp3ALMRVB2i8GXeEndvCq3eSl/WsAl1Ryk="
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css"/>
+    <script src="{% static "js/bootstrap/bootstrap.js" %}"></script>
+    <script src="{% static "js/jquery.animateNumber.js" %}"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/2.7.2/less.min.js"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/css/bootstrap-select.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.js"></script>
+    <script type="text/javascript" src="{% static "js/jquery.word-break-keep-all.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/ion.rangeSlider.js" %}"></script>
+    <link rel="stylesheet" href="{% static "css/ion.rangeSlider.css" %}">
+    <link rel="stylesheet" href="{% static "css/ion.rangeSlider.skinFlat.css" %}">
+{#    <script src="https://cdn.ravenjs.com/3.24.0/raven.min.js" crossorigin="anonymous"></script>#}
+{#    <script>Raven.config('https://432e439bfa2846ca866e9838ad79ff9b@sentry.io/668669').install()</script>#}
+    <script>
+
+        function unique(arr, keepLast) {
+            return arr.filter(function (value, index, array) {
+                return keepLast ? array.indexOf(value, index + 1) < 0 : array.indexOf(value) === index;
+            });
+        };
+
+        var absolute_url = "{{ request.scheme }}://{{ request.META.HTTP_HOST }}{{ request.path }}";
+        var getParameter = function (param) {
+            var returnValue;
+            var url = location.href;
+            var parameters = (url.slice(url.indexOf('?') + 1, url.length)).split('&');
+            for (var i = 0; i < parameters.length; i++) {
+                var varName = parameters[i].split('=')[0];
+                if (varName.toUpperCase() == param.toUpperCase()) {
+                    returnValue = parameters[i].split('=')[1];
+                    return decodeURIComponent(returnValue);
+                }
+            }
+        };
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $(document).ready(function () {
+
+            //$(".sm_ttl").wordBreakKeepAll();
+            $("#confirm").on("click", function () {
+                $("#rate_panel").addClass("hidden")
+                $("#rate_panel_c").removeClass("hidden")
+            })
+
+            $("#confirm_c").on("click", function () {
+                $("#rate_panel_c").addClass("hidden")
+            })
+            $("#rate_x_btn").on("click", function () {
+                $("#rate_panel").addClass("hidden")
+            })
+
+            $("#rate").on("click", function () {
+                $("#rate_panel").removeClass("hidden")
+            })
+
+
+            console.log($(window).height())
+            var csrftoken = getCookie('csrftoken');
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+            $("#support_business").hover(function () {
+                $(".pop_menu").addClass("hidden")
+                $("#pop_menu").removeClass("hidden")
+            })
+            $("#pop_menu").mouseleave(function () {
+
+                $("#pop_menu").addClass("hidden")
+            })
+            $("#x_btn").on("click", function () {
+                $(this).parent().parent().parent().remove()
+            })
+            $("#name").hover(function () {
+                $(".pop_menu").addClass("hidden")
+                $("#mypage_popup").removeClass("hidden")
+            })
+            $("#mypage_popup").mouseleave(function () {
+                $("#mypage_popup").addClass("hidden")
+            })
+            $(function () {
+                $("#rateYo").rateYo({
+                    rating: 3.6,
+                    starWidth: "33px"
+                }).on("rateyo.set", function (e, data) {
+                    //  alert("The rating is set to " + data.rating + "!");
+                    $.ajax({
+                        url: '{% url "rate_page" %}',
+                        method: "post",
+                        data: {
+                            "page": "{{ request.get_full_path  }}",
+                            "user": "{{ request.user.id }}",
+                            "rate": data.rating
+                        },
+                        success: function (data) {
+
+                        },
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+                });
+                ;
+            });
+            $(".del_btn").on("click", function () {
+
+            })
+            $(".noti_seg").on("click", function () {
+            })
+            $("#alarm").mouseenter(function () {
+                $("#noti_abs").css("top", $("#alarm").offset())
+                $("#noti_abs").css("left", $("#alarm").offset())
+                $(".pop_menu").addClass("hidden")
+                if ($("#noti_abs").hasClass("hidden")) {
+                    $("#noti_abs").removeClass("hidden")
+                }
+                else {
+                    $("#noti_abs").addClass("hidden")
+                }
+            })
+            $(".pop_menu").mouseleave(function () {
+                $(".pop_menu").addClass("hidden")
+            })
+
+            {% if user.is_authenticated and user.startup and user.additionaluserinfo.auth != "4" %}
+                $.ajax({
+                    url: '{% url "get_alarm_status" %}',
+                    method: "post",
+                    data: {},
+                    success: function (data) {
+                        console.log(data)
+                        console.log(data.noti)
+                        console.log(data.step.title)
+                        if (data.noti.title.length == 0) {
+                            $("#add_sb").append("<li>추가 된 지원사업이 없습니다.</li>")
+                        }
+                        if (data.step.title.length == 0) {
+                            $("#change_sb").append(" <li> 변경된 지원사업이 없습니다. </li>")
+                        }
+                        if (data.noti.title.length == 0 && data.step.title.length == 0) {
+                            $("#alarm").find("img").attr("src", "{% static "img/icon_noti_line_gray.png" %}")
+                        }
+                        else {
+                            $("#alarm").find("img").attr("src", "{% static "img/icon_noti_line_gray_b.png" %}")
+                        }
+                        var total_sb = []
+
+                        for (var k = 0; k < data.noti.title.length; k++) {
+                            var title = data.noti.title[k]
+                            total_sb.push(data.noti.sbid[k])
+                            if (title.length > 30)
+                                title = title.substr(0, 30) + "..."
+                            $("#add_sb").append("<li><a href='/support/" + data.noti.sbid[k] + "' >" + title + "</a></li>")
+                        }
+                        for (var k = 0; k < data.step.title.length; k++) {
+                            var title = data.step.title[k]
+                            total_sb.push(data.step.sbid[k])
+                            if (title.length > 30)
+                                title = title.substr(0, 30) + "..."
+                            $("#change_sb").append(" <li><a href='/support/" + data.step.sbid[k] + "'>" + title + "</a></li>")
+                        }
+                        try {
+                            var uni_arr = unique(total_sb);
+                            console.log(uni_arr)
+                            for (var k = 0; k < uni_arr.length; k++) {
+                                $("#result").find(".sm_l[data-id='" + uni_arr[k] + "']").css({
+                                    "padding-left": "3px",
+                                    "border-left": " 7px solid #f74e4e"
+                                })
+                                $(".sm_cd_hd").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                    "padding-left": "3px",
+                                    "border-left": " 7px solid #f74e4e"
+                                })
+                                $(".sm_l").find(".int[data-id='" + uni_arr[k] + "']").parent().parent().css({
+                                    "width": ($(".sm_l").find(".int[data-id='" + uni_arr[k] + "']").parent().parent().parent().css("width") - 3),
+                                    "border-left": " 7px solid #f74e4e",
+                                    "padding-left": "3px"
+                                })
+                                $(".sm_l").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                    "width": "177px",
+                                })
+                                $(".sm_l.int").find(".int[data-id='" + uni_arr[k] + "']").parent().parent().css({
+                                    "width": "853px",
+                                    "border-left": " 7px solid #f74e4e",
+                                    "padding-left": "3px"
+                                })
+                                $(".sm_l .int").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                    "width": "177px",
+                                })
+
+                            }
+
+
+                        }
+
+
+                        catch (e) {
+                            console.log(e)
+                        }
+
+
+                    },
+                    error: function (e) {
+                        console.log(e)
+                    }
+                })
+            {% endif %}
+        });
+
+
+        less.pageLoadFinished.then(
+            function () {
+                console.log('completed');
+                if ($(window).height() > $(document).height()) {
+                    $("body").css("min-height", $(window).height() + 100)
+                }
+                else {
+                    $("body").css("min-height", $(document).height() + 100)
+                }
+                console.log($("body").css("height"))
+                $("body").append('<div class="row" style="height: 40px; position: absolute; bottom: 0px;width: 100%;   border-top: 1px solid  #e4ebf2;; ">\n' +
+                    '</div>')
+            }
+        );
+    </script>
+    {% block js %}{% endblock %}
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-115046701-1"></script>
+{#    <script>#}
+{#        window.dataLayer = window.dataLayer || [];#}
+{##}
+{#        function gtag() {#}
+{#            dataLayer.push(arguments);#}
+{#        }#}
+{##}
+{#        gtag('js', new Date());#}
+{#        gtag('config', 'UA-115046701-1');#}
+{#    </script>#}
+</head>
+<body>
+<div id="header">
+    <div class="container">
+        <a href="{% if user.additionaluserinfo.auth == "4" %} {% url "dashboard" %} {% else %} {% url "index" %} {% endif %}">
+            <div id="logo" style="background-color: #fff"><img src="{% static "img/top_logo.png" %}"></div>
+        </a>
+        <div id="menu" style="position: relative">
+            <div id="support_business"
+                    {% if  request == "/support/" or request.resolver_match.url_name == "support" %}
+                 class="on_menu"
+                    {% endif %}><a href="{% url "matching_business" %}">지원사업</a></div>
+            <div id="startup"><a href="{% url "startup_list" %}">스타트업</a></div>
+            <div id="pop_menu" class="hidden pop_menu">
+                <ul>
+                    <li><a href="{% url "matching_business" %}">매칭된 지원사업</a></li>
+                    <li><a href="/search/"> 모든 지원사업</a></li>
+                </ul>
+            </div>
+        </div>
+        <div id="login" style="position: relative;">
+            {% if user.is_authenticated %}
+                <style>
+                    #header #login {
+                        font-size: 13px;
+                        margin-left: 186px;
+                        float: left;
+                        margin-top: 10px;
+                        width: 350px;
+                    }
+                </style>
+                {% if request.user.additionaluserinfo.auth == "4" or request.user.additionaluserinfo.auth == "5" %}
+                    <a id="name" style="margin-left: 242px;  margin-top: 5px; display: inline-block;"
+                       href="{% url "dashboard" %}"> Maneger home </a>
+                    <div id="mypage_popup" class="hidden pop_menu" style="z-index: 1000; height:80px;">
+                        <ul>
+                            <li>
+                                <a href="{% url "manager" %}">마이페이지</a>
+                            </li>
+                            <li id="logout_btn">
+                                <a href="{% url "logout" %}">로그아웃</a>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div id="name" href="#" onclick="toggle_mypage_popup()"
+                         style="color: #1b66f4;float: right; cursor: pointer"> {% user_name user %}
+                        님 <img onclick="toggle_mypage_popup()" src="{% static "img/icon-down-fill@2x.png" %}"></div>
+                    <div style="float: right" id="avatar">
+                        {% user_avatar user %}
+                    </div>
+
+
+                    <div id="alarm"
+                         style=" width: 24px;height: 24px; margin-right: 11px;margin-top: -2px;float: right">
+                        <img style="width: 24px;height: 24px;" src="{% static "img/icon_noti_line_gray_b.png" %}">
+                    </div>
+                    {% if request.user.startup %}
+                        <div id="mypage_popup" class="hidden pop_menu" style="z-index: 1000">
+                            <ul>
+                                <li>
+                                    <a href="{% url "mypage" %}?cat=int">내 지원 내역</a>
+                                </li>
+                                <li>
+                                    <a href="{% url "my_profile" %}">내 프로필 관리</a>
+                                </li>
+                                <li>
+                                    <a href="{% url "company_profile" %}">기업 정보 관리</a>
+                                </li>
+                                <li id="logout_btn">
+                                    <a href="{% url "logout" %}">로그아웃</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div id="noti_abs" class="hidden pop_menu" style="width:394px;">
+                            <div id="noti_wnd_stu" style="width: 394px;">
+                                <div class="noti_con" style="background-color: #fff; margin: 0px; display: block">
+                                    <ul id="add_sb">
+                                        <li style="line-height: 25px;color: #fff; background-color: #1b66fe; padding-left: 20px;; padding-top: 10px; width: 392px;;">
+                                            나에게 맞는 지원사업이 추가 되었어요.
+                                        </li>
+                                    </ul>
+                                    <ul id="change_sb">
+                                        <li style="line-height: 25px;;color: #fff; background-color: #1b66fe;padding-left: 20px;; padding-top: 10px; width: 392px; border-top:1px solid #ddd">
+                                            내가 지원한 지원사업의 상태가 변경되었어요.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div id="mypage_popup" class="hidden pop_menu" style="z-index: 1000">
+                            <ul>
+                                <li>
+                                    <a href="{% url "mypage" %}?cat=int">내 지원 내역</a>
+                                </li>
+                                <li>
+                                    <a href="{% url "my_profile" %}">내 프로필 관리</a>
+                                </li>
+                                <li>
+                                    <a style="color: #1b66f4; font-weight: bold; font-size: 13px;"
+                                       href="{% url "company_profile" %}">기업등록</a>
+                                </li>
+                                <li id="logout_btn">
+                                    <a href="{% url "logout" %}">로그아웃</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <style>
+                            #noti_wnd_stu:before, #noti_wnd_stu:after {
+                                border-bottom-color: #ffe130;
+                            }
+                        </style>
+                        <div id="noti_abs" class="hidden pop_menu" style="">
+                            <div id="noti_wnd_stu" style="width: 396px; border:1px solid  #ddd ; ">
+                                <div class="noti_con" style="background-color: #fff; margin: 0px; display: block">
+                                    <div style="width: 394px; height: 144px; color :#2b2b2b; font-size: 15px; background-color: #ffe130; border-radius: 10px 10px 0px 0px; text-align: center;margin: 0px">
+                                        <span style="display: inline-block; margin-top: 54px;">기업등록을 통해 나에게 맞는<br>
+                                        지원사업 알림을 받아 보세요.</span>
+                                    </div>
+                                    <div style=" width: 394px; margin: 0px; font-weight: bold; height: 42px; font-size: 15px; color : #1b66f4; line-height: 42px; text-align: center; border-radius:0px 0px 10px 10px;  background-color: #ffffff;">
+                                        <a href="{% url "company_profile_new" %}">기업등록하기</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <style>
+                    #header #login {
+                        margin-left: 422px;
+                    }
+                </style>
+                <a id="hd_login" style="float: right" href="{% url "login" %}"> 로그인</a>
+                <div id="alarm"
+                     style=" width: 24px;height: 24px; margin-right: 11px;margin-top: -2px;float: right">
+                    <img style="width: 24px;height: 24px;" src="{% static "img/icon_noti_line_gray_b.png" %}">
+                </div>
+                <div id="noti_abs" class="hidden pop_menu" style="left: -364px; ;">
+                    <style>
+                        #noti_wnd_stu:before, #noti_wnd_stu:after {
+                            border-bottom-color: #1976d2;
+                        }
+                    </style>
+                    <div id="noti_wnd_stu" style="width: 396px; border:1px solid  #ddd ; ">
+                        <div class="noti_con" style="background-color: #fff; margin: 0px; display: block">
+                            <div style="width: 394px; height: 144px; color :#fff; font-size: 15px; background-color: #1976d2; border-radius: 10px 10px 0px 0px; text-align: center;margin: 0px">
+                                        <span style="display: inline-block; margin-top: 54px;">회원가입/기업등록을 통해 나에게 맞는<br>
+                                        지원사업 알림을 받아 보세요.</span>
+                            </div>
+                            <div style=" width: 394px; margin: 0px; font-weight: bold; height: 42px; font-size: 15px; color : #1b66f4; line-height: 42px; text-align: center; border-radius:0px 0px 10px 10px;  background-color: #ffffff;">
+                                <a href="{% url "signup" %}">회원가입하기</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div id="content" style="padding-bottom: 50px;">
+    {% block content %}
+    {% endblock %}
+</div>
+
+<div id="rate_panel" class="hidden">
+    <div id="rate_hd">
+        <span>이 페이지가 마음에 드시나요?</span>
+        <img id="rate_x_btn" src="{% static "img/icon-del-fill@2x.png" %}">
+        <div id="rateYo"></div>
+    </div>
+    <div id="confirm">확인</div>
+</div>
+
+<div id="rate_panel_c" class="hidden">
+    <div id="rate_hd_c">
+        <span>평가해 주셔서 감사합니다.<br>
+사이트 개선에 참고하겠습니다.</span>
+
+    </div>
+    <div id="confirm_c">닫기</div>
+</div>
+
+
+<div id="rate" style="z-index: 999">
+    <span>평가하기</span>
+    <img src="{% static "img/star.png" %}">
+</div>
+
+
+</body>
+<!-- Channel Plugin Scripts -->
+<!-- Channel Plugin Scripts -->
+<script>
+    window.channelPluginSettings = {
+        "pluginKey": "ba916772-1de5-4cb3-a9bd-317926698309"
+    };
+    (function () {
+        var node = document.createElement('div');
+        node.id = 'ch-plugin';
+        document.body.appendChild(node);
+        var async_load = function () {
+            var s = document.createElement('script');
+            s.type = 'text/javascript';
+            s.async = true;
+            s.src = '//cdn.channel.io/plugin/ch-plugin-web.js';
+            s.charset = 'UTF-8';
+            var x = document.getElementsByTagName('script')[0];
+            x.parentNode.insertBefore(s, x);
+        };
+        if (window.attachEvent) {
+            window.attachEvent('onload', async_load);
+        } else {
+            window.addEventListener('DOMContentLoaded', async_load, false);
+        }
+    })();
+</script>
+<!-- End Channel Plugin -->
+<!-- End Channel Plugin -->
+
+
+</html>

@@ -1,0 +1,177 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/app_support.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+{% block content %}
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $('.selectpicker').selectpicker({});
+        })
+
+    </script>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="">홈</a>&nbsp;&gt;&nbsp;<a href="#">지원사업</a> &nbsp;&gt;&nbsp; <a href="#">작성중 지원사업</a>&nbsp;&gt;&nbsp;<a
+                id="final" href="#">2018 북부 경기문화창조허브 가상오피스 하반기 모집 공고</a>
+        </div>
+        <div id="sp_hd">
+            <div id="sp_cat">
+                <div id="sp_status">모집중</div>
+                <div id="category" style="font-size: 15px;font-weight: bold">공간지원</div>
+            </div>
+            <div id="sp_ttl_con" style="margin-top: 16px;">
+                <span id="sp_ttl"
+                      style="font-size: 16px;font-weight: normal">2018 북부 경기문화창조허브 가상오피스 하반기 모집 공고</span><br>
+                <span id="due" style="font-size: 16px;font-weight: bold">모집기간 :  2018년 7월 26일(수)~8월 23일(수)까지</span>
+                <div id="sp_tag_con">
+                    <span class="tag">공간지원</span><span class="tag">융자지원</span>
+                </div>
+            </div>
+            <div id="loc">GCA(판교)</div>
+        </div>
+
+        <select class="selectpicker" id="sel" title="내 지원서 불러오기">
+            <option>2018 공간지원 상반기 모집공고 판교</option>
+            <option>2017 하반기 가상오피스 북부</option>
+            <option>2017 상반기 가상오피스 북부</option>
+        </select>
+
+
+        <div id="sp_detail_con">
+            <div class="detail_seg">
+                <div class="detail_ttl">회사소개</div>
+                <div class="desc">
+                    <textarea>
+                    안녕하셉니까 창업가 여러분의 행보에 찬사를 보냅니다. (재)경기콘텐츠진흥원 북부 경기문화창조허브에서는 문화콘텐츠산업 창업활성화를
+                    목적으로 사무 공간 확보가 열악한 초기단계 창업(예비)자를 대상으로 창업 공간 및 우편함 지원 등 비상주 사업자등록 주소지
+                    지원, 일명 가상오피스 지원을 시행합니다. 많은 참여바랍니다.
+                    </textarea>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">사업소개</div>
+                <div class="desc">
+                    <textarea>
+                    문화콘텐츠산업 창업(예비)자 중 개인사업자 ※ 법인사업자 제외함
+
+                    (1) 문화체육관광부와 한국콘텐츠진흥원이 작성하는 정부승인통계인 ‘콘텐츠 산업통계’에 따라 총 12개 분야 및 ICT융복합 분야
+                    (2) 신청서 작성 시 지원대상 업종표의 중분류, 소분류, 분류체계의 정의를 참고하여 해당 대분류 선택. 해당사항이 없을 경우 유사 분야를 선택하시거나
+                    혹은 기타분야로서 상세히 기재
+
+                    ※ 붙임 [참고]지원대상 업종 분류 참조
+                        </textarea>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">진행단계</div>
+                <div class="desc">
+                    <textarea>
+                    (1) 경기도내 거주자 ※ 주민등록등본 상 주소지
+                    (2) 문화콘텐츠산업 창업(예정)자 ※ 붙임[참고] 자료 참조
+                    (3) 개인사업자등록(예정)자 ※ 법인사업자로 전환 시 지원계약 해제
+                    (4) 경기도내 주소지 사업자등록(예정)자
+                    (5) 창업수행 사무공간으로 스마트오피스 이용이 절실히 필요한 자
+                        </textarea>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">투자유치 현황</div>
+                <div class="desc">
+                    <textarea>
+                    가. 비상주 사업자등록 주소지 사용 허가
+                    (1) 사업자등록 시 사업장 소재(주소지) 사용 ※ 주소지 : 북부 경기문화창조허브
+                    (2) 사업자등록을 위한 스마트오피스 임대차 계약서
+                    ※ 계약기간 : 계약시점으로부터 1년
+
+                    ​나. 사용 대차 내용
+                    (1) 스마트오피스 개인좌석(3.3㎡) ※ 공용좌석으로 지정석은 아님
+                    (2) 우편함 ※ 지원대상 선정 창업(예정)자에 한하여 우편함 지정 제공
+
+                    ​다. 사용대차 비용 : 무상대여
+                        </textarea>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">향후 추진 계획</div>
+                <div class="desc">
+                    <textarea>
+                    ​가. 가상오피스 지원에 따른 계약체
+                    나. 임대차 계약 체결 후 담당자가 요청한 기간 내에 북부 경기문화창조허브로 사업자 주소지 등록(변경) 후 사업자 등록증 제출
+                    다. 임대차 계약 기간 중 필요한 경우 대면상담 또는 서면을 통한 창업수행 현황 보고서 제출
+                    (1) 창업기업 구성원(명)수
+                    (2) 당월 매출실적
+                    (3) 사업자등록현황
+                    (4) 기타 창업수행 관련 재단이 요구하는 자료
+
+                    ※ 가상오피스 지원 신청자 중 이미 사업자등록(개인)을 소지한 창업자는 지원계약 체결 후 사업장 소재(주소지)를 북부 경기문화창조허브로 변경해야 함
+                        </textarea>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">협력 방안</div>
+                <div class="desc">
+                    <textarea>
+                    (1) 재단이 요구하는 증빙자료 구비 (최근 3개월 이내)<br>
+                    (2) 작성/날인 문서 및 증빙서류를 하나의 파일로 변환 (.pdf 또는 .zip)<br>
+                    (3) 하단의 지원하기를 통해 지원서 작성 후 (2)의 파일 첨부 <br>
+                        </textarea>
+                </div>
+            </div>
+        </div>
+        <div id="attached_file">첨부서류</div>
+        <div class="file_con">
+            <span class="file_ttl">사업자 등록증</span>
+            <div class="file_wr">
+                <span class="file_name">트레이드링크_2018_사업자등록증.pdf</span>
+                <img class="file_icon" src="{% static "img/icon-del-fill@2x.png" %}">
+            </div>
+        </div>
+        <div class="file_con">
+            <span class="file_ttl">자산 내역서</span>
+            <div class="file_wr">
+                <span class="file_name"></span>
+                <img class="file_icon" src="{% static "img/icon-attachment@2x.png" %}">
+            </div>
+        </div>
+        <div class="file_con">
+            <span class="file_ttl">통장 사본</span>
+            <div class="file_wr">
+                <span class="file_name"></span>
+                <img class="file_icon" src="{% static "img/icon-attachment@2x.png" %}">
+            </div>
+        </div>
+        <div id="btn_group">
+            <div class="back">뒤로가기</div>
+            <div class="save">저장하기</div>
+            <div class="submit">제출하기</div>
+        </div>
+        <div id="cap">
+            완성후 저장후 제출하기 버튼 강조
+        </div>
+        <div id="btn_group_1">
+            <div class="back">뒤로가기</div>
+            <div class="submit save">제출하기</div>
+        </div>
+
+
+
+
+    </div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/_sb_manage_list.css" %}"/>
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $(".sb_" + getParameter("cat")).removeClass("hidden");
+            if (getParameter("cat") === "all") {
+                $(".sm_l_a").removeClass("hidden")
+            }
+            $('#sort_tbl').DataTable({
+                "iDisplayLength": 50,
+                "order": [[1, "desc"]],
+                "columnDefs": [{orderable: false, targets: [0]},],
+            });
+
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+            }
+            console.log($("body").css("height"))
+             $("#get_down").on("click", function () {
+                var allVals = [];
+                $(".check_target").each(function () {
+                    if($(this).is(":checked"))allVals.push($(this).val());
+                });
+                console.log(allVals);
+                if(allVals.length != 0){
+                    location.href = "/get_stp_excel/?id=" + allVals.join(",") + "/"
+                }
+                else{
+                    alert("체크항목이 없습니다.")
+                }
+
+
+            })
+        })
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <style>
+            .sorting {
+                padding-left: 0px !important;
+            }
+            table.dataTable tbody th, table.dataTable tbody td {
+                padding: 3px 8px !important;
+            }
+            td.sorting_1 {
+                background-color: rgba(27, 102, 239, 0.2);
+            }
+        </style>
+        {% include "pc/manager/common/list_tab.html" %}
+
+        <div id="sb_con">
+
+            <div id="get_down" style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer">선택한 리스트
+                다운로드
+            </div>
+   <script>
+                function set_all(target) {
+                    if ($(target).prop("checked") === false) {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+                    }
+                }
+            </script>
+
+            <table id="sort_tbl" style="width: 1000px; table-layout: fixed">
+                <thead>
+                <tr>
+                    <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                          <div class="checkbox checkbox-primary" style="width: 30px; ">
+                                <input type="checkbox" id="all_check"   onclick="set_all(this)">
+                                <label></label>
+                            </div>
+                    </th>
+                    <th style=" padding: 0px!important; font-size: 13px;">회원아이디</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">회원명</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">핸드폰 번호</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">추가이메일</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">회원가입일</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for q in qs %}
+                    <tr>
+                      <td style="width: 20px; padding: 0px!important; font-size: 13px;">
+                                <div class="checkbox checkbox-primary" style="width: 30px;">
+                                    <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                           value="{{ q.id }}"
+                                           aria-label="Single checkbox Two">
+                                    <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                                </div>
+                            </td>
+                        <td>
+                            {{ q.user.username }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.name }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.tel }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.additional_email|default:"" }}
+                        </td>
+                       <td>
+                            {{ q.user.date_joined|date:"Y-m-d H:i" }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+
+
+
+{% endblock %}

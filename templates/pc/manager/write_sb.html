@@ -1,0 +1,2245 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/_write.css" %}"/>
+    <link href="{% static "css/bootstrap-datetimepicker.min.css" %}" rel="stylesheet" media="screen">
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script type="text/javascript" src="{% static "js/bootstrap-datetimepicker.js" %}" charset="UTF-8"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap-datetimepicker.ko.js" %}" charset="UTF-8"></script>
+    <script>
+        var is_show = true
+
+        function set_icon() {
+            var selected_cat = []
+            for (var k = 0; k < $(".mb15").find(".filter.on").length; k++) {
+                selected_cat.push($(".mb15").find(".filter.on").eq(k).parent().prev().text())
+            }
+            var unique_arr = []
+            $.each(selected_cat, function (i, el) {
+                if ($.inArray(el, unique_arr) === -1) unique_arr.push(el);
+            })
+            var percent_arr = []
+            console.log(unique_arr)
+            for (var k = 0; k < unique_arr.length; k++) {
+                console.log($(".mb15").find("th:contains('" + unique_arr[k] + "')").next().find(".on").length)
+                percent_arr.push(parseFloat($(".mb15").find("th:contains('" + unique_arr[k] + "')").next().find(".on").length)) // parseFloat($(".mb15").find("th:contains('" + unique_arr[k] + "')").next().find("span").length))
+            }
+            console.log(percent_arr)
+            var largest = [0];
+            for (var i = 0; i < percent_arr.length; i++) {
+                var comp = (percent_arr[i] - largest[0]) > 0;
+                if (comp) {
+                    largest = [];
+                    largest.push(percent_arr[i]);
+                }
+            }
+            var arrIndex = [];
+            for (var i = 0; i < percent_arr.length; i++) {
+                var comp = percent_arr[i] - largest[0] == 0;
+                if (comp) {
+                    arrIndex.push(i);
+                }
+            }
+            console.log(arrIndex)
+            $(".mb15").find("input").prop("disabled", true);
+            $(".mb15").find("input").each(function () {
+                $(this).prev().prev().attr("src", $(this).prev().prev().attr("data-off"))
+            })
+            $("input[type='radio']").css("opacity", 0)
+            for (var k = 0; k < arrIndex.length; k++) {
+                console.log(unique_arr[arrIndex[k]])
+
+                if (unique_arr[arrIndex[k]] == "자금지원") {
+                    $("#ra_0").css("opacity", "1");
+                    $("#ra_0").prop("checked", true);
+                    $("#ra_0").prop("disabled", false);
+                    $("#ra_0").prev().prev().attr("src", $("#ra_0").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "엑셀러레이팅 투자연계") {
+                    $("#ra_1").css("opacity", "1");
+                    $("#ra_1").prop("checked", true);
+                    $("#ra_1").prop("disabled", false);
+                    $("#ra_1").prev().prev().attr("src", $("#ra_1").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "교육") {
+                    $("#ra_2").css("opacity", "1");
+                    $("#ra_2").prop("checked", true);
+                    $("#ra_2").prop("disabled", false);
+                    $("#ra_2").prev().prev().attr("src", $("#ra_2").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "판로") {
+                    $("#ra_3").css("opacity", "1");
+                    $("#ra_3").prop("checked", true);
+                    $("#ra_3").prop("disabled", false);
+                    $("#ra_3").prev().prev().attr("src", $("#ra_3").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "네트워킹") {
+                    $("#ra_4").css("opacity", "1");
+                    $("#ra_4").prop("checked", true);
+                    $("#ra_4").prop("disabled", false);
+                    $("#ra_4").prev().prev().attr("src", $("#ra_4").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "기타지원") {
+                    $("#ra_7").css("opacity", "1");
+                    $("#ra_7").prop("checked", true);
+                    $("#ra_7").prop("disabled", false);
+                    $("#ra_7").prev().prev().attr("src", $("#ra_7").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "공간지원") {
+                    $("#ra_5").css("opacity", "1");
+                    $("#ra_5").prop("checked", true);
+                    $("#ra_5").prop("disabled", false);
+                    $("#ra_5").prev().prev().attr("src", $("#ra_5").prev().prev().attr("data-on"))
+                }
+                if (unique_arr[arrIndex[k]] == "피칭") {
+                    $("#ra_6").css("opacity", "1");
+                    $("#ra_6").prop("checked", true);
+                    $("#ra_6").prop("disabled", false);
+                    $("#ra_6").prev().prev().attr("src", $("#ra_6").prev().prev().attr("data-on"))
+                }
+
+            }
+        }
+
+        $(window).on("beforeunload", function () {
+            if (is_show) return confirm("화면을 나가시겠습니까? 입력한 정보가 저장되지 않습니다.")
+        })
+        $(document).ready(function () {
+            $("input[type='radio']").css("opacity", "0")
+            try {
+                var filter_list = "{% for f in sb.filter.all %}{{ f.id}},{% endfor %}".split(",")
+                console.log(filter_list)
+                for (var k = 0; k < filter_list.length; k++) {
+                    $("span[data-id=" + filter_list[k] + "]").addClass("on");
+                }
+
+                    $("#filter").val(filter_list)
+            }
+            catch (e) {
+                console.log(e)
+            }
+
+            try {
+                $("#id_apply_end_day").val($("#id_apply_end").val().split(" ")[0])
+                $("#id_apply_end_hour").val($("#id_apply_end").val().split(" ")[1].split(":")[0])
+                $("#id_apply_start_day").val($("#id_apply_start").val().split(" ")[0])
+                $("#id_apply_start_hour").val($("#id_apply_start").val().split(" ")[1].split(":")[0])
+
+            }
+            catch (e) {
+                console.log(e)
+            }
+
+            $("input:radio").eq($("#id_icon_set").val()).attr("checked", true)
+
+            $(".content").find(".filter").on("click", function () {
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+
+                    if ($(this).hasClass("filter_y")) {
+                        $(".filter_y").removeClass("on")
+                    }
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter").val(filter_list.join(","))
+            })
+            $(".mb15").find(".filter").on("click", function () {
+                set_icon()
+            })
+
+
+            var options = {
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년'
+            }
+            $("#id_business_period_start").datepicker(options);
+            $("#id_business_period_end").datepicker(options);
+            $("#id_pro_0_start").datepicker(options);
+            $("#id_pro_0_end").datepicker(options);
+            $("#id_pro_1_start").datepicker(options);
+            $("#id_pro_1_end").datepicker(options);
+            $("#id_pro_2_start").datepicker(options);
+            $("#id_pro_2_end").datepicker(options);
+            $("#id_ceremony_start").datepicker(options);
+            $("#id_ceremony_end").datepicker(options);
+            $("#id_pro_0_open").datepicker(options);
+            $("#id_pro_1_open").datepicker(options);
+            $("#id_pro_2_open").datepicker(options);
+            $(".hash").attr("placeholder", "해시태그를 입력하세요")
+            $("#id_apply_end_day").datepicker(options);
+            $("#id_apply_start_day").datepicker(options);
+
+            $(":checkbox").on("change", function () {
+                console.log(this.id)
+                if (this.checked) {
+                    $("div[data-bind='" + this.id + "']").removeClass("hidden")
+                }
+                else {
+                    $("div[data-bind='" + this.id + "']").addClass("hidden")
+                }
+                if (this.id.indexOf("app") != -1) {
+                    console.log($("input[id*='app']:checked").eq(2).attr("id"))
+                    var arr = []
+                    for (var k = 0; k < $("input[id*='app']:checked").length; k++) {
+                        arr.push($("input[id*='app']:checked").eq(k).attr("id").replace("app", ""))
+                    }
+                    console.log(arr)
+                }
+                if ($(window).height() > $(document).height()) {
+                    $("body").css("min-height", $(window).height() + 50)
+                }
+
+                else {
+                    $("body").css("min-height", $(document).height() + 50)
+
+                }
+            })
+            $("form").submit(function () {
+                var meta_arr = []
+                var flag = false
+                var flag_arr = []
+                if ($("#id_title").val() == "") {
+                    //alert("사업의 타이틀을 입력해 주세요.")
+                    $(".title:contains('지원사업명 *')").css({"color": "red"})
+                    //window.scrollTo(0, $(".title:contains('지원사업명 *')").offset().top - 200)
+                    //return false
+                    flag_arr.push("사업의 타이틀")
+                    flag = true
+                }
+
+                if ($(".title:contains('기본장르')").parent().find("span.on").length == 0 && $("#kind2").prop("checked") == false && $(".title:contains('특수장르')").parent().find("span.on").length == 0) {
+                    //alert("모집분야 필터를 선택해주세요.")
+                    $(".title:contains('모집분야')").css({"color": "red"})
+                    //window.scrollTo(0, $(".title:contains('모집분야')").offset().top - 200)
+                    flag_arr.push("모집분야 필터")
+                    //return false
+                    flag = true
+                }
+                if ($(".title:contains('지원항목')").parent().find("span.on").length == 0 && $("#kind2").prop("checked") == false) {
+                    //alert("지원항목 필터를 선택해주세요.")
+                    $(".title:contains('지원항목')").css({"color": "red"})
+                    //window.scrollTo(0, $(".title:contains('지원항목')").offset().top - 200)
+                    //return false
+                    flag_arr.push("지원항목 필터")
+                    flag = true
+                }
+                   var pattern = /[0-9]{4}-[0-9]{2}-[0-9]{2}/;
+                var date_string_0 = $("#id_apply_start_day").val();
+                if (!pattern.test(date_string_0) || !pattern.test($("#id_apply_end_day").val())) {
+                    if(flag_arr.indexOf("올바른 시작날짜,시간, 마감날짜, 시간") == -1)
+                     flag_arr.push("올바른 시작날짜,시간, 마감날짜, 시간")
+                    $(".duration:contains('모집기간')").css({"color": "red", })
+
+                }
+                if ($("#id_apply_start_hour").val() == "" || $("#id_apply_start_hour").val() == "") {
+                    $(".duration:contains('모집기간')").css({"color": "red",})
+                     if(flag_arr.indexOf("올바른 시작날짜,시간, 마감날짜, 시간") == -1)
+                      flag_arr.push("올바른 시작날짜,시간, 마감날짜, 시간")
+                }
+
+                if (flag == true) {
+                    alert(flag_arr.join(",") + "을(를) 입력/선택해주세요.")
+                    return false
+                }
+
+
+
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter").val(filter_list.join(","))
+                for (var k = 0; k < $("input").length; k++) {
+                    $("input:eq(" + k + ")").val($("input:eq(" + k + ")").val().trim())
+                }
+                for (var k = 0; k < $("textarea").length; k++) {
+                    $("textarea:eq(" + k + ")").val($("textarea:eq(" + k + ")").val().trim())
+                }
+
+
+                if (($("#kind0").is(":checked"))) {
+                    meta_arr.push("kind0")
+                }
+                if (($("#con0").is(":checked"))) {
+                    meta_arr.push("con0")
+                }
+                if (($("#con1").is(":checked"))) {
+                    meta_arr.push("con1")
+                }
+                if (($("#con2").is(":checked"))) {
+                    meta_arr.push("con2")
+                }
+                if (($("#con3").is(":checked"))) {
+                    meta_arr.push("con3")
+                }
+                if (($("#con4").is(":checked"))) {
+                    meta_arr.push("con4")
+                }
+                if (($("#con5").is(":checked"))) {
+                    meta_arr.push("con5")
+                }
+                if (($("#kind1").is(":checked"))) {
+                    meta_arr.push("kind1")
+                }
+                if (($("#kind2").is(":checked"))) {
+                    meta_arr.push("kind2")
+                }
+                if (($("#checkbox0").is(":checked"))) {
+                    meta_arr.push("place")
+                }
+                if (($("#checkbox1").is(":checked"))) {
+                    meta_arr.push("subject")
+                }
+                if (($("#checkbox2").is(":checked"))) {
+                    meta_arr.push("business_detail")
+                }
+                if (($("#plus0").is(":checked"))) {
+                    meta_arr.push("prefer")
+                }
+                if (($("#plus1").is(":checked"))) {
+                    meta_arr.push("constraint")
+                }
+                if (($("#pro_1").is(":checked"))) {
+                    meta_arr.push("pro_1")
+                }
+                if (($("#pro_2").is(":checked"))) {
+                    meta_arr.push("pro_2")
+                }
+                if (($("#option1").is(":checked"))) {
+                    meta_arr.push("ir_file")
+                }
+                if (($("#option2").is(":checked"))) {
+                    meta_arr.push("business_file")
+                }
+                if (($("#option3").is(":checked"))) {
+                    meta_arr.push("tax_file")
+                }
+                if (($("#option4").is(":checked"))) {
+                    meta_arr.push("fund_file")
+                }
+                if (($("#option5").is(":checked"))) {
+                    meta_arr.push("ppt_file")
+                }
+                if (($("#option6").is(":checked"))) {
+                    meta_arr.push("etc_file")
+                }
+                if (($("#sub_0").is(":checked"))) {
+                    meta_arr.push("supply_condition")
+                }
+                if (($("#sub_1").is(":checked"))) {
+                    meta_arr.push("ceremony")
+                }
+                if (($("#sub_2").is(":checked"))) {
+                    meta_arr.push("faq_only")
+                }
+                if (($("#sub_3").is(":checked"))) {
+                    meta_arr.push("additional_faq")
+                }
+                if (($("#app0").is(":checked"))) {
+                    meta_arr.push("base")
+                }
+                if (($("#app1").is(":checked"))) {
+                    meta_arr.push("repre")
+                }
+                if (($("#app2").is(":checked"))) {
+                    meta_arr.push("mark")
+                }
+                if (($("#app3").is(":checked"))) {
+                    meta_arr.push("company")
+                }
+                if (($("#app4").is(":checked"))) {
+                    meta_arr.push("business")
+                }
+                if (($("#app5").is(":checked"))) {
+                    meta_arr.push("oversea")
+                }
+                if (($("#app6").is(":checked"))) {
+                    meta_arr.push("company_etc")
+                }
+                $("#id_icon_set").val($("input[name=icon_set]:checked").val())
+                $("#meta").val(meta_arr.join(","))
+
+                alert("저장하였습니다.")
+            })
+
+            $("#save").on("click", function () {
+                var start_string = $("#id_apply_start_day").val() + " " + $("#id_apply_start_hour").val() + ":00"
+                var end_string = $("#id_apply_end_day").val() + " " + $("#id_apply_end_hour").val() + ":00"
+                $("#id_apply_end").val(end_string)
+                $("#id_apply_start").val(start_string)
+                $("#obj").val("save")
+                is_show = false
+                $("form").submit();
+            })
+            $("#preview").on("click", function () {
+                var start_string = $("#id_apply_start_day").val() + " " + $("#id_apply_start_hour").val() + ":00"
+                var end_string = $("#id_apply_end_day").val() + " " + $("#id_apply_end_hour").val() + ":00"
+                $("#id_apply_end").val(end_string)
+                $("#id_apply_start").val(start_string)
+                $("#obj").val("preview")
+                is_show = false
+                $("form").submit();
+            })
+
+
+            try {
+                var meta_string = "{{ sb.meta }}"
+                var icon_set = "{{ sb.icon_set }}"
+
+                // $("input:radio[name='icon_set']:radio[value='"+icon_set+"']").prop("checked",true);
+                $("input:radio[name='icon_set']:radio[value='" + icon_set + "']").click();
+                for (var k = 0; k < 8; k++) {
+                    $(".icon_set:eq(" + k + ")").find("img").attr("src", $(".icon_set:eq(" + k + ")").find("img").attr("data-off"))
+                }
+
+                $("input:radio[name='icon_set']:radio[value='" + icon_set + "']").parent().find("img").attr("src", $("input:radio[name='icon_set']:radio[value='" + icon_set + "']").parent().find("img").attr("data-on"))
+
+
+                if (meta_string.indexOf("con0") != -1) {
+                    ($("#con0").click())
+                }
+                if (meta_string.indexOf("con1") != -1) {
+                    ($("#con1").click())
+                }
+                if (meta_string.indexOf("con2") != -1) {
+                    ($("#con2").click())
+                }
+                if (meta_string.indexOf("con3") != -1) {
+                    ($("#con3").click())
+                }
+                if (meta_string.indexOf("con4") != -1) {
+                    ($("#con4").click())
+                }
+                if (meta_string.indexOf("con5") != -1) {
+                    ($("#con5").click())
+                }
+                if (meta_string.indexOf("kind2") != -1) {
+                    ($("#kind2").click())
+                }
+                if (meta_string.indexOf("place") != -1) {
+                    ($("#checkbox0").click())
+                }
+                if (meta_string.indexOf("subject") != -1) {
+                    ($("#checkbox1").click())
+                }
+                if (meta_string.indexOf("business_detail") != -1) {
+                    ($("#checkbox2").click())
+                }
+                if (meta_string.indexOf("prefer") != -1) {
+                    ($("#plus0").click())
+                }
+                if (meta_string.indexOf("constraint") != -1) {
+                    ($("#plus1").click())
+                }
+                if (meta_string.indexOf("pro_1") != -1) {
+                    ($("#pro_1").click())
+                }
+                if (meta_string.indexOf("pro_2") != -1) {
+                    ($("#pro_2").click())
+                }
+                if (meta_string.indexOf("ir_file") != -1) {
+                    ($("#option1").click())
+                }
+                if (meta_string.indexOf("business_file") != -1) {
+                    ($("#option2").click())
+                }
+                if (meta_string.indexOf("tax_file") != -1) {
+                    ($("#option3").click())
+                }
+                if (meta_string.indexOf("fund_file") != -1) {
+                    ($("#option4").click())
+                }
+                if (meta_string.indexOf("ppt_file") != -1) {
+                    ($("#option5").click())
+                }
+                if (meta_string.indexOf("etc_file") != -1) {
+                    ($("#option6").click())
+                }
+                if (meta_string.indexOf("supply_condition") != -1) {
+                    ($("#sub_0").click())
+                }
+                if (meta_string.indexOf("ceremony") != -1) {
+                    ($("#sub_1").click())
+                }
+                if (meta_string.indexOf("faq_only") != -1) {
+                    ($("#sub_2").click())
+                }
+                if (meta_string.indexOf("additional_faq") != -1) {
+                    ($("#sub_3").click())
+                }
+                if (meta_string.indexOf("base") != -1) {
+                    ($("#app0").click())
+                }
+                if (meta_string.indexOf("repre") != -1) {
+                    ($("#app1").click())
+                }
+                if (meta_string.indexOf("mark") != -1) {
+                    ($("#app2").click())
+                }
+                if (meta_string.indexOf("company") != -1) {
+                    ($("#app3").click())
+                }
+                if (meta_string.indexOf("business") != -1) {
+                    ($("#app4").click())
+                }
+                if (meta_string.indexOf("oversea") != -1) {
+                    ($("#app5").click())
+                }
+                if (meta_string.indexOf("company_etc") != -1) {
+                    ($("#app6").click())
+                }
+
+
+            }
+            catch (e) {
+                console.log(e)
+            }
+
+            $('#id_apply_end').datetimepicker({
+                language: 'ko',
+                weekStart: 1,
+                todayBtn: 1,
+                autoclose: 1,
+                todayHighlight: 1,
+                startView: 2,
+                forceParse: 0,
+                format: 'yyyy-mm-dd hh:ii',
+                fontAwesome: true
+                /* showMeridian: 1*/
+            });
+            $('#id_apply_start').datetimepicker({
+                language: 'ko',
+                weekStart: 1,
+                todayBtn: 1,
+                autoclose: 1,
+                todayHighlight: 1,
+                startView: 2,
+                forceParse: 0,
+                format: 'yyyy-mm-dd hh:ii',
+                fontAwesome: true
+                /* showMeridian: 1*/
+            });
+            $("input[name='icon_set']").on("change", function () {
+                console.log($(this).parent().find("img"))
+                for (var k = 0; k < 8; k++) {
+                    $(".icon_set:eq(" + k + ")").find("img").attr("src", $(".icon_set:eq(" + k + ")").find("img").attr("data-off"))
+                }
+
+                $(this).parent().find("img").attr("src", $(this).parent().find("img").attr("data-on"))
+            })
+            $("#icon_cp").hover(
+                function () {
+                    $("#icon_cp_img").removeClass("hidden")
+                    console.log(parseInt($("#icon_cp").offset().left) + parseInt(20))
+                    var left = parseInt($("#icon_cp").offset().left) + parseInt(20)
+                    var top = parseInt($("#icon_cp").offset().top)
+                    $("#icon_cp_img").css("left", left)
+                    $("#icon_cp_img").css("top", top)
+
+                }, function () {
+                    $("#icon_cp_img").addClass("hidden")
+                }
+            )
+            $("#cp").hover(
+                function () {
+                    $("#icon_cp2_img").removeClass("hidden")
+                    var left = parseInt($("#cp").offset().left) + parseInt(20)
+                    var top = parseInt($("#cp").offset().top)
+                    $("#icon_cp2_img").css("left", left)
+                    $("#icon_cp2_img").css("top", top)
+                }, function () {
+                    $("#icon_cp2_img").addClass("hidden")
+                }
+            )
+            try {
+                set_icon()
+            }
+            catch (e) {
+                console.log(e)
+            }
+            if (getParameter("result") == "preview") {
+                $("#sp_modal").modal('show')
+                console.log("here")
+            }
+
+        })
+
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <div id="hd">
+            <img onclick="history.back();" style="cursor: pointer" src="{% static "img/icon_arrow-left.png" %}">
+            <span>사업 공고문 관리</span>
+        </div>
+        <div id="ttl">공고문 작성</div>
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.icon_set }}
+            <input type="hidden" id="meta" name="meta">
+            <input type="hidden" id="filter" name="filter">
+            <input type="hidden" id="open_status" name="open_status">
+            <div class="f_field">
+                <div class="ttl" style="margin-top: 20px;"> 사업개요</div>
+                <div class="text_con" style="margin-top: 15px;position: relative">
+                    <div class="title">
+                        지원사업명 *
+                    </div>
+                    {{ form.title }}
+                    <span class="help_text">기업이 참여하게 되는 사업명</span>
+                    <span style="position: absolute; font-size: 13px; color: #2b2b2b; top: 18px;  right: 25px;">지원사업의 타이틀 영역에 보여집니다.</span>
+
+                </div>
+                <style>
+                    .img_text {
+                        display: inline-block;
+                        font-weight: normal;
+                    }
+
+                    .icon_set {
+                        width: 74px;
+                        text-align: center;
+                    }
+                </style>
+
+
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title">
+                        지원 사업을 한마디로 표현한다면?<img id="cp" style=" cursor: pointer;   vertical-align: text-bottom;
+    margin-left: 10px;" src="{% static "img/icon_question.png" %}">
+                    </div>
+                    {{ form.short_desc }}
+                </div>
+                <span style="display: inline-block; margin-left: 5px;"> 과거 진행된 관련 지원 사업 : </span>
+                <select id="recent_apply" name="relate_sp" data-width="fit"
+                        title="과거 지원사업을 선택하세요 - 지원사업 상세 정보의 통계에 데이터가 표시됩니다. " class="selectpicker"
+                        style="margin-top: 20px;">
+                    {% for a in ap %}
+                        <option value="{{ a.id }}" {% if a.id == form.relate_sb.initial %} selected {% endif %}
+                                data-content="<span class='label label-success'>{{ a.update_at|date:" Y-m-d" }}</span>&nbsp;{{ a.title }}"></option>
+                    {% endfor %}
+                    <option value="">선택안함</option>
+                </select>
+                <div class="text_con" style="margin-top: 0px;">
+                    <div class="title">
+                        지원사업명
+                    </div>
+                    {{ form.title_sub }}
+                    <span class="help_text">대규모 사업(행사)중 하위사업(행사)가 특정된 경우</span>
+
+                </div>
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="duration">
+                        진행기간
+                    </div>
+                    <div class="due">
+                        <img src="{% static "img/icon_cal.png" %}">
+                        {{ form.business_period_start }}
+                        &nbsp;&nbsp;&nbsp; ~
+                        <img src="{% static "img/icon_cal.png" %}">
+                        {{ form.business_period_end }}
+                    </div>
+                    <span class="help_text">사업(행사) 진행기간</span>
+                    <script>
+                    </script>
+
+                </div>
+                <div class="check_con">
+                    <div class="checkbox checkbox-primary">
+                        <input id="checkbox0" type="checkbox">
+                        <label for="checkbox0">
+                            진행장소
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="checkbox1" type="checkbox">
+                        <label for="checkbox1">
+                            사업목적
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+
+                        <input id="checkbox2" type="checkbox">
+                        <label for="checkbox2">
+                            사업내용
+                        </label>
+                    </div>
+                </div>
+                <div data-bind="checkbox0" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        진행장소
+                    </div>
+                    {{ form.place }}
+                    <span class="help_text">사업(행사) 진행장소</span>
+
+                </div>
+                <div data-bind="checkbox1" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        사업목적
+                    </div>
+                    {{ form.subject }}
+                    <span class="help_text">사업의 목적</span>
+
+                </div>
+                <div data-bind="checkbox2" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        사업내용
+                    </div>
+                    {{ form.business_detail }}
+                    <span class="help_text">사업의 내용</span>
+                </div>
+            </div>
+            <style>
+                .bootstrap-select {
+
+                    margin-top: 15px !important;
+                    margin-bottom: 21px;
+                }
+            </style>
+            <div class="f_field">
+                <div class="ttl" style="margin-top: 30px;"> 모집 개요</div>
+                <div class="text_con" style="margin-top: 15px;height:123px; overflow:visible;">
+                    <div class="duration">모집기간*</div>
+                    <div class="due">
+                        <img src="{% static "img/icon_cal.png" %}">
+                        <input type="text" class="due_input" id="id_apply_start_day" required>
+
+                        <select id="id_apply_start_hour" data-width="fit" title="시간" class="selectpicker"
+                                style="margin-top: 0px;">
+                            <option value="00">00시</option>
+                            <option value="01">01시</option>
+                            <option value="03">03시</option>
+                            <option value="04">04시</option>
+                            <option value="05">05시</option>
+                            <option value="06">06시</option>
+                            <option value="07">07시</option>
+                            <option value="08">08시</option>
+                            <option value="09">09시</option>
+                            <option value="10">10시</option>
+                            <option value="11">11시</option>
+                            <option value="12">12시</option>
+                            <option value="13">13시</option>
+                            <option value="14">14시</option>
+                            <option value="15">15시</option>
+                            <option value="16">16시</option>
+                            <option value="17">17시</option>
+                            <option value="18">18시</option>
+                            <option value="19">19시</option>
+                            <option value="20">20시</option>
+                            <option value="21">21시</option>
+                            <option value="22">22시</option>
+                            <option value="23">23시</option>
+
+                        </select>
+                        {% comment %}    <input type="number" class="due_input due_input_h" id="id_apply_start_hour"
+                               placeholder="24시간 기준 ex) 18" required>시{% endcomment %}
+                        {{ form.apply_start }}
+                        &nbsp;&nbsp;&nbsp; ~
+                        <img src="{% static "img/icon_cal.png" %}">
+                        <input type="text" class="due_input" id="id_apply_end_day" required>
+
+                        <select id="id_apply_end_hour" data-width="fit" title="시간" class="selectpicker"
+                                style="margin-top: 0px;">
+
+                            <option value="00">00시</option>
+                            <option value="01">01시</option>
+                            <option value="03">03시</option>
+                            <option value="04">04시</option>
+                            <option value="05">05시</option>
+                            <option value="06">06시</option>
+                            <option value="07">07시</option>
+                            <option value="08">08시</option>
+                            <option value="09">09시</option>
+                            <option value="10">10시</option>
+                            <option value="11">11시</option>
+                            <option value="12">12시</option>
+                            <option value="13">13시</option>
+                            <option value="14">14시</option>
+                            <option value="15">15시</option>
+                            <option value="16">16시</option>
+                            <option value="17">17시</option>
+                            <option value="18">18시</option>
+                            <option value="19">19시</option>
+                            <option value="20">20시</option>
+                            <option value="21">21시</option>
+                            <option value="22">22시</option>
+                            <option value="23">23시</option>
+
+                        </select>
+                        {% comment %}<input type="number" class="due_input due_input_h" id="id_apply_end_hour"
+                               placeholder="24시간 기준 ex) 18" required> 시{% endcomment %}
+                        {{ form.apply_end }}
+                    </div>
+                </div>
+                <style>
+                    .due_input {
+                        width: 150px;
+                    }
+
+                    .due_input_h {
+                        width: 100px;
+                        margin-left: 5px;;
+                    }
+                </style>
+
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title">
+                        모집대상
+                    </div>
+                    {{ form.object }}
+                    <span class="help_text">사업(행사) 참가기업 대상(조건 및 분야를 포함)</span>
+
+                </div>
+                <div class="text_con" style="margin-top: 15px; margin-bottom: 0px;">
+                    <div class="title">
+                        모집조건
+                    </div>
+                    {{ form.condition }}
+                    <span class="help_text">사업(행사) 참가기업이 반드시 갖추어야 하는 조건</span>
+
+                    <div class="checkbox checkbox-primary">
+                        <input id="con0" type="checkbox">
+                        <label for="con0">
+                            기업 연차
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="con1" type="checkbox">
+                        <label for="con1">
+                            구성원
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="con2" type="checkbox">
+                        <label for="con2">
+                            주소지
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="con3" type="checkbox">
+                        <label for="con3">
+                            형태
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="con4" type="checkbox">
+                        <label for="con4">
+                            제품단계
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="con5" type="checkbox">
+                        <label for="con5">
+                            기타
+                        </label>
+                    </div>
+                    <div data-bind="con0" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            기업 연차
+                        </div>
+                        <div class="filter_con ">
+                            {% for f in filter_2 %}
+                                <span class="filter filter_y" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div data-bind="con1" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            구성원
+                        </div>
+                        <div class="filter_con">
+                            <div style="display: inline-block; width: 454px; float: left ">
+                                {{ form.employee_num }}
+                                <input id="id_employee_num_mask">
+                            </div>
+                            <script>
+                                $(document).ready(function () {
+                                    var values = ["제한없음"]
+                                    for (var k = 1; k < 100; k++) {
+                                        values.push(k + "명 이하")
+                                    }
+                                    values.push("100명 이상")
+                                    var initial_val = $("#id_employee_num").val()
+
+                                    $("#id_employee_num_mask").ionRangeSlider({
+                                        values: values,
+                                        type: "single",
+                                        min: 0,
+                                        max: 100,
+                                        from: initial_val,
+                                        onFinish:
+                                            function (data) {
+                                                console.log(data);
+                                                console.log(data.from);
+                                                $("#id_employee_num").val(data.from)
+                                            },
+                                    });
+                                })
+                            </script>
+                        </div>
+                    </div>
+                    <div data-bind="con2" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            주소지
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_4 %}
+                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div data-bind="con3" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            형태
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_5 %}
+                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div data-bind="con4" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            제품단계
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_6 %}
+                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div data-bind="con5" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            기타
+                        </div>
+                        {{ form.condition_etc }}
+                        <span class="help_text">기타 필요 내용</span>
+
+                    </div>
+                </div>
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title">
+                        모집분야*
+                    </div>
+                    <div class="checkbox checkbox-primary hidden">
+                        <input id="kind0" type="checkbox" checked="">
+                        <label for="kind0">
+                            기본장르
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary hidden">
+                        <input id="kind1" type="checkbox" checked="">
+                        <label for="kind1">
+                            특수장르
+                        </label>
+                    </div>
+                    <div data-bind="kind0" class="text_con" style="margin-top: 15px;">
+                        <div class="title">
+                            기본장르
+                        </div>
+                        <div class="filter_con">
+                            {% for f in filter_0 %}
+                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div data-bind="kind1" class="text_con" style="margin-top: 15px;">
+                        <div class="title">
+                            특수장르
+                        </div>
+                        <div class="filter_con">
+                            <table>
+                                <tr>
+                                    <th style="width:57px;">창작</th>
+                                    <td style="width:334px;">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "창작" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>IT 관련</th>
+                                    <td style="width: 171px;">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "IT 관련" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>창업</th>
+                                    <td style="">
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "창업" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>제조/융합</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "제조/융합 관련" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>신규산업</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "신규사업" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <th>기타</th>
+                                    <td>
+                                        {% for f in filter_1 %}
+                                            {% if f.cat_1 == "기타" %}
+                                                <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="kind2" type="checkbox">
+                        <label for="kind2">
+                            기타
+                        </label>
+                    </div>
+                    <div data-bind="kind2" class="text_con hidden" style="margin-top: 15px;">
+                        <div class="title">
+                            기타
+                        </div>
+                        {{ form.kind2_text }}
+                    </div>
+
+                </div>
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title" id="size">
+                        모집규모
+                    </div>
+                    {{ form.recruit_size }}&nbsp;&nbsp;팀 내외
+                </div>
+                <div class="check_con">
+                    <div class="checkbox checkbox-primary">
+                        <input id="plus0" type="checkbox">
+                        <label for="plus0">
+                            우대사항
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="plus1" type="checkbox">
+                        <label for="plus1">
+                            제한사항
+                        </label>
+                    </div>
+                </div>
+                <div data-bind="plus0" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        우대사항
+                    </div>
+                    {{ form.prefer }}
+                    <span class="help_text">사업(행사) 신청 기업 중 우대하는 기업</span>
+
+
+                </div>
+                <div data-bind="plus1" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        제한사항
+                    </div>
+                    {{ form.constraint }}
+                    <span class="help_text">사업(행사)에 참여 제약을 받는 기업 조건</span>
+
+                </div>
+            </div>
+            <div style="width: 1020px; height:1px; border-bottom: 1px solid #ddd; margin-top: 15px; margin-bottom: 15px;"></div>
+
+            <div class="f_field">
+                <div class="ttl" style="margin-top: 30px;"> 선정 개요</div>
+
+                <div class="checkbox checkbox-primary">
+                    <input id="pro_0" type="checkbox" disabled checked>
+                    <label for="pro_0">
+                        1차
+                    </label>
+                </div>
+                <div class="checkbox checkbox-primary">
+                    <input id="pro_1" type="checkbox">
+                    <label for="pro_1">
+                        2차
+                    </label>
+                </div>
+                <div class="checkbox checkbox-primary">
+                    <input id="pro_2" type="checkbox">
+                    <label for="pro_2">
+                        3차
+                    </label>
+                </div>
+                <div data-bind="pro_0">
+                    <div class="text_con" style="margin-top: 15px;">
+                        <div class="title">
+                            1차 선정 방법
+                        </div>
+                        {{ form.pro_0_choose }}
+                        <span class="help_text">선정 방식, 선정 규모 기재</span>
+
+                    </div>
+                    <div class="text_con" style="border-top: none; border-bottom: none">
+                        <div class="duration">
+                            1차 심사 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_0_start }}&nbsp;&nbsp; ~
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_0_end }}
+                        </div>
+                    </div>
+                    <div class="text_con" style=" border-bottom:none">
+                        <div class="duration">
+                            1차 발표 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_0_open }}
+                        </div>
+                    </div>
+                    <div class="text_con">
+                        <div class="title">
+                            1차 심사 기준
+                        </div>
+                        {{ form.pro_0_criterion }}
+                        <span class="help_text">심사 채점 지표</span>
+
+                    </div>
+                </div>
+                <div data-bind="pro_1" class="hidden">
+                    <div class="text_con" style="margin-top: 15px;">
+                        <div class="title">
+                            2차 심사 방법
+                        </div>
+                        {{ form.pro_1_choose }}
+                        <span class="help_text">선정 방식, 선정 규모 기재</span>
+
+                    </div>
+                    <div class="text_con" style="border-bottom: none; border-top: none">
+                        <div class="duration">
+                            2차 심사 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_1_start }}&nbsp;&nbsp;&nbsp; ~
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_1_end }}
+                        </div>
+                    </div>
+                    <div class="text_con" style=" border-bottom:none">
+                        <div class="duration">
+                            2차 발표 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_1_open }}
+                        </div>
+                    </div>
+                    <div class="text_con">
+                        <div class="title">
+                            2차 심사 기준
+                        </div>
+                        {{ form.pro_1_criterion }}
+                        <span class="help_text">심사 채점 지표</span>
+
+                    </div>
+                </div>
+                <div data-bind="pro_2" class="hidden">
+                    <div class="text_con" style="margin-top: 15px;">
+                        <div class="title">
+                            3차 선정 방법
+                        </div>
+                        {{ form.pro_2_choose }}
+                        <span class="help_text">선정 방식, 선정 규모 기재</span>
+
+                    </div>
+                    <div class="text_con" style="border-top: none; border-bottom: none">
+                        <div class="duration">
+                            3차 심사 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_2_start }}&nbsp;&nbsp;&nbsp; ~
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_2_end }}
+                        </div>
+                    </div>
+                    <div class="text_con" style=" border-bottom:none">
+                        <div class="duration">
+                            3차 발표 일정
+                        </div>
+                        <div class="due">
+                            <img src="{% static "img/icon_cal.png" %}">
+                            {{ form.pro_2_open }}
+                        </div>
+                    </div>
+                    <div class="text_con" style="">
+                        <div class="title">
+                            3차 심사 기준
+                        </div>
+                        {{ form.pro_2_criterion }}
+                        <span class="help_text">심사 채점 지표</span>
+                    </div>
+                </div>
+                <div class="ttl" style="margin-top: 30px;"> 제출 서류</div>
+                <div id="file_kind">
+                    <div class="checkbox checkbox-primary">
+                        <input id="option1" type="checkbox">
+                        <label for="option1">
+                            사업계획서
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="option2" type="checkbox">
+                        <label for="option2">
+                            사업등록증
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="option3" type="checkbox">
+                        <label for="option3">
+                            지방세/국세납입증
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="option4" type="checkbox">
+                        <label for="option4">
+                            투자 유치 증빙서류
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="option5" type="checkbox">
+                        <label for="option5">
+                            발표심사 PPT
+                        </label>
+                    </div>
+                    <div class="checkbox checkbox-primary">
+                        <input id="option6" type="checkbox">
+                        <label for="option6">
+                            기타
+                        </label>
+                    </div>
+
+                    <div data-bind="option6" class="text_con file_etc hidden" style="margin-top: 15px; width: 954px;">
+                        <div class="title">
+                            기타
+                        </div>
+                        {{ form.etc_file_title }}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="f_field">
+                <div class="ttl" style="margin-top: 30px;"> 지원내용</div>
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title">
+                        지원항목*
+                    </div>
+                    <div class="filter_con mb15">
+                        <table>
+                            <tr>
+                                <th style="width:57px;">자금지원</th>
+                                <td style="width:334px;">
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "자금지원" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th>엑셀러레이팅 투자연계</th>
+                                <td style="width: 184px;">
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "엑셀러레이팅 투자연계" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th>교육</th>
+                                <td style="width: 200px;">
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "교육" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>판로</th>
+                                <td>
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "판로" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th>네트워킹</th>
+                                <td>
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "네트워킹" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th>기타지원</th>
+                                <td>
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "기타지원" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            <tr style="border: none">
+                                <th style="border: none">공간지원</th>
+                                <td style="border: none">
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "공간지원" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th style="border: none">피칭</th>
+                                <td style="border: none">
+                                    {% for f in filter_7 %}
+                                        {% if f.cat_1 == "피칭" %}
+                                            <span class="filter" data-id="{{ f.id }}">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <th style="border: none"></th>
+                                <td style="border: none">
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <script>
+                    var auto = false
+
+                    function set_icon_manual(dom) {
+                        var target = dom;
+                        if (auto == false) {
+                            $(target).parent().parent().find("input").attr("disabled", false)
+                            auto = true;
+                            $(dom).addClass("on_auto")
+                            $("input[type='radio']").css("opacity", "1")
+
+                        }
+                        else {
+                            $(target).parent().parent().find("input").attr("disabled", true)
+                            auto = false;
+                            $(dom).removeClass("on_auto")
+
+                            $("input[type='radio']").css("opacity", "0")
+                            set_icon()
+                        }
+                    }
+
+                </script>
+                <style>
+                    #manual_select {
+                        display: inline-block;
+                        padding: 2px 10px;
+                        border-radius: 15px;
+                        font-size: 12px;
+                        margin-left: 10px;
+                        cursor: pointer;
+                        color: #6b6b6b;
+                        border: 1px solid #6b6b6b;
+                    }
+
+                    .on_auto {
+                        color: #1b66fe !important;
+                        border: 1px solid #1b66fe !important;
+                    }
+                </style>
+                <div class="text_con" style="margin-top: 15px;">
+                    <div class="title">
+                        지원항목 아이콘 선택
+                        <div onclick="set_icon_manual(this)"
+                             id="manual_select" style="">
+                            직접 선택
+                        </div>
+                        <img id="icon_cp" style=" cursor: pointer;   vertical-align: text-bottom;
+    margin-left: 10px;" src="{% static "img/icon_question.png" %}">
+                    </div>
+                    <div class="filter_con mb15">
+                        <div class="icon_set" style="margin-left: 48px;">
+                            <img data-off="{% static 'img/icon-main-1-gray.png' %}"
+                                 data-on="{% static "img/icon-main-1-copy.png" %}"
+                                 src="{% static "img/icon-main-1-copy.png" %}"><br>
+                            <input id="ra_0" type="radio" name="icon_set" value="1" disabled>
+                            <label for="ra_0" class="img_text">자금지원</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-2-gray.png' %}"
+                                 data-on="{% static "img/icon-main-2-copy.png" %}"
+                                 src="{% static "img/icon-main-2-gray.png" %}"><br>
+                            <input id="ra_1" type="radio" name="icon_set" value="2" disabled>
+                            <label for="ra_1" class="img_text">투자연계</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-3-gray.png' %}"
+                                 data-on="{% static "img/icon-main-3-copy.png" %}"
+                                 src="{% static "img/icon-main-3-gray.png" %}"><br>
+                            <input id="ra_2" type="radio" name="icon_set" value="3" disabled>
+                            <label for="ra_2" class="img_text">교육</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-4-gray.png' %}"
+                                 data-on="{% static "img/icon-main-4-copy.png" %}"
+                                 src="{% static "img/icon-main-4-gray.png" %}"><br>
+                            <input id="ra_3" type="radio" name="icon_set" value="4" disabled>
+                            <label for="ra_3" class="img_text">판로</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-5-gray.png' %}"
+                                 data-on="{% static "img/icon-main-5-copy.png" %}"
+                                 src="{% static "img/icon-main-5-gray.png" %}"><br>
+                            <input id="ra_4" type="radio" name="icon_set" value="5" disabled>
+                            <label for="ra_4" class="img_text">네트워킹</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-7-gray.png' %}"
+                                 data-on="{% static "img/icon-main-7-copy.png" %}"
+                                 src="{% static "img/icon-main-7-gray.png" %}"><br>
+                            <input id="ra_5" type="radio" name="icon_set" value="7" disabled>
+                            <label for="ra_5" class="img_text">공간지원</label>
+                        </div>
+                        <div class="icon_set">
+                            <img data-off="{% static 'img/icon-main-8-gray.png' %}"
+                                 data-on="{% static "img/icon-main-8-copy.png" %}"
+                                 src="{% static "img/icon-main-8-gray.png" %}"><br>
+                            <input id="ra_6" type="radio" name="icon_set" value="8" disabled>
+                            <label for="ra_6" class="img_text">피칭</label>
+                        </div>
+                        <div class="icon_set" style="margin-right: 0px;">
+                            <img data-off="{% static 'img/icon-main-6-gray.png' %}"
+                                 data-on="{% static "img/icon-main-6-copy.png" %}"
+                                 src="{% static "img/icon-main-6-gray.png" %}"><br>
+                            <input id="ra_7" type="radio" name="icon_set" value="6" disabled>
+                            <label for="ra_7" class="img_text">기타지원</label>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="text_con lng" style="margin-top: 15px;">
+                    <div class="title">
+                        지원내용
+                    </div>
+                    {{ form.supply_content }}
+                    <span class="help_text">선정시 기업이 받게되는 지원내용</span>
+
+                </div>
+                <div class="checkbox checkbox-primary" style="float: none">
+                    <input id="sub_0" type="checkbox">
+                    <label for="sub_0">
+                        지원조건
+                    </label>
+                </div>
+                <div data-bind="sub_0" class="text_con lng hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        지원조건
+                    </div>
+                    {{ form.supply_condition }}
+                    <span class="help_text">선정시 기업이 반드시 이행해야 하는 조건</span>
+
+                </div>
+            </div>
+            <div class="f_field" style="min-height: 50px;">
+                <div class="checkbox checkbox-primary">
+                    <input id="sub_1" type="checkbox">
+                    <label for="sub_1">
+                        행사일정
+                    </label>
+                </div>
+                <div class="checkbox checkbox-primary">
+                    <input id="sub_2" type="checkbox">
+                    <label for="sub_2">
+                        FAQ
+                    </label>
+                </div>
+                <div class="checkbox checkbox-primary">
+                    <input id="sub_3" type="checkbox">
+                    <label for="sub_3">
+                        추가 문의처
+                    </label>
+                </div>
+                <div data-bind="sub_1" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="duration">
+                        행사일정
+                    </div>
+
+                    <div class="due">
+                        <img src="{% static "img/icon_cal.png" %}">
+                        {{ form.ceremony_start }}&nbsp;&nbsp;&nbsp; ~
+                        <img src="{% static "img/icon_cal.png" %}">
+                        {{ form.ceremony_end }}
+                    </div>
+                </div>
+                <div data-bind="sub_2" class="text_con lng hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        FAQ
+                    </div>
+                    {{ form.faq }}
+                    <span class="help_text">관련 문의 내용 정리</span>
+
+                </div>
+                <div data-bind="sub_3" class="text_con hidden" style="margin-top: 15px;">
+                    <div class="title">
+                        추가문의처
+                    </div>
+                    {{ form.additional_faq }}
+                    <span class="help_text">공고 게시 담당자 외 문의채널(공동 담당자, 용역사 연락처)</span>
+                </div>
+            </div>
+            <div id="holder">
+                <div id="holder_hd">
+                    <span id="holder_con_title">주관기관 담당부서 및 담당자</span>
+                    <span id="modify"><a href="#" onclick="var result = confirm('현재 작성중인 공고문을 저장하고 이동하시겠습니까'); if (result===true){  $(window).unbind('beforeunload');  $('#obj').val('manager');  $('form').submit() }"> 수정은 여기에서</a></span>
+                    <span id="sub_cp">해당 정보는 매니저 계정 정보에서 수집되어 뷰단에 뿌려집니다.</span>
+                </div>
+                <div id="holder_con">
+                    <table>
+                        <tr>
+                            <th>
+                                주관기관
+                            </th>
+                            <td>
+                                {{ user.additionaluserinfo.department }}
+                            </td>
+                            <th>
+                                담당부서
+                            </th>
+                            <td>
+                                {{ user.additionaluserinfo.belong_to }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                전화번호
+                            </th>
+                            <td>
+                                {{ user.additionaluserinfo.tel }}
+                            </td>
+                            <th>
+                                담당자 메일
+                            </th>
+                            <td>
+                                {{ user.username }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                담당자명
+                            </th>
+                            <td>
+                                {{ user.additionaluserinfo.name }}
+                            </td>
+                            <th>
+                                홈페이지URL
+                            </th>
+                            <td>
+                                {{ user.additionaluserinfo.web }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text_con m1020" style="margin-top: 15px; width: 1020px;">
+                <div class="title">
+                    기타
+                </div>
+                {{ form.etc }}
+            </div>
+
+            <div class="text_con m1020" style="margin-top: 15px; width: 1020px;">
+                <div class="title">
+                    해시태그
+                </div>
+                {{ form.object_tag }}
+            </div>
+            <div id="save"
+                 style="width: 158px;margin-left: 350px;margin-top: 40px;font-size: 15px;line-height: 40px; text-align: center; height: 40px;">
+                임시 저장
+            </div>
+            <div id="preview"
+                 style="width: 178px;margin-top: 40px;font-size: 15px;line-height: 40px; color: #1b66fe; border: 1px solid #1b66fe; text-align: center; float: left; height: 40px; margin-left:10px;margin-bottom: 200px">
+                저장후 공고문 미리보기
+            </div>
+            <style>
+                .m1020 > textarea {
+                    width: 980px;
+                }
+            </style>
+            <input type="hidden" name="obj" id="obj">
+        </form>
+    </div>
+    <div id="icon_cp_img" style="position: absolute; top: 417px; z-index: 99999 " class="hidden">
+        <img src="{% static "img/card2.png" %}">
+    </div>
+
+    <div id="icon_cp2_img" style="position: absolute; top: 577px;; z-index: 99999" class="hidden">
+        <img src="{% static "img/card1.png" %}">
+    </div>
+
+    <div id="sp_modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog"
+         aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width: 1040px;">
+            <div class="modal-content" style=" padding-left: 10px;">
+                <img src="{% static "img/icon_cancel.png" %}" style="float: right; margin: 20px; cursor: pointer"
+                     onclick="$('#sp_modal').modal('hide')">
+                <a class="sm_l_a ">
+                    {% if support %}
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="int" data-id="{{ support.id }}">
+                                    <img
+                                            src="{% static "img/icon-fav-none.png" %}"
+                                            style="width: 24px;cursor: pointer">
+                                </div>
+                                <div class="l_cp">
+
+                                    <img src="{% static "img/icon-main-"|add:support.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ support.short_desc|default:"" }}
+                                    </div>
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}">0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ support.title|default:"" }}</div>
+                                <div class="sb_due">{{ support.apply_end|date:"Y n d"|calc_day }}
+                                    {#                        <span>{{ support.is_past_due }} </span>#}
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in support.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name|default:"" }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ support.user.department|default:"" }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </a>
+                <div id="sp_detail_con" style="">
+
+                    <div class="hash_tag_area detail_seg" style="color: #1b66f4;">
+                        <div class="detail_ttl" style="border-bottom: none"> {{ support.object_tag|default:"" }}</div>
+                    </div>
+                    <div class="detail_seg" style="margin-top: 15px;">
+                        <div class="detail_ttl">지원사업명 <span class="sh_de"> {{ support.title_tag|default:"" }}</span>
+                        </div>
+                        <div class="desc">
+                            {{ support.title | linebreaksbr }}
+                        </div>
+                    </div>
+
+                    {% if support.title_sub != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl">지원사업명(하위) <span
+                                    class="sh_de"> {{ support.title_sub_tag|default:"" }}</span>
+                            </div>
+                            <div class="desc">
+                                {{ support.title_sub| default:"" | linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl">진행 기간</div>
+                        <div class="desc">
+                            {{ support.business_period_start|date:"Y-m-d" }}
+                            ~ {{ support.business_period_end|date:"Y-m-d" }}
+                        </div>
+                    </div>
+
+
+                    {% if "place" in support.meta and support.place != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl">진행 장소</div>
+                            <div class="desc">
+                                {{ support.place| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+
+                    {% if "subject" in support.meta and support.subject != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl">사업목적 <span class="sh_de"> {{ support.subject_tag }}</span></div>
+                            <div class="desc">
+                                {{ support.subject|linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "detail" in support.meta and support.business_detail != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl">사업내용 <span
+                                    class="sh_de"> {{ support.business_detail_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.business_detail | linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl">모집기간</div>
+                        <div class="desc">
+                            {{ support.apply_start|date:"Y-m-d H:i" }} 부터 ~ {{ support.apply_end|date:"Y-m-d H:i" }} 까지
+                        </div>
+                    </div>
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 모집대상<span class="sh_de"> </span></div>
+                        <div class="desc">
+                            {{ support.object | linebreaksbr }}
+                        </div>
+                    </div>
+                    <style>
+                        .opt {
+                            margin-top: 5px !important;
+                        }
+                    </style>
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 모집조건<span class="sh_de"> {{ support.condition_tag|default:"" }}</span>
+                        </div>
+                        <div class="desc">
+                            {{ support.condition| linebreaksbr }}
+                        </div>
+                        {% if "con0" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;">기업 연차</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_1 == "업력" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "con1" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;"> 구성원</div>
+                                <div class="desc opt">
+                                    {% if employee_num == 0 %}제한없음
+                                    {% else %} {{ support.employee_num }}명{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "con2" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;"> 주소지</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_1 == "소재지" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "con3" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;"> 형태</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_1 == "기업형태" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "con4" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;"> 제품단계</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_1 == "기업단계" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if "con5" in support.meta and support.condition_etc|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 모집조건 - 기타<span
+                                    class="sh_de"> {{ support.condition_etc_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.condition_etc| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 모집분야<span
+                                class="sh_de"> {{ support.object_span_tag|default:"" }}</span></div>
+                        <div class="desc">
+                            {{ support.object_span| linebreaksbr }}
+                        </div>
+
+                        {% if "kind0" in support.meta %}
+                            <div>
+                                <div class="" style="margin-left: 10px;"> 기본장르</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_0 == "기본장르" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "kind1" in support.meta %}
+                            <div style="margin-top: 15px;">
+                                <div class="" style="margin-left: 10px;"> 특수장르</div>
+                                <div class="desc opt">
+                                    {% for f in support.filter.all %}
+                                        {% if f.cat_0 == "영역" %}
+                                            <span style="background-color: #c8d7f4" class="filter">{{ f.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if "kind2" in support.meta and support.kind2_text != "" %}
+                            <div class="" style="margin-left: 10px;"> 기타</div>
+                            <div class="desc">
+                                {{ support.kind2_text| linebreaksbr }}
+                            </div>
+                        {% endif %}
+
+
+                    </div>
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 모집규모</div>
+                        <div class="desc p">
+                            {{ support.recruit_size| default:""| linebreaksbr }} 팀 내외
+                        </div>
+                    </div>
+                    <style>
+                        .p p {
+                            display: inline-block;
+                        }
+                    </style>
+                    {% if "prefer" in support.meta and support.prefer|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 우대사항<span class="sh_de"> {{ support.prefer_tag|default:"" }}</span>
+                            </div>
+                            <div class="desc">
+                                {{ support.prefer| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "constraint" in support.meta and support.constraint|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 제한사항<span
+                                    class="sh_de"> {{ support.constraint_tag|default:"" }}</span>
+                            </div>
+                            <div class="desc">
+                                {{ support.constraint| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 1차 선정 방법<span
+                                class="sh_de"> {{ support.pro_0_choose_tag|default:"" }}</span>
+                        </div>
+                        <div class="desc">
+                            {{ support.pro_0_choose| linebreaksbr }}
+                        </div>
+                    </div>
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 1차 심사 일정</div>
+                        <div class="desc">
+                            {{ support.pro_0_start|date:"Y-m-d" }} ~ {{ support.pro_0_end|date:"Y-m-d" }}
+                        </div>
+                    </div>
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 1차 발표 일정</div>
+                        <div class="desc">
+                            {{ support.pro_0_open|date:"Y-m-d" }}
+                        </div>
+                    </div>
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 1차 심사기준<span
+                                class="sh_de"> {{ support.pro_0_criterion_tag|default:"" }}</span>
+                        </div>
+                        <div class="desc">
+                            {{ support.pro_0_criterion| linebreaksbr }}
+                        </div>
+                    </div>
+
+                    {% if "pro_1" in support.meta and support.pro_1_choose|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 2차 선정 방법<span
+                                    class="sh_de"> {{ support.pro_1_choose_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.pro_1_choose| linebreaksbr }}
+                            </div>
+                        </div>
+
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 2차 심사 일정</div>
+                            <div class="desc">
+                                {{ support.pro_1_start|date:"Y-m-d" }} ~ {{ support.pro_1_end|date:"Y-m-d" }}
+                            </div>
+                        </div>
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 2차 발표 일정</div>
+                            <div class="desc">
+                                {{ support.pro_1_open|date:"Y-m-d" }}
+                            </div>
+                        </div>
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 2차 심사기준<span
+                                    class="sh_de"> {{ support.pro_1_criterion_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.pro_1_criterion| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "pro_2" in support.meta and support.pro_2_choose|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 3차 선정 방법<span
+                                    class="sh_de"> {{ support.pro_2_choose_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.pro_2_choose| linebreaksbr }}
+                            </div>
+                        </div>
+
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 3차 심사 일정</div>
+                            <div class="desc">
+                                {{ support.pro_2_start|date:"Y-m-d" }} ~ {{ support.pro_2_end|date:"Y-m-d" }}
+                            </div>
+                        </div>
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 3차 발표 일정</div>
+                            <div class="desc">
+                                {{ support.pro_2_open|date:"Y-m-d" }}
+                            </div>
+                        </div>
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 3차 심사기준<span
+                                    class="sh_de"> {{ support.pro_2_criterion_tag|default:"" }}</span></div>
+                            <div class="desc">
+                                {{ support.pro_2_criterion| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 지원내용<span
+                                class="sh_de"> {{ support.supply_content_tag|default:"" }}</span>
+                        </div>
+                        <div class="desc">
+                            {{ support.supply_content| linebreaksbr }}
+                        </div>
+                    </div>
+
+                    {% if "supply_condition" in support.meta and support.supply_condition|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 지원 조건<span class="sh_de"> {{ support.supply_condition_tag }}</span>
+                            </div>
+                            <div class="desc">
+                                {{ support.supply_condition| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "ceremony" in support.meta and support.ceremony_start|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl">행사일정</div>
+                            <div class="desc">
+                                {{ support.ceremony_start|date:"Y-m-d" }} ~ {{ support.ceremony_end|date:"Y-m-d" }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "faq_only" in support.meta and  support.faq|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> FAQ<span class="sh_de"> {{ support.faq_tag|default:"" }}</span>
+                            </div>
+                            <div class="desc">
+                                {{ support.faq| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if "additional_faq" in support.meta and support.additional_faq|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 추가문의처</div>
+                            <div class="desc">
+                                {{ support.additional_faq| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+
+                    <div class="detail_seg">
+                        <div class="detail_ttl"> 주관기관 담당부서 및 담당자</div>
+                        <div class="desc">
+                            <table>
+                                <tr>
+                                    <th>
+                                        주관기관
+                                    </th>
+                                    <td>
+                                        {{ support.user.department| linebreaksbr }}
+                                    </td>
+                                    <th>
+                                        담당부서
+                                    </th>
+                                    <td>
+                                        {{ support.user.belong_to| linebreaksbr }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        전화번호
+                                    </th>
+                                    <td>
+                                        {{ support.user.tel| linebreaksbr }}
+                                    </td>
+                                    <th>
+                                        담당자 메일
+                                    </th>
+                                    <td>
+                                        {{ support.user.user.username| linebreaksbr }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        담당자명
+                                    </th>
+                                    <td>
+                                        {{ support.user.name| linebreaksbr }}
+                                    </td>
+                                    <th>
+                                        홈페이지URL
+                                    </th>
+                                    <td>
+                                        {{ support.user.web| linebreaksbr }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="file_form" style="margin-top: 46px;">
+
+                        <div class="detail_seg">
+                            <div id="detail_ttl"
+                                 style="font-weight: normal;    margin-top: 20px;    width: 930px;
+    border-bottom: 1px solid #ced4da;
+    font-size: 15px;
+    height: 38px;
+    line-height: 38px;
+    font-weight: normal;  ">
+                                제출서류
+
+                            </div>
+                        </div>
+                        <style>
+                            .file_img {
+                                padding-top: 5px;
+                                padding-bottom: 5px;
+                                vertical-align: middle !important;
+                            }
+
+                            .file_name {
+                                padding-top: 5px;
+                                padding-bottom: 0px !important;
+                            }
+
+                            .file_seg > table > tbody > tr > td:nth-child(1) {
+                                padding-left: 10px;
+                                width: 40px;
+                            }
+                        </style>
+                        <div class="file_seg">
+                            <table style="width:922px; margin-left: 53px; font-size: 13px;">
+                                {% if "ir_file" in support.meta %}
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업계획서
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.ir_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+
+                                {% if "business_file" in support.meta %}
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            사업자 등록증
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.business_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+
+                                {% if "tax_file" in support.meta %}
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            국세/지방세 납입증
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.tax_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "fund_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            투자유치 증빙서류
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.fund_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "ppt_file" in support.meta %}
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            발표 심사 PT 자료
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.ppt_file }}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if "etc_file" in support.meta %}
+                                    <tr>
+                                        <td class="file_img">
+                                            <img src="{% static "img/icon-attachment@2x.png" %}"
+                                                 style="width:18px;">
+                                        </td>
+                                        <td class="file_name">
+                                            {{ support.etc_file_title }}
+                                        </td>
+                                        <td class="file_input">
+                                            {{ form.etc_file }}
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #ddd">
+                                        <td></td>
+                                        <td colspan="2" style=" color: red ">
+                                            해당 파일은 압축하여 1개의 파일로 업로드 하세요.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    {% if support.etc|default:"" != "" %}
+                        <div class="detail_seg">
+                            <div class="detail_ttl"> 기타</div>
+                            <div class="desc">
+                                {{ support.etc| linebreaksbr }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div onclick="$('#sp_modal').modal('hide');" style="cursor: pointer;width: 150px; text-align: center; color: #fff; background-color: #1b66fe; height: 40px;font-size: 17px; line-height: 40px; float: left; margin-left: 354px;  margin-top: 76px; margin-bottom: 80px;">
+                        수정
+                    </div>
+                    <div onclick="$('#sp_modal').modal('hide'); $(window).unbind('beforeunload'); location.href='{% url "example" id=support.id|default:"0" %}'"
+                         style="cursor:pointer; width: 150px; text-align: center; color: #1b66fe; background-color: #fff; height: 40px;font-size: 17px; line-height: 40px;margin-left: 10px; float: left; border: 1px solid #1b66fe;  margin-top: 76px;">
+                        지원서 양식 지정
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        p {
+            margin-bottom: 0px !important;
+        }
+    </style>
+{% endblock %}

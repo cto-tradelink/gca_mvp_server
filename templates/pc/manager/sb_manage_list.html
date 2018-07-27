@@ -1,0 +1,637 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_sb_manage_list.css" %}"/>
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $(".sb_" + getParameter("cat")).removeClass("hidden");
+            if (getParameter("cat") === "all") {
+                $(".sm_l_a").removeClass("hidden")
+            }
+
+                if ($(window).height() > $(document).height()) {
+                    $("body").css("min-height", $(window).height() + 50)
+                }
+
+                else {
+                    $("body").css("min-height", $(document).height() + 50)
+
+                }
+        })
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <style>
+        .blind.n_on{
+            border-bottom: 2px solid coral!important;
+        }
+        .blind:hover{
+               border-bottom: 2px solid coral!important;
+        }
+    </style>
+    <div class="content">
+       <div id="mp_nav">
+
+            {% if user.additionaluserinfo.get_depth == 3 %}
+            <div id="write"><a href="{% url "write" %}">사업 공고문 등록</a></div>
+            {% endif %}
+
+            <ul>
+                <li><a href="{% url "sb_list" %}?cat=write" data-for="write">공고 작성중</a></li>
+                 <li><a href="{% url "sb_list" %}?cat=confirm" data-for="confirm">승인 대기중</a></li>
+                <li><a href="{% url "sb_list" %}?cat=ing" data-for="ing">공고중</a></li>
+                <li><a href="{% url "sb_list" %}?cat=comp" data-for="comp">모집마감</a></li>
+                <li><a href="{% url "sb_list" %}?cat=result" data-for="result">공고종료</a></li>
+                <li><a href="{% url "sb_list" %}?cat=all" data-for="all">전체보기</a></li>
+                <li style="color:#f0f0f0;;margin-left: 6px; margin-right: 30px;">|</li>
+                <li><a href="{% url "sb_list" %}?cat=blind" data-for="blind" class="blind" style="color: coral">블라인드</a></li>
+            </ul>
+        </div>
+        <div id="sb_con">
+            {% if cat == "write" %}
+                {% for q in qs_0 %}
+                    <a href="{% url "sb_edit" id=q.id %}" class="sm_l_a sb_write hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 작성중</span>
+                            <span class="write_date">{{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:" Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                        <div class="red">작성중인 상태입니다. 등록절차를 진행해주세요.</div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if cat == "confirm" %}
+                {% for q in qs_0_1 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_confirm hidden">
+                        <div class="status">
+                            <span class="bl status_cp">승인 대기중</span>
+                            <span class="write_date">{{ q.updated_at|date:" Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:" Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+
+                    </a>
+                {% endfor %}
+
+                {% for q in qs_0_3 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_confirm hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 대기중</span>
+                            <span class="write_date">{{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                               <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+
+            {% endif %}
+            {% if cat == "ing" %}
+                {% for q in qs_1 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_ing hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고중{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.update_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                               <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if cat == "comp" %}
+                {% for q in qs_2 %}
+                    <a href="{% url "pick_winner" id=q.id %}" class="sm_l_a sb_comp hidden">
+                        <div class="status">
+                            <span class="bl status_cp">모집마감{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                     <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                               <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                        <div class="comp black">
+                            <span>공고가 종료되었습니다. 선정절차를 진행해주세요.</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if cat == "result" %}
+                {% for q in qs_3 %}
+                    <a href="{% url "pick_winner" id=q.id %}" class="sm_l_a sb_result hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 종료{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.update_at|date:"Y-m-d"  }}</span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                               <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if cat == "all" %}
+                {% for q in qs_0 %}
+                    <a href="{% url "sb_edit" id=q.id %}" class="sm_l_a sb_write hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 작성중</span>
+                            <span class="write_date">{{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                        <div class="red">작성중인 상태입니다. 등록절차를 진행해주세요.</div>
+                    </a>
+                {% endfor %}
+
+                {% for q in qs_0_1 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_confirm hidden">
+                        <div class="status">
+                            <span class="bl status_cp">승인 대기중</span>
+                            <span class="write_date">{{ q.updated_at|date:" Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:" Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+                {% for q in qs_0_3 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_confirm hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 대기중</span>
+                            <span class="write_date">{{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                               <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+
+
+                {% for q in qs_1 %}
+                    <a href="{% url "sb_detail" id=q.id %}" class="sm_l_a sb_ing hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고중{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.update_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                  <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+
+                    </a>
+                {% endfor %}
+                {% for q in qs_2 %}
+                    <a href="{% url "pick_winner" id=q.id %}" class="sm_l_a sb_comp hidden">
+                        <div class="status">
+                            <span class="bl status_cp">모집마감{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                   <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    {%  if q.is_blind != True %}
+                        <div class="comp black">
+                            <span>모집이 마감되었습니다. 선정절차를 진행해주세요.</span>
+                        </div>
+                    {% else %}
+                         <div class="red">블라인드중인 상태입니다. 수정후 승인절차를 진행해주세요.</div>
+                    {% endif %}
+                    </a>
+                {% endfor %}
+                {% for q in qs_3 %}
+                    <a href="{% url "pick_winner" id=q.id %}" class="sm_l_a sb_result hidden">
+                        <div class="status">
+                            <span class="bl status_cp">공고 종료{% if q.is_blind == True %} - 블라인드 중{% endif %}</span>
+                            <span class="write_date">등록일 {{ q.update_at|date:"Y-m-d"  }}</span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                 <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> {{ q.appliance_set.count }}
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if cat == "blind" %}
+                {% for q in qs_5 %}
+                    <a href="{% url "sb_edit" id=q.id %}" class="sm_l_a sb_blind hidden">
+                        <div class="status">
+                            <span class="bl status_cp">블라인드 중</span>
+                            <span class="write_date">{{ q.updated_at|date:"Y-m-d"  }} </span>
+                        </div>
+                        <div class="sm_l">
+                            <div class="sm_f">
+                                <div class="l_cp">
+                                    <img src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                    <div>
+                                        {{ q.short_desc }}
+                                    </div>
+                                </div>
+                                <div class="apply_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_done.png" %}"> 0
+                                </div>
+                                <div class="view_cnt">
+                                    <img class="view_cnt_ic"
+                                         src="{% static "img/ic_visibility.png" %}"> 0
+                                </div>
+                            </div>
+                            <div class="sm_s">
+                                <div class="sb_title">{{ q.title }}</div>
+                                <div class="sb_due">모집기간 : {{ q.apply_start|date:"Y-m-d"  }}~{{ q.apply_end|date:"Y-m-d"  }}까지
+                                    <span>{{ qs.is_past_due }} </span>
+                                </div>
+                                <div class="filter_con">
+                                    {% for f in q.filter.all|slice:":8" %}
+                                        <span class="filter">{{ f.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="sm_t">
+                                {{ q.user.department }}
+                            </div>
+                        </div>
+                        <div class="red">블라인드중인 상태입니다. 수정후 승인절차를 진행해주세요.</div>
+                    </a>
+                {% endfor %}
+
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_sb_manage_list.css" %}"/>
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $(".sb_" + getParameter("cat")).removeClass("hidden");
+            if (getParameter("cat") === "all") {
+                $(".sm_l_a").removeClass("hidden")
+            }
+            $('#sort_tbl').DataTable({
+                "order": [[1, "desc"]],
+                "columnDefs": [{orderable: false, targets: [0]},],
+                "iDisplayLength": 50
+            });
+
+
+            console.log('completed');
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+
+            }
+            console.log($("body").css("height"))
+            $("body").append('<div class="row" style="height: 40px; position: absolute; bottom: 0px;width: 100%;z-index:9999;   background-color:  #e4ebf2;; ">\n' +
+                '</div>')
+
+            $("#cancel").on("click", function () {
+                $(this).parent().parent().addClass("hidden")
+            })
+            $("#add_account").on("click", function () {
+                $("#add_ac_panel").removeClass("hidden")
+            })
+
+            $("#save_acc").on("click", function () {
+                if ($("#pw").val() != "" && $("#pw2").val() != "" && $("#pw").val() == $("#pw").val()) {
+                    $.ajax({
+                        url: '{% url "add_manager_acc" %}',
+                        method: "post",
+                        data: {
+                            "id": $("#id").val(),
+                            "pw": $("#pw").val(),
+                            "name": $("#name_acc").val(),
+                            "department": $("#department_acc").val(),
+                            "position": $("#position_acc").val(),
+                            "tel": $("#tel").val(),
+                            "phone": $("#phone").val(),
+                            "additional_email": $("#additional_email").val()
+                        },
+                        success: function (data) {
+                            console.log(data)
+                            if (data === "") location.reload();
+                            else alert("회원등록이 이루어지지 않았습니다.이메일(아이디) 중복을 확인하세요.")
+                        }
+                        ,
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+
+
+                } else {
+                    alert("비밀번호를 확인해주세요")
+                }
+            })
+
+            $("#del_account").on("click", function () {
+                var checkedValues = $('input:checkbox:checked:visible').map(function () {
+                    return this.value;
+                }).get();
+
+                if (checkedValues.length == 0) {
+                    alert("체크한 항목이 없습니다.")
+                    return false;
+                }
+                else {
+                    var result = confirm("해당 계정을 삭제하시겠습니까?")
+                    if (result === false) {
+                        return false;
+                    }
+
+                    $.ajax({
+                        url: '{% url "del_manager_acc" %}',
+                        method: "post",
+                        data: {
+                            "id": checkedValues.join(",")
+                        },
+                        success: function (data) {
+                            console.log(data)
+                            location.reload();
+                        }
+                        ,
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+                }
+            })
+
+            $(".stage").on("change", function () {
+                console.log($(this).val())
+                console.log($('option:selected', this).attr("data-target"))
+                var result = confirm(($(this).parent().prev().text()).trim() + "회원님을 " + ($('option:selected', this).text().trim() + "로 변경하시겠습니까?" ))
+                if (result == true) {
+                    $.ajax({
+                        url: '{% url "change_stage" %}',
+                        method: "post",
+                        data: {
+                            "id": ($(this).parent().prev().prev().text()).trim(),
+                            'to': $(this).val(),
+                            'boss': $('option:selected', this).attr("data-target")
+                        },
+                        success: function (data) {
+                            console.log(data)
+                            location.reload();
+                        },
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+                }
+                else {
+                    return
+                }
+            })
+
+        })
+
+        function set_all(target) {
+            if ($(target).prop("checked") === false) {
+                $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+            } else {
+                $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                $("#sort_tbl").find(".check_target").prop("checked", false)
+                $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+            }
+
+        }
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <style>
+            .sorting {
+                padding-left: 0px !important;
+            }
+
+            table.dataTable tbody th, table.dataTable tbody td {
+                padding: 3px 8px !important;
+            }
+
+            td.sorting_1 {
+                background-color: rgba(27, 102, 239, 0.2);
+            }
+        </style>
+        <div style="height: 30px; width:1020px; border-bottom: 1px solid #ddd;  margin-bottom: 20px;font-size: 15px;">
+            매니저 관리
+        </div>
+        <div id="add_account" onclick="add_account()"
+             style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer">계정 생성
+        </div>
+        <div id="del_account" onclick="del_account()"
+             style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer; float: left">계정 삭제
+        </div>
+        <style>
+            #add_account {
+                width: 126px;
+                height: 29px;
+                border-radius: 17px;
+                line-height: 29px;
+                text-align: center;
+                border: solid 1px #1b66f4;
+                color: #1b66fe;
+                float: right;
+                margin-right: -266px;
+                cursor: pointer;
+            }
+        </style>
+        <div id="sb_con">
+            <table id="sort_tbl" style="width: 1000px; border: none; table-layout: fixed!important;">
+                <thead>
+                <tr>
+                    <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                        <div class="checkbox checkbox-primary" style="width: 30px; ">
+                            <input type="checkbox" id="all_check" onclick="set_all(this)">
+                            <label></label>
+                        </div>
+                    </th>
+                    <th style=" padding: 0px!important; font-size: 13px; width:180px;">ID
+                    </th>
+                    <th style=" padding: 0px!important; font-size: 13px;">이름</th>
+                    <th style=" padding: 0px!important; font-size: 13px; width:220px;">단계/변경</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">소속</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">직책</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">연락처</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">핸드폰 번호</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for q in q %}
+
+
+                    <tr>
+                        <td style="width: 20px; padding: 0px!important; font-size: 13px;">
+                            <div class="checkbox checkbox-primary" style="width: 30px;">
+                                <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                       value="{{ q.id }}"
+                                       aria-label="Single checkbox Two">
+                                <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                            </div>
+                        </td>
+                        <td>
+                            {{ q.user.username }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.name }}
+                        </td>
+                        <td>
+                            <select class="stage">
+
+                                {% if user.additionaluserinfo.get_depth == 1 %}
+
+                                <option value="0" data-target=""
+                                        {% if  q.user.additionaluserinfo.account_stage == "경영진" %} selected {% endif %}>
+                                    경영진
+                                </option>
+                                <option value="1" data-target=""
+                                        {% if  q.user.additionaluserinfo.account_stage == "기관장" %} selected {% endif %}>
+                                    기관장
+                                </option>
+                                    {% for u in user.additionaluserinfo.additionaluserinfo_set.all %}
+                                        {{ q.user.additionaluserinfo.boss }} {{ u }}
+                                        <option value="2" data-target="{{ u }}" data-name="{{ u.name }}"
+                                                {% if  q.user.additionaluserinfo.boss == u %}
+                                                selected {% endif %} >{{ u.name }}의 실무매니저
+                                        </option>
+                                    {% endfor %}
+                                {% elif user.additionaluserinfo.get_depth == 2 %}
+                                    {% for u in admin.additionaluserinfo.additionaluserinfo_set.all %}
+                                        <option value="2" data-target="{{ u }}" data-name="{{ u.name }}"
+                                                {% if  q.user.additionaluserinfo.boss == user.additionaluserinfo %}
+                                                selected {% endif %} >{{ u.name }}의 실무매니저
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.belong_to }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.position }}
+                        </td>
+
+                        <td>
+                            {{ q.user.additionaluserinfo.tel }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.phone }}
+                        </td>
+                        {#                        <td>#}
+                        {#                            {{ q.user.additionaluserinfo.additional_email }}#}
+                        {#                        </td>#}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+    <div id="add_ac_panel" class="hidden">
+        <div id="add_hd" style="height: 40px;padding: 10px; border-bottom: 1px solid #ddd; font-size: 15px;">
+            매니저 계정 생성
+            <img id="cancel" src="{% static "img/icon_cancel.png" %}" style="cursor: pointer; float: right">
+        </div>
+        <div id="add_con">
+            아이디<br>
+            <input name="id" id="id" placeholder="example@company.com"><br>
+            비밀번호<br>
+            <input name="pw" id="pw" placeholder="비밀번호를 입력하세요">
+            <br>
+            비밀번호 확인<br>
+            <input name="pw2" id="pw2" placeholder="비밀번호를 입력하세요" style="margin-bottom: 30px;">
+            <br>
+            이름
+            <br>
+            <input name="name" id="name_acc"><br>
+            소속기관<br>
+            <input name="department" id="department_acc"><br>
+            직급<br>
+            <input name="position" id="position_acc"><br>
+            연락처<br>
+            <input name="tel" id="tel"><br>
+            핸드폰 번호<br>
+            <input name="phone" id="phone"><br>
+            이메일<br>
+            <input name="additional_email" id="additional_email">
+            <div id="save_acc">저장하기</div>
+        </div>
+    </div>
+    <style>
+        #add_ac_panel {
+            background-color: #fff;
+            position: absolute;
+            left: 50%;
+            margin-left: -250px;
+            width: 550px;
+            height: 830px;
+            border: solid 1px #7a7a7a;
+        }
+
+        #add_con {
+            margin-left: 84px;
+            margin-top: 22px;
+
+        }
+
+        #add_con > input {
+            width: 378px;
+            height: 38px;
+            border-radius: 4px;
+            background-color: #ffffff;
+            border: solid 1px #cccccc;
+            padding-left: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+        #save_acc {
+            width: 128px;
+            height: 29px;
+            background-color: #1b66f4;
+            text-align: center;
+            line-height: 29px;
+            color: #fff;
+            border-radius: 15px;
+            margin-left: 125px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}

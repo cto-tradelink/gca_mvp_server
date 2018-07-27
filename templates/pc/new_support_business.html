@@ -1,0 +1,222 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/new_support.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+
+
+{% block content %}
+    <script
+            src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"
+            integrity="sha256-0YPKAwZP7Mp3ALMRVB2i8GXeEndvCq3eSl/WsAl1Ryk="
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{% static "css/jquery_ui.css" %}"/>
+    <script>
+        var selected_filter = []
+        $(document).ready(function () {
+            $(".tag").on("click", function () {
+                if ($(this).hasClass("on")) {
+                    selected_filter.slice(selected_filter.indexOf($(this).attr("data-id")), 1)
+                    $(this).removeClass("on")
+                }
+                else {
+                    selected_filter.push($(this).attr("data-id"))
+                    $(this).addClass("on")
+                }
+                console.log(selected_filter)
+                $("#filter").attr("value", selected_filter.join(","))
+            })
+        })
+        $(function () {
+            $("#id_from_date, #id_end_date").datepicker({
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년'
+            });
+        });
+    </script>
+    <div id="left_col">
+        <ul>
+            <li>
+                <a href="#">통계보기</a>
+            </li>
+            <li>
+                <a href="{% url "new_support" %}">지원사업 등록페이지</a>
+            </li>
+            <li>
+                <a href="{% url "manage_support" %}">지원사업 관리 페이지</a>
+            </li>
+        </ul>
+    </div>
+    <div id="body_content">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" id="filter" name="filter">
+            <div class="input_form">
+                <div class="input_label">지원 사업 명</div>
+                {{ form.title }}
+                다른 공고 글 불러오기
+            </div>
+            <div class="input_form">
+                <div class="input_label">모집기간</div>
+                {{ form.from_date }}~{{ form.end_date }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">대상 기업(필터)</div>
+                <table style="clear:both;">
+                    <tr>
+                        <th>
+                            기본장르
+                        </th>
+                        <td>
+                            {% for filter in filter_0 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            영역
+                        </th>
+                        <td>
+                            <span class="cat_label">창작</span>
+                            {% for filter in filter_1 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">IT 관련</span>
+                            {% for filter in filter_2 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">창업</span>
+                            {% for filter in filter_3 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">제조/융합</span>
+                            {% for filter in filter_4 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">신규산업</span>
+                            {% for filter in filter_5 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기타</span>
+                            {% for filter in filter_6 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            조건
+                        </th>
+                        <td>
+                            <span class="cat_label">업력</span>
+                            {% for filter in filter_7 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">구성원</span>
+                            {% for filter in filter_8 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">소재지</span>
+                            {% for filter in filter_9 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업형태</span>
+                            {% for filter in filter_10 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업단계</span>
+                            {% for filter in filter_11 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            지원 형태
+                        </th>
+                        <td>
+                            <span class="cat_label">자금</span>
+                            {% for filter in filter_12 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">투자연계</span>
+                            {% for filter in filter_13 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">교육</span>
+                            {% for filter in filter_14 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">판로</span>
+                            {% for filter in filter_15 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">네트워킹</span>
+                            {% for filter in filter_16 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기타지원</span>
+                            {% for filter in filter_17 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">공간지원</span>
+                            {% for filter in filter_18 %}
+                                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="input_form">
+                <div class="input_label">모집 방식 선택</div>
+            </div>
+            <div class="input_form">
+                <div class="input_label">사업 개요</div>
+                {{ form.abstract }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">
+                    지원 분야 및 대상
+                </div>
+                {{ form.target }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">
+                    내용
+                </div>
+                {{ form.detail }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">신청방법 및 서류</div>
+                {{ form.apply_method }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">기타 사항</div>
+                {{ form.etc }}
+            </div>
+            <div class="input_form">
+                <div class="input_label">
+                    주관 기관 담당부서 및 담당자
+                </div>
+            </div>
+            <div id="btn_group">
+                <button id="reserve">예약게시</button>
+                <button type="submit" id="register">공고글 게시</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

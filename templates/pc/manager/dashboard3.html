@@ -1,0 +1,587 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_account.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/dash.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+        })
+        google.charts.load("current", {packages: ["corechart"]});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+            var data = google.visualization.arrayToDataTable([
+                ['지원 사업 분류', '등록수'],
+                ['자금', 11],
+                ['투자연계', 2],
+                ['교육', 2],
+                ['판로', 1],
+                ['네트워킹', 4],
+                ['공간지원', 5],
+                ['기타지원', 7],
+            ]);
+            var options = {
+                pieHole: 0.4,
+            };
+            var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+            chart.draw(data, options);
+            var data_1 = google.visualization.arrayToDataTable([
+                ['진행 단계', '진행 단계별 사업수'],
+                ['공고작성중', 10],
+                ['공고중', 15],
+                ['공고종료', 2],
+                ['선정완료', 5],
+            ]);
+            var options = {
+                pieHole: 0.4,
+            };
+        }
+    </script>
+    <style>
+        .pie_ch {
+            text-align: center;
+        }
+
+        #total {
+            font-weight: bold;
+            font-size: 20px;
+            color: #1b66f4;
+        }
+
+        .pie_ch > span {
+            font-size: 19px;
+        }
+
+        #dash_nav {
+            width: 1200px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+            text-align: center;
+        }
+
+        #dash_nav > div {
+            display: inline-block;
+            margin-right: 15px;
+            margin-left: 15px;
+            font-size: 18px;
+        }
+
+        #dash_nav > div:hover {
+            border-bottom: 2px solid #1B66F4;
+            cursor: pointer;
+        }
+    </style>
+    {% include "pc/manager/common/left_nav.html" %}
+    <script>
+        $(document).ready(function () {
+            var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+            $('#total').animateNumber(
+                {
+                    number: 32,
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $("#dash_nav>div").on("click", function (e) {
+                console.log("sadf");
+                e.stopPropagation();
+                return false;
+            })
+        })
+        function open(num) {
+            $(".con").addClass("hidden");
+            $("#con_" + num).removeClass("hidden")
+            return false;
+        }
+    </script>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages': ['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+            var data = google.visualization.arrayToDataTable([
+                ['년도', '창업기업수',],
+                ['2010', 100000,],
+                ['2011', 117000,],
+                ['2012', 112000,],
+                ['2013', 103000,],
+                ['2014', 100000,],
+                ['2015', 117000,],
+                ['2016', 112000,],
+                ['2017', 103000,]
+            ]);
+            var options = {
+                vAxis: {minValue: 0}
+            };
+            var chart = new google.visualization.ColumnChart(document.getElementById('gr_1'));
+            chart.draw(data, options);
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', '평균 구성원수'],
+                ['2010', 10,],
+                ['2011', 20,],
+                ['2012', 25,],
+                ['2013', 10,],
+                ['2014', 15,],
+                ['2015', 7,],
+                ['2016', 5,],
+                ['2017', 8,],
+            ]);
+            var options = {
+                vAxis: {minValue: 0}
+            };
+            var chart2 = new google.visualization.LineChart(document.getElementById('gr_2'));
+            chart2.draw(data, options);
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ all_rev_2 }}, {{ fund_gr.2015 }}, {{ all_rev_0 }}],
+                ['2016', {{ all_rev_1 }}, {{ fund_gr.2016 }}, {{ all_rev_0 }}],
+                ['2017', {{ all_rev_0 }}, {{ fund_gr.2017 }}, {{ all_rev_0 }}],
+            ]);
+            var options = {
+                seriesType: 'line',
+            };
+            var chart3 = new google.visualization.LineChart(document.getElementById('gr_3'));
+            chart3.draw(data, options);
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ sel_rev_2 }}, {{ sel_fund_gr.2015 }}, {{ sel_exp_2 }}],
+                ['2016', {{ sel_rev_1 }}, {{ sel_fund_gr.2016 }}, {{ sel_exp_1 }}],
+                ['2017', {{ sel_rev_0 }}, {{ sel_fund_gr.2017 }}, {{ sel_exp_0 }}],
+            ]);
+            var options = {
+                seriesType: 'line',
+            };
+            var chart4 = new google.visualization.LineChart(document.getElementById('sel_gr_rev'));
+            chart4.draw(data, options);
+
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ local_rev_2 }}, {{ local_fund_gr.2015 }}, {{ local_exp_2 }}],
+                ['2016', {{ local_rev_1 }}, {{ local_fund_gr.2016 }}, {{ local_exp_1 }}],
+                ['2017', {{ local_rev_0 }}, {{ local_fund_gr.2017 }}, {{ local_exp_0 }}],
+            ]);
+
+            var options = {
+                seriesType: 'line',
+            };
+            var chart5 = new google.visualization.LineChart(document.getElementById('local_gr_rev'));
+            chart5.draw(data, options);
+        }
+        var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+        $(document).ready(function () {
+            $('#seg_0').animateNumber(
+                {
+                    number: {{ total }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_1').animateNumber(
+                {
+                    number: {{ ing }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_2').animateNumber(
+                {
+                    number: {{  avg_apply_ent }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_3').animateNumber(
+                {
+                    number: {{ avg_award_ent }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_4').animateNumber(
+                {
+                    number: {{ total_startup }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_5').animateNumber(
+                {
+                    number: {{ total_person }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_6').animateNumber(
+                {
+                    number: {{ avg_apply }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_7').animateNumber(
+                {
+                    number: {{ avg_award }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+        })
+    </script>
+    <div class="content" style="width:1200px; margin-bottom: 200px;">
+        <div class="category" style="font-size: 18px;margin-left: 0px;">사업 통계</div>
+        <div class="dash_con" style="margin-left: -10px;">
+            <style>
+                .dash_con {
+                    width: 1200px;
+                    height: auto;
+                    overflow: auto;
+                }
+                .dash_seg {
+                    width: 500px;
+                    height: 133px;
+                    float: left;
+                    margin: 10px;
+                    position: relative;
+                }
+                .seg_ttl {
+                    font-size: 15px;
+                    position: absolute;
+                    top: 20px;
+                    left: 30px;
+                }
+                .num_dash {
+                    font-size: 50px;
+                    position: absolute;
+                    top: 35px;
+                    right: 30px;
+                    display: inline-block;
+                    font-weight: 200;
+                }
+
+            </style>
+            <div class="dash_seg" style=" background-color: #1b66f4;"
+                 onclick="location.href='/manager/all/sb_list/?cat=all';">
+                <span class="seg_ttl" style="color: #fff">총 등록사업(누적)</span>
+                <span class="num_dash" style="color: #fff" id="seg_0">5,637,098</span>
+            </div>
+
+            <div class="dash_seg" onclick="location.href='/manager/all/sb_list/?cat=ing';"
+                 style=" background-color: #1b66f4; cursor: pointer">
+                <span class="seg_ttl" style="color: #fff">진행중 사업</span>
+                <span class="num_dash" style="color: #fff" id="seg_1">37</span>
+            </div>
+            <div class="dash_seg" style="  background-color: #ffe130;">
+                <span class="seg_ttl">사업당 참가기업수 평균</span>
+                <span class="num_dash" id="seg_2">80</span>
+            </div>
+            <div class="dash_seg" style=" background-color: #ffe130;">
+                <span class="seg_ttl">사업당 선정기업수 평균</span>
+                <span class="num_dash" id="seg_3">29</span>
+            </div>
+        </div>
+
+        <div class="category"
+             style="font-size: 18px;margin-left: 0px;clear: left;margin-top: 50px;margin-bottom: 47px;">기업 통계
+        </div>
+
+        <div style="width:1020px; height: 40px; border-bottom: 1px solid #ddd ; margin-bottom: 32px;" id="tab_c">
+            <ul id="tab_li">
+                <li onclick="$('.pan').css('display','none'); $('#pan_0').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');"
+                    class="tab_on">
+                    회원등록기업(전체보기)
+                </li>
+                <li onclick="$('.pan').css('display','none'); $('#pan_1').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');">
+                    최종 선정기업(참가기업)
+                </li>
+                <li onclick="$('.pan').css('display','none'); $('#pan_2').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');">
+                    경기지역 기업 모아보기
+                </li>
+            </ul>
+        </div>
+        <style>
+            ul {
+                padding: 0px !important;
+                height: 40px;
+            }
+
+            li {
+                list-style: none;
+                height: 40px;
+                line-height: 45px;
+            }
+
+            #tab_li > li {
+                float: left;
+                display: inline-block;
+                margin-right: 10px;
+                cursor: pointer;
+            }
+
+            #tab_li > li:hover, #tab_li > li.tab_on {
+                border-bottom: 2px solid #1b66f4;
+            }
+
+        </style>
+        <div class="pan" id="pan_0">
+            <div class="dash_con" style="margin-left: -10px;">
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">총 기업회원수</span>
+                    <span class="num_dash" id="seg_4">37,098</span>
+                </div>
+
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">총 개인회원수</span>
+                    <span class="num_dash" id="seg_5">37</span>
+                </div>
+                <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                    <span class="num_dash" id="seg_6">80</span>
+                </div>
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                    <span class="num_dash" id="seg_7">29</span>
+                </div>
+
+            </div>
+            <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년 이내 창업
+                기업숫자
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_1"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                            style="font-size: 20px;">개</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균 구성원
+                수
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_2"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ avg_em }} <span
+                            style="font-size: 20px;">명</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/ 수출액/
+                투자유치액/
+                평균(만원)
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_3"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ total_rev }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ total_fund }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ total_exp }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pan" id="pan_1" style="display: none">
+            <div class="dash_con" style="margin-left: -10px;">
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">총 기업회원수</span>
+                    <span class="num_dash" id="">{{ total_select_com }}</span>
+                </div>
+                <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                    <span class="num_dash" id="">{{ total_apply_com_avg|floatformat }}</span>
+                </div>
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                    <span class="num_dash" id="">{{ total_select_com_avg|floatformat }}</span>
+                </div>
+            </div>
+            <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년 이내 창업
+                기업숫자
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_1"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                            style="font-size: 20px;">개</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균 구성원
+                수
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="sel_gr_em"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ sel_avg_em }} <span
+                            style="font-size: 20px;">명</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/ 수출액/
+                투자유치액/
+                평균(만원)
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="sel_gr_rev"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ sel_total_rev }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ sel_total_fund }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ sel_total_exp }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="pan" id="pan_2" style="display: none">
+            <div class="dash_con" style="margin-left: -10px;">
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">총 기업회원수</span>
+                    <span class="num_dash" id="">{{ local_num }}</span>
+                </div>
+
+
+                <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                    <span class="num_dash" id="">{{ local_apply_com_avg|floatformat }}</span>
+                </div>
+                <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                    <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                    <span class="num_dash" id="">{{ lcoal_select_com_avg|floatformat }}</span>
+                </div>
+
+            </div>
+            <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년 이내 창업
+                기업숫자
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_1"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                            style="font-size: 20px;">개</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균 구성원
+                수
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="gr_2"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ local_avg_em }} <span
+                            style="font-size: 20px;">명</span> </span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/ 수출액/
+                투자유치액/
+                평균(만원)
+            </div>
+            <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                <div id="local_gr_rev"
+                     style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ local_total_rev }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ local_total_fund }}</span>
+                </div>
+                <div class="gr_con"
+                     style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액</span>
+                    <span class="gr_result"
+                          style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ local_total_exp }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

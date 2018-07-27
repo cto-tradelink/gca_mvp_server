@@ -1,0 +1,60 @@
+{% extends "pc/common/base_d.html" %}
+{% load socialaccount staticfiles %}
+
+{% block css %}
+    <link href="{% static "css/login.css" %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    {% get_providers as providers %}
+    <script>
+    if(getParameter("result")=="y"){
+        alert("가입되었습니다.")
+    }
+
+    </script>
+    <div class="container">
+        <div class="row">
+            <div id="login_form">
+                <div id="sns_login">
+                    {% for provider in providers %}
+
+                        {% if provider.name == "Facebook" %}
+                            <a id="face" title="{{ provider.name }}"
+                               href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                               class="">
+                                페이스북 로그인
+                            </a>
+                        {% elif provider.name == "Kakao" %}
+                            <a id="kakao" title="{{ provider.name }}"
+                               href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                               class="">
+                                카카오 로그인
+                            </a>
+                        {% else %}
+                            <a id="naver" title="{{ provider.name }}"
+                               href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                               class="">
+                                네이버 로그인
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {{ form.as_ul }}
+                    <button type="submit" id="login_btn" class="blue_btn">로그인</button>
+                </form>
+                <div id="login_sub">
+                    <a id="find_id" href="#" class="find_account">아이디 찾기</a>
+                    <div class="center_bar"></div>
+                    <a id="find_pass" href="#" class="find_account">비밀 번호 찾기</a>
+                </div>
+            </div>
+            <div id="sign_up">
+                <div>G-CONNECT의 회원이되어보세요.</div>
+                <button id="sign_up_btn" class="" onclick="location.href='/signup/'">회원 가입</button>
+            </div>
+        </div>
+    </div>
+    <script>    console.log($("input[name*='csrfmiddlewaretoken']:eq(0)").val())</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+#title {
+  width: 600px;
+}
+table tr {
+  height: 57px;
+}
+table tr td,
+table tr th {
+  line-height: 57px;
+  height: 57px;
+  vertical-align: middle!important;
+  border-bottom: 1px solid #ddd;
+}
+table tr th {
+  border-top: none!important;
+}
