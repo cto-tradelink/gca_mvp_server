@@ -1196,6 +1196,10 @@ def manage_support(request):
         print(e)
         return HttpResponse('권한 없음.')
 
+def search2(request):
+    query1 = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")))
+    query2 = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1))
+    return render(request, 'pc/search.html', {     })
 
 def search(request):
     today_min = datetime.datetime.now()
@@ -4524,6 +4528,8 @@ def get_grant_detail(request):
     result = {}
     result["title"] = sp.title
     result["author"] = sp.user.name
+    result["title_sub"] = sp.title_sub
+
     result["email"] = sp.user.user.username
     result["tel"] = sp.user.tel
     result["short_desc"] = sp.short_desc
@@ -4533,7 +4539,7 @@ def get_grant_detail(request):
     result["business_end"] = sp.business_period_end
     result["subject"] = sp.subject
     result["business_detail"] = sp.business_detail
-
+    result["poster"] = sp.poster
     result["object"] = sp.object
     result["top_support_tag"]=[]
     result["int"] = random.randrange(0, 100)
@@ -4565,51 +4571,65 @@ def get_grant_detail(request):
 
     return JsonResponse(result)
 
-def get_static_info(request):
+def get_sample(request):
     total_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")))
     current_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1))
     result={}
     result["total_grant"] = total_grant
     result["current_grant"] = current_grant
     result["current_grant_list"] = []
-
     for sp in SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1):
         result["current_grant_list"].append({"name":sp.title,"id":sp.id})
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1)
+
+
+
+
+def get_static_info(request):
+    query1 = SupportBusiness.objects.values("id","title").filter(user_id=request.GET.get("id"))
+    # query1 = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).value("id","title")
+    total_grant = len(query1)
+    current_grant = (SupportBusiness.objects.values("id","title").filter(user_id=request.GET.get("id")).filter(complete=1))
+    current_grant = query1.filter(complete=1)
+    result={}
+    result["current_grant_list"]=[]
+    for sp in current_grant:
+        print(sp)
+        result["current_grant_list"].append({"name":sp["title"],"id":sp["id"]})
+    sb = current_grant
     # 매니져가 올린 모든 지원사업 // 일일 좋아요 수 , 매니져 평균 좋아요 수
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).order_by("date").values("date").order_by("date").distinct()
+        q_objects = q_objects | Q(sb_id=s["id"])
+    int_date = InterestLog.objects.filter(q_objects).order_by("date").values("date").distinct()
     k = 0
     inter_arr=[]
     inter_avg_arr=[]
     for inter in int_date:
-        inter_arr.append({"date":(inter["date"]),"number":(len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"])))})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
+        inter_arr.append({"date":(inter["date"]),"number":(len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"])))})
+        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
             apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
         if len(mother) != 0:
             inter_avg_arr.append({"date": (inter["date"]),
-                          "number": (len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"])))/len(mother)})
+                          "number": (len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"])))/len(mother)})
     result["total_int_data"] =inter_arr
     result["total_int_avg_data"] = inter_avg_arr
 
     # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 지원 수
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
+        q_objects = q_objects | Q(sb_id=s["id"])
     date_arr = []
 
-    for ap in Appliance.objects.all().filter(q_objects).order_by("created_at").dates("created_at", "day").values("created_at").distinct():
+    for ap in Appliance.objects.filter(q_objects).order_by("created_at").dates("created_at", "day").values("created_at").distinct():
         if str(ap["created_at"]).split(" ")[0] not in date_arr:
             date_arr.append(str(ap["created_at"]).split(" ")[0])
 
     apply_arr=[]
     apply_avg_arr=[]
     for k in date_arr:
-        ap = Appliance.objects.all().filter(q_objects).filter(
+        ap = Appliance.objects.values("id").filter(q_objects).filter(
             created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
         apply_arr.append({"date":k,"number":len(ap)})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
+        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
         if len(mother) !=0 :
             apply_avg_arr.append({"date": k, "number": len(ap)/len(mother)})
@@ -4619,17 +4639,17 @@ def get_static_info(request):
     # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 방문 수
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
+        q_objects = q_objects | Q(sb_id=s["id"])
+    hit = HitLog.objects.filter(q_objects).values("date").distinct()
     hit_arr=[]
     hit_avg_arr=[]
     for h in hit:
-        hit_arr.append({"date":h["date"],"number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
+        hit_arr.append({"date":h["date"],"number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))})
+        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
                                                day=int(k.split("-")[2])))
         if(len(mother)!=0):
-            hit_avg_arr.append({"date":h["date"],"number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))/len(mother)})
+            hit_avg_arr.append({"date":h["date"],"number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))/len(mother)})
     result["total_hit_data"]=hit_arr
     result["total_hit_avg_data"] = hit_avg_arr
 
@@ -4640,42 +4660,45 @@ def get_static_info(request):
                                  ])[0]
 
 
+
     # 기관 평균 데이터 시작!!!
     # 기관 평균 좋아요 수
     user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
     q_u_objects = Q()
     for u in user.boss.child_list():
         q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects).filter(complete=1)
+    sb = SupportBusiness.objects.values("id","title").filter(q_u_objects).filter(complete=1)
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).values("date").order_by("date").distinct()
+        q_objects = q_objects | Q(sb_id=s["id"])
+    int_date = InterestLog.objects.values("id").filter(q_objects).values("date").order_by("date").distinct()
     k = 0
     result["agency_int_avg_data"]=[]
     for inter in int_date:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
+        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
             apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
-        result["agency_int_avg_data"].append({"date":inter["date"],"number":len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"]))/len(mother)})
+        result["agency_int_avg_data"].append({"date":inter["date"],"number":len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"]))/len(mother)})
 
     # 기관 평균 일일 방문자수
     user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
     q_u_objects = Q()
     for u in user.boss.child_list():
         q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects)
+    sb = SupportBusiness.objects.values("id").filter(q_u_objects)
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
+        q_objects = q_objects | Q(sb_id=s["id"])
+    hit = HitLog.objects.values("id").filter(q_objects).values("date").distinct()
     result["agency_hit_avg_data"] = []
+
+
     for h in hit:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
+        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
             apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day))
         result["agency_hit_avg_data"].append(
             {
              "date":h["date"],
-             "number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))/(len(mother))
+             "number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))/(len(mother))
             }
         )
     user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
@@ -4684,17 +4707,17 @@ def get_static_info(request):
         q_u_objects = q_u_objects | Q(user_id=u.id)
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
+        q_objects = q_objects | Q(sb_id=s["id"])
     date_arr = []
     result["agency_app_avg_data"]=[]
-    for ap in Appliance.objects.all().filter(q_objects).dates("created_at", "day").values("created_at").distinct():
+    for ap in Appliance.objects.filter(q_objects).dates("created_at", "day").values("created_at").distinct():
         if str(ap["created_at"]).split(" ")[0] not in date_arr:
             date_arr.append(str(ap["created_at"]).split(" ")[0])
     for k in date_arr:
-        ap = Appliance.objects.all().filter(q_objects).filter(
+        ap = Appliance.objects.values("id").filter(q_objects).filter(
             created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
 
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
+        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
 
         result["agency_app_avg_data"].append({
@@ -4704,11 +4727,11 @@ def get_static_info(request):
 
     # 태그 추출
 
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1)
+    sb = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(complete=1)
     q_objects = Q()
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    ap = Appliance.objects.all().filter(q_objects).values("startup")
+        q_objects = q_objects | Q(sb_id=s["id"])
+    ap = Appliance.objects.values("id").filter(q_objects).values("startup")
     # 지원자의 지역 추출
 
     ap_local_tag = []
@@ -4754,11 +4777,11 @@ def get_static_info(request):
     hit_kind_tag = []
     hit_em_tag = []
     hit_tag_tag = []
-    hit = HitLog.objects.all().filter(q_objects).values("user").distinct()
+    hit = HitLog.objects.values("id").filter(q_objects).values("user").distinct()
     k=0
     result["hit_startup_list"]=[]
     for h in hit:
-        if Startup.objects.all().filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
+        if Startup.objects.values("id").filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
             filter = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.filter.all()
             for f in filter:
                 if f.cat_1 == "소재지":
@@ -4795,7 +4818,7 @@ def get_static_info(request):
     aw_startup_list=[]
     result["aw_startup_list"]=[]
     k=0
-    award = Award.objects.all().filter(q_objects).values("startup").distinct()
+    award = Award.objects.values("id").filter(q_objects).values("startup").distinct()
     for aw in award:
         filter = Startup.objects.get(id=aw["startup"]).filter.all()
         for f in filter:
@@ -4826,19 +4849,19 @@ def get_static_info(request):
     result["aw_tag_tag"]=(organize(aw_tag_tag))
 
 
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1)
+    sb = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(complete=1)
     q_objects = Q()
     startup_list=[]
     for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    ap = Appliance.objects.all().filter(q_objects).values("startup").distinct()
+        q_objects = q_objects | Q(sb_id=s["id"])
+    ap = Appliance.objects.values("id").filter(q_objects).values("startup").distinct()
     for a in ap:
         startup_list.append(a["startup"])
-    hit = HitLog.objects.all().filter(q_objects).values("user").distinct()
+    hit = HitLog.objects.values("id").filter(q_objects).values("user").distinct()
     for h in hit:
-        if len(Startup.objects.all().filter(user = AdditionalUserInfo.objects.get(id=h["user"]).user))!=0:
+        if len(Startup.objects.values("id").filter(user = AdditionalUserInfo.objects.get(id=h["user"]).user))!=0:
             startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
-    award = Award.objects.all().filter(q_objects).values("startup").distinct()
+    award = Award.objects.values("id").filter(q_objects).values("startup").distinct()
 
     all_local_tag=[]
     all_kind_tag=[]
@@ -4874,7 +4897,7 @@ def get_static_info(request):
     result["all_kind_tag"]=organize(all_kind_tag)
     result["all_tag_tag"]=organize(all_tag_tag)
     result["all_em_tag"]=organize(all_em_tag)
-    return JsonResponse(result)
+    return JsonResponse(result, safe=False)
 
 
 def get_grant_static_detail(request):
@@ -5212,7 +5235,7 @@ def get_grant_static_detail(request):
         print(e)
         hit_date=datetime.datetime.now()
     try:
-        if  datetime.datetime(year=int(apply_arr[0]["date"].split("-")[0]),
+        if datetime.datetime(year=int(apply_arr[0]["date"].split("-")[0]),
                                                month=int(apply_arr[0]["date"].split("-")[1]),
                                                day=int(apply_arr[0]["date"].split("-")[2])):
             apply_date = datetime.datetime(year=int(apply_arr[0]["date"].split("-")[0]),
@@ -5628,6 +5651,7 @@ def vue_get_startup_detail(request):
     # result["logo"] = st.thumbnail
     result["short_desc"] = st.short_desc
     result["intro_text"] = st.intro_text
+    result["established_date"] = st.established_date
     result["information"]={}
     result["information"]["id"] = st.id
     result["information"]["tag"]=[]
@@ -5644,7 +5668,7 @@ def vue_get_startup_detail(request):
         result["business_file_path"] =""
     result["service"]=[]
     result["tag"]=[]
-
+    result["select_tag"]=[]
     for f in st.filter.all():
         result["tag"].append(f.name)
 
@@ -5704,6 +5728,7 @@ def vue_get_startup_detail(request):
         obj["rep_num"] = len(news.reply_set.all())
         obj["id"] = news.id
         obj["img"] = news.img
+        obj["youtube"] = news.youtube
 
         obj["rep"]=[]
         for rep in news.reply_set.all():
@@ -5715,6 +5740,51 @@ def vue_get_startup_detail(request):
             obj["rep"].append(copy.deepcopy(temp))
         result["news"].append(copy.deepcopy(obj))
     return JsonResponse(result)
+
+
+
+@csrf_exempt
+def vue_update_startup_detail_base(request):
+    print("here")
+    print(request.POST.get("json_data"))
+    rjd = json.loads(request.POST.get("json_data"))
+    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
+    st = Startup.objects.get(id=rjd["startup_id"])
+    st.name = rjd["name"]
+    st.short_desc = rjd["short_desc"]
+    st.intro_text =  rjd["intro_text"]
+    st.website = rjd["information"]["homepage"]
+    st.user.username = rjd["information"]["email"]
+    st.youtube = rjd["youtube"]
+    st.insta = rjd["insta"]
+    st.facebook = rjd["facebook"]
+
+    st.tag.clear()
+    for tag in rjd["information"]["tag"]:
+        tag_origin ,created= Tag.objects.get_or_create(name=tag)
+        st.tag.add(tag_origin)
+    st.address_0 = rjd["location"]
+    user = st.user
+    user.username = rjd["information"]["email"]
+    user.save()
+    st.save()
+    for history in rjd["history"]:
+        if history.get("id"):
+            his = History.objects.get(id=history.get("id"))
+        else:
+            his = History()
+        his.year = history["year"]
+        his.month = history["month"]
+        his.content = history["content"]
+        his.startup = st
+        his.save()
+
+    st.save()
+    return JsonResponse(
+        {"result":"ok"}
+    )
+
+
 
 @csrf_exempt
 def vue_update_startup_detail(request):
@@ -5752,6 +5822,7 @@ def vue_update_startup_detail(request):
         else:
             activity = Activity()
         activity.text = act["content"]
+        activity.youtube=act["youtube"]
         activity.startup = st
         try:
             print("======")
@@ -5784,30 +5855,53 @@ def vue_update_startup_detail(request):
             ser = Service.objects.get(id = service["id"])
             ser.intro = service["intro"]
             ser.name =service["name"]
-            if request.FILES.get("file_1"):
-                if service["file_name"] and service["file_name"] == request.FILES.get("file_1").name:
-                    path = handle_uploaded_file_service_product( request.FILES['file_1'], str(request.FILES['file_1']),  rjd["startup_id"] )
-                    ser.file = path
-            if request.FILES.get("file_2"):
-                if service["img_name"] and service["img_name"] == request.FILES.get("file_2").name:
-                    path = handle_uploaded_file_service_product( request.FILES['file_2'], str(request.FILES['file_2']),  rjd["startup_id"] )
-                    ser.img = path
+            try:
+                for key in request.FILES.keys():
+
+                    print(service["img_name"])
+                    print(request.FILES[key])
+                    if service["img_name"].strip()  == request.FILES[key].name :
+
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.img = path
+            except Exception as e:
+                print(e)
+            try:
+                for key in request.FILES.keys():
+
+                    print(service["file_name"])
+                    print(request.FILES[key])
+                    if service["file_name"].strip()  == request.FILES[key].name :
+
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.file = path
+            except Exception as e:
+                print(e)
             ser.save()
-            print("he22re")
+
         else :
             ser = Service()
             ser.intro = service["intro"]
             ser.name = service["name"]
-
-            if request.FILES.get("file_1"):
-                    # 파일 을 변경한 경우
-                path = handle_uploaded_file_service_product(request.FILES['file_1'], str(request.FILES['file_1']),
+            try:
+                for key in request.FILES.keys():
+                    if service["img_name"].strip() == request.FILES[key].name:
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
                                                                 rjd["startup_id"])
-                ser.file = path
-            if request.FILES.get("file_2"):
-                path = handle_uploaded_file_service_product(request.FILES['file_2'], str(request.FILES['file_2']),
-                                                            rjd["startup_id"])
-                ser.img = path
+                        ser.img = path
+            except Exception as e:
+                print(e)
+            try:
+                for key in request.FILES.keys():
+                    if service["file_name"].strip() == request.FILES[key].name:
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                rjd["startup_id"])
+                        ser.file = path
+            except Exception as e:
+                print(e)
+
             ser.startup = st
             ser.save()
             print("here2")
@@ -6134,31 +6228,26 @@ def vue_get_dashboard(request):
     for sp in due_sp:
         result_due={}
         result_due["id"] = sp.id
-
         result_due["pick_date"] = sp.pick_date
         result_due['title'] = sp.title
         result_due["start"] = sp.apply_start
         result_due["end"] = sp.apply_end
         result_due["apply_num"] =len(Appliance.objects.all().filter(sb_id=sp.id))
-
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
             result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id))/int(sp.recruit_size),2)
         else:
             result_due["comp"] = "없음"
         due_set.append(copy.deepcopy(result_due))
-
         blind_sp = SupportBusiness.objects.all().filter(is_blind=1).filter(user_id=86)
         blind_set = []
         for sp in blind_sp:
             result_due = {}
             result_due["id"] = sp.id
-
             result_due["pick_date"] = sp.pick_date
             result_due['title'] = sp.title
             result_due["start"] = sp.apply_start
             result_due["end"] = sp.apply_end
             result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-
             if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
                 result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
             else:
@@ -6170,8 +6259,7 @@ def vue_get_dashboard(request):
         for sp in writing_sp:
             result_due = {}
             result_due["id"] = sp.id
-
-            result_due["pick_date"] = sp.pick_date
+            result_due["updated"] = sp.update_at
             result_due['title'] = sp.title
             result_due["start"] = sp.apply_start
             result_due["end"] = sp.apply_end
@@ -7089,10 +7177,16 @@ def vue_my_interest_set_detail(request):
         temp_obj["name"] = s.name
         temp_obj["short_desc"] = s.short_desc
         temp_obj["tag"] = []
+
         temp_obj["id"] = s.id
         for t in s.tag.all():
             if t.name != "" and t.name != None:
                 temp_obj["tag"].append(t.name)
+        temp_obj["filter"] = []
+        for t in s.tag.all():
+            if t.name != "" and t.name != None:
+                temp_obj["filter"].append(t.name)
+
         result.append(copy.deepcopy(temp_obj))
     return JsonResponse(list(result), safe=False)
 @csrf_exempt
@@ -7319,6 +7413,11 @@ def vue_get_clip(request):
         temp = {}
         temp["id"] = c.id
         temp["title"] = c.title
+        temp["play"] = c.play
+        temp["thumb"] = c.thumb
+        temp["user"] = clip.user.name
+        temp["created"] = clip.created_at
+        temp["youtube"] = clip.youtube
         result["another_course"].append(copy.deepcopy(temp))
 
 
@@ -7353,6 +7452,18 @@ def vue_get_course(request):
         temp["title"] = c.title
         result["another_clip"].append(copy.deepcopy(temp))
 
+    result["another_course"] = []
+    for c in Course.objects.all().order_by("?")[:2]:
+        temp = {}
+        temp["id"] = c.id
+        temp["title"] = c.title
+        temp["play"] = c.total_play
+        temp["thumb"] = c.thumb
+        temp["user"] = clip.user.name
+        temp["created"] = clip.created_at
+        temp["youtube"] = clip.youtube
+        result["another_course"].append(copy.deepcopy(temp))
+
 
 
     return JsonResponse(result)
@@ -7361,37 +7472,69 @@ def vue_get_course(request):
 @csrf_exempt
 def vue_get_path(request):
     result={}
-    clip= Clip.objects.get(id=request.POST.get("clip"))
-    result["title"] = clip.title
-    result["youtube"] = clip.youtube
-    result["mov_address"] = clip.mov_address
-    result["object"] = clip.object
-    result["info"] = clip.info
-    result["clip_id"] = clip.id
-    result["int"] = len(clip.additionaluserinfo_set.all())
-    result["play"] = clip.play
-    result["user"] = clip.user.name
-    result["created"] = clip.created_at
-    result["another_course"]=[]
-    k=1
-    a=1
+    try:
+        clip= Clip.objects.get(id=request.POST.get("clip"))
+        result["title"] = clip.title
+        result["youtube"] = clip.youtube
+        result["mov_address"] = clip.mov_address
+        result["object"] = clip.object
+        result["info"] = clip.info
+        result["clip_id"] = clip.id
+        result["int"] = len(clip.additionaluserinfo_set.all())
+        result["play"] = clip.play
+        result["user"] = clip.user.name
+        result["created"] = clip.created_at
+
+    except Exception as e:
+        print(e)
+
+    p = Path.objects.get(id=request.POST.get("id"))
+    result["filter"] = []
+    for t in p.filter.all():
+        result["filter"].append(t.name)
+    result["path_title"] = p.title
+    result["path_rec_dur"] = p.rec_dur
+    result["path_info"] = p.info
+    result["path_object"] = p.object
+    result["total_play"] = p.total_play
+    result["course"]=[]
+    result["another_course"] = []
+
+    k = 1
+    a = 1
     for c in Path.objects.get(id=request.POST.get("id")).course.all():
-        temp={}
-        temp["index"]=a
-        a=a+1
-        k = 1
-        temp["id"] = c.id
-        temp["title"] = c.title
-        temp["clips"]=[]
-        for clip in c.clips.all():
-            ttem={}
-            ttem["index"] = k
-            k = k + 1
-            ttem["id"] = clip.id
-            ttem["play"] = clip.play
-            ttem["title"] = clip.title
-            temp["clips"].append(copy.deepcopy(ttem))
-        result["another_course"].append(copy.deepcopy(temp))
+            temp = {}
+            temp["index"] = a
+            a = a + 1
+            k = 1
+            temp["id"] = c.id
+            temp["play"] = c.total_play
+            temp["author"] = c.user.name
+            temp["created"] = c.created_at
+            temp["title"] = c.title
+            temp["info"] = c.info
+            temp["object"] = c.object
+            temp["rec_dur"] = c.rec_dur
+            temp["filter"] = []
+            for f in c.filter.all():
+                temp["filter"].append(f.name)
+
+            temp["clips"] = []
+            for clip in c.clips.all():
+                ttem = {}
+                ttem["index"] = k
+                k = k + 1
+                ttem["id"] = clip.id
+                ttem["play"] = clip.play
+                ttem["title"] = clip.title
+                ttem["info"] = clip.info
+                ttem["object"] = clip.object
+
+
+                temp["clips"].append(copy.deepcopy(ttem))
+            result["course"].append(copy.deepcopy(temp))
+            result["another_course"].append(copy.deepcopy(temp))
+
     return JsonResponse(result)
 
 
@@ -7482,6 +7625,7 @@ def vue_get_user_info(request):
     result["name"] = ad.name
     result["agreement"]= ad.agreement
     result["email"] = ad.user.username
+    result["sns"] =ad.sns
     return JsonResponse({"result":result})
 
 
@@ -7490,10 +7634,13 @@ def vue_set_user_info(request):
     ad =  AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     ad.tel = request.POST.get("phone")
     ad.name = request.POST.get("name")
-    ad.agreement = request.POST.get("agreement")
-    ad.user.username = request.POST.get("name")
+    if request.POST.get("agreement") == "true":
+        ad.agreement = True
+    else:
+        ad.agreement = False
     ad.sns = request.POST.get("sns")
     ad.save()
+    print(ad.sns)
     return JsonResponse({"result":"ok"})
 
 
@@ -7715,7 +7862,8 @@ def vue_get_startup_detail_manager(request):
     result["youtube"] = st.youtube
     result["insta"] = st.insta
     result["facebook"] = st.facebook
-
+    result["found_date"]= st.established_date
+    result["select_tag"]= ""
 
     result["startup_id"] = st.id
     result["name"] = st.name
@@ -7787,13 +7935,14 @@ def vue_get_startup_detail_manager(request):
         obj["currency"] = invest.currency
         result["invest"].append(copy.deepcopy(obj))
     result["news"] = []
-    result["news"] = []
+
 
     for news in st.activity_set.order_by("-created_at").all():
         obj = {}
         obj["date"] = news.created_at
         obj["content"] = news.text
         obj["img"] = news.img
+        obj["youtube"] = news.youtube
 
         obj["like_num"] = len(news.activitylike_set.all())
         obj["rep_num"] = len(news.reply_set.all())
@@ -7807,6 +7956,67 @@ def vue_get_startup_detail_manager(request):
             temp["id"] = rep.id
             obj["rep"].append(copy.deepcopy(temp))
         result["news"].append(copy.deepcopy(obj))
+    print("end")
+    return JsonResponse(result)
+
+
+
+@csrf_exempt
+def vue_get_startup_detail_manager_base(request):
+    print(request.GET.get("id"))
+    # st= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    st = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    result = {}
+
+    result["back_img"] = st.back_img
+    result["logo"] = st.logo
+    result["homepage"] = st.website
+    result["youtube"] = st.youtube
+    result["insta"] = st.insta
+    result["facebook"] = st.facebook
+    result["found_date"]= st.established_date
+    result["select_tag"]= ""
+
+    result["startup_id"] = st.id
+    result["name"] = st.name
+    # result["logo"] = st.thumbnail
+    result["short_desc"] = st.short_desc
+    result["intro_text"] = st.intro_text
+    result["information"] = {}
+    result["information"]["id"] = st.id
+    result["information"]["tag"] = []
+    for t in st.tag.all():
+        if t.name != "" and t.name != None:
+            result["information"]["tag"].append(t.name)
+    result['information']["homepage"] = st.website
+    result['information']["email"] = st.user.username
+    result["location"] = st.address_0
+    try:
+        result["business_file"] = st.business_file.split("/")[-1]
+    except:
+        result["business_file"]=""
+    result["business_file_path"] = st.business_file
+    if result["business_file"] == "":
+        result["business_file"] = "파일을 업로드 하세요."
+        result["business_file_path"] = ""
+    result["service"] = []
+    result["tag"] = []
+
+    for f in st.filter.all():
+        result["tag"].append(f.name)
+
+    result["history"] = []
+    for history in st.history_set.all():
+        obj = {}
+        obj["year"] = history.year
+        obj["month"] = history.month
+        obj["content"] = history.content
+        obj["id"] = history.id
+        result["history"].append(copy.deepcopy(obj))
+
+
+
+    print("end")
     return JsonResponse(result)
 
 @csrf_exempt
@@ -7924,18 +8134,24 @@ def vue_watch_clip_history(request):
 
 @csrf_exempt
 def vue_hit_course_log(request):
-    print("?")
     clip = Clip.objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     course = Course.objects.get(id=request.POST.get("course"))
     HitCourseLog.objects.get_or_create(clip=clip, user=ad, course= course)
+    WatchCourseHistory.objects.get_or_create(clip=clip, user=ad, course=course)
     return  JsonResponse({"result":"ok"})
+
 @csrf_exempt
 def vue_watch_course_history(request):
     clip = Clip.objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     course = Course.objects.get(id=request.POST.get("course"))
     WatchCourseHistory.objects.create(clip=clip, user=ad, course=course)
+    WatchClipHistory.objects.create(clip=clip, user=ad, )
+    time = clip.play
+    num = len(WatchCourseHistory.objects.all().filter(clip=clip))*6
+    if 100 * num / time > 98 :
+        return JsonResponse({"result": "com"})
     return JsonResponse({"result": "ok"})
 
 @csrf_exempt
@@ -7947,15 +8163,20 @@ def vue_hit_path_log(request):
     path = Path.objects.get(id=request.POST.get("path"))
     HitPathLog.objects.get_or_create(clip=clip, user=ad, course= course,path=path)
 
+
 @csrf_exempt
 def vue_watch_path_history(request):
+    print("hello")
     clip = Clip.objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     course = Course.objects.get(id=request.POST.get("course"))
     path = Path.objects.get(id=request.POST.get("path"))
-    WatchPathHistory.objects.create(clip=clip, user=ad, course=course, path=path)
-
-
+    watch = WatchPathHistory.objects.create(clip=clip, user=ad, course=course, Path=path)
+    print(watch)
+    WatchCourseHistory.objects.create(clip=clip, user=ad, course=course,)
+    WatchClipHistory.objects.create(clip=clip, user=ad,)
+    print("hello")
+    return JsonResponse({"result":"ok"})
 
 @csrf_exempt
 def vue_get_ing_lecture(request):
@@ -8167,6 +8388,7 @@ def vue_get_channel_statics_course(request):
     for fd in fav_date_list:
         temp={}
         temp["date"] = fd["date"]
+        print(len(FavCourseLog.objects.filter(Course=course).filter(date = fd["date"])))
         temp["number"] = len(FavCourseLog.objects.filter(Course=course).filter(date = fd["date"]))
         result["fav_static"].append(copy.deepcopy(temp))
 
@@ -8175,7 +8397,7 @@ def vue_get_channel_statics_course(request):
     for i in watch_time:
         temp={}
         temp["date"] = i["date"]
-        temp["number"]= len(WatchCourseHistory.objects.all().filter(Course=course).filter(date=i["date"]))*6
+        temp["number"]= len(WatchCourseHistory.objects.all().filter(course=course).filter(date=i["date"]))*6
         result["watch_static"].append(copy.deepcopy(temp))
 
     local_list=[]
@@ -8220,7 +8442,8 @@ def vue_get_channel_statics_clip(request):
     for i in watch_time:
         temp={}
         temp["date"] = i["date"]
-        temp["watch_num"]= len(WatchClipHistory.objects.all().filter(Clip=clip).filter(date=i["date"]))*6
+
+        temp["number"]= len(WatchClipHistory.objects.all().filter(clip=clip).filter(date=i["date"]))*6
         result["watch_static"].append(copy.deepcopy(temp))
 
     local_list=[]
@@ -8516,3 +8739,11 @@ def hit_sb(request):
         h.sb_id = target
         h.save()
     return JsonResponse({"result":"success"})
+
+
+
+@csrf_exempt
+def vue_get_grant_optional_data(request):
+    sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
+    result = sb.meta
+    return JsonResponse({"result":result})

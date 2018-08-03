@@ -243,6 +243,7 @@ class Activity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     text = models.TextField()
     img = models.CharField(max_length=300, blank=True, null=True)
+    youtube = models.CharField(max_length=300, blank=True, null=True)
 
 class ActivityLike(models.Model):
     activity = models.ForeignKey(Activity)
@@ -595,7 +596,7 @@ class EmailConfirmation(models.Model):
     
 class HitLog(models.Model):
     sb = models.ForeignKey(SupportBusiness)
-    user = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
+    user = models.ForeignKey("AdditionalUserInfo", blank=True, null=True )
     date = models.DateField(blank=True, null=True, default=datetime.datetime.now())
 
 class startup_found(models.Model):
@@ -707,6 +708,12 @@ class FavCourseLog(models.Model):
     date = models.DateField(auto_now_add=True)
 
 class FavClipLog(models.Model):
+    Clip = models.ForeignKey(Clip)
+    user = models.ForeignKey(AdditionalUserInfo)
+    date = models.DateField(auto_now_add=True)
+
+
+class CompletedClip(models.Model):
     Clip = models.ForeignKey(Clip)
     user = models.ForeignKey(AdditionalUserInfo)
     date = models.DateField(auto_now_add=True)

@@ -170,33 +170,34 @@ urlpatterns = [
     url(r'^vue_hit_course_log/', views.vue_hit_course_log, name='vue_hit_course_log', ),
     url(r'^vue_watch_course_history/', views.vue_watch_course_history, name='vue_watch_course_history', ),
     url(r'^vue_hit_path_log/', views.vue_hit_path_log, name='vue_hit_path_log', ),
-    url(r'^vue_watch_path_history/', views.vue_watch_course_history, name='vue_watch_course_history', ),
+    url(r'^vue_watch_path_history/', views.vue_watch_path_history, name='vue_watch_path_history', ),
     url(r'^vue_get_ing_lecture/', views.vue_get_ing_lecture, name='vue_get_ing_lecture', ),
     url(r'^vue_get_clip_uploaded/', views.vue_get_clip_uploaded, name='vue_get_clip_uploaded', ),
     url(r'^vue_get_course_uploaded/', views.vue_get_course_uploaded, name='vue_get_course_uploaded', ),
     url(r'^vue_get_manager_lecture/', views.vue_get_manager_lecture, name='vue_get_manager_lecture', ),
-url(r'^vue_get_channel_statics_path/', views.vue_get_channel_statics_path, name='vue_get_channel_statics_path', ),
-url(r'^vue_get_channel_statics_course/', views.vue_get_channel_statics_course, name='vue_get_channel_statics_course', ),
-url(r'^vue_get_channel_statics_clip/', views.vue_get_channel_statics_clip, name='vue_get_channel_statics_clip', ),
-url(r'^getfiles/', views.getfiles, name='getfiles', ),
-url(r'^vue_get_clip_all/', views.vue_get_clip_all, name='vue_get_clip_all', ),
-url(r'^vue_get_course_all/', views.vue_get_course_all, name='vue_get_course_all', ),
-url(r'^vue_get_path_all/', views.vue_get_path_all, name='vue_get_path_all', ),
+    url(r'^vue_get_channel_statics_path/', views.vue_get_channel_statics_path, name='vue_get_channel_statics_path', ),
+    url(r'^vue_get_channel_statics_course/', views.vue_get_channel_statics_course, name='vue_get_channel_statics_course', ),
+    url(r'^vue_get_channel_statics_clip/', views.vue_get_channel_statics_clip, name='vue_get_channel_statics_clip', ),
+    url(r'^getfiles/', views.getfiles, name='getfiles', ),
+    url(r'^vue_get_clip_all/', views.vue_get_clip_all, name='vue_get_clip_all', ),
+    url(r'^vue_get_course_all/', views.vue_get_course_all, name='vue_get_course_all', ),
+    url(r'^vue_get_path_all/', views.vue_get_path_all, name='vue_get_path_all', ),
+    url(r'^vue_set_grant_information/', views.vue_set_grant_information, name='vue_set_grant_information', ),
+    url(r'^vue_get_grant_information/', views.vue_get_grant_information, name='vue_get_grant_information', ),
+    url(r'^vue_set_service_show/', views.vue_set_service_show, name='vue_set_service_show', ),
+    url(r'^vue_get_grant_appliance/', views.vue_get_grant_appliance, name='vue_get_grant_appliance', ),
+    url(r'^vue_set_activity_like/', views.vue_set_activity_like, name='vue_set_activity_like', ),
+    url(r'^vue_get_all_fav/', views.vue_get_all_fav, name='vue_get_all_fav', ),
+    url(r'^hit_sb/', views.hit_sb, name='hit_sb', ),
+    url(r'^search2/', views.search2, name='search2', ),
+    url(r'^vue_get_grant_optional_data/', views.vue_get_grant_optional_data, name='vue_get_grant_optional_data', ),
+    url(r'^vue_set_user_info/', views.vue_set_user_info, name='vue_set_user_info', ),
+    url(r'^vue_get_startup_detail_manager_base/', views.vue_get_startup_detail_manager_base, name='vue_get_startup_detail_manager_base', ),
+    url(r'^vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
 
-url(r'^vue_set_grant_information/', views.vue_set_grant_information, name='vue_set_grant_information', ),
-url(r'^vue_get_grant_information/', views.vue_get_grant_information, name='vue_get_grant_information', ),
-
-url(r'^vue_set_service_show/', views.vue_set_service_show, name='vue_set_service_show', ),
-url(r'^vue_get_grant_appliance/', views.vue_get_grant_appliance, name='vue_get_grant_appliance', ),
-
-url(r'^vue_set_activity_like/', views.vue_set_activity_like, name='vue_set_activity_like', ),
-
-
-url(r'^vue_get_all_fav/', views.vue_get_all_fav, name='vue_get_all_fav', ),
-url(r'^hit_sb/', views.hit_sb, name='hit_sb', ),
-
-
-#vue_get_grant_infomation
 
 
 ]
+import debug_toolbar
+
+urlpatterns.append(url(r'^__debug__/', include(debug_toolbar.urls)))

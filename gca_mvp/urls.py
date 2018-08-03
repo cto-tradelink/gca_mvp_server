@@ -14,6 +14,8 @@ urlpatterns = [
                   # url(r'^login/$', login, name='login', kwargs={'template_name': 'accounts/login.html'}),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
 handler404 = sp_views.error_404
 handler500 = sp_views.error_500
 handler500 = sp_views.error_500
