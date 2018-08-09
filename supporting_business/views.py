@@ -96,29 +96,6 @@ def logout_user(request):
 
 
 
-@csrf_exempt
-def vue_login_user(request):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            try:
-                if str(user.additionaluserinfo.auth) == "4" or (user.additionaluserinfo.auth) == "5":
-                    print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
-                    if len(user.additionaluserinfo.additionaluserinfo_set.all())>0:
-                        return JsonResponse({"result":"success", "user":"ma","id":user.additionaluserinfo.id})
-                    return JsonResponse({"result":"success","user": "m","id":user.additionaluserinfo.id})
-                else:
-                    return JsonResponse({"result":"success","user":"u","id":user.additionaluserinfo.id})
-            except:
-                return JsonResponse({})
-        else:
-            return JsonResponse({"result":'로그인 실패. 다시 시도 해보세요.'})
-
-
 
 def login_user(request):
     if request.method == "POST":
@@ -3510,152 +3487,6 @@ def get_all_inter(request, sbid):
     return response
 
 
-import os
-import tempfile
-from zipfile import ZipFile
-import shutil
-
-
-def appliance_download(request, apid):
-    ap = apid
-    ap_target = Appliance.objects.get(id=ap)
-    # filenames = ["temp_folder/" + business_file.name.split("/")[-1], ]
-    zip_subdir = "applicance"
-    zip_filename = "%s.zip" % (
-        str(ap_target.sb.apply_end).split("-")[
-            0] + "_" + ap_target.sb.title + "_" + ap_target.startup.name + "_" + ap_target.startup.user.additionaluserinfo.name)
-    s = io.BytesIO()
-    url = "http://gconnect.kr/grant/" + str(ap_target.sb_id) + "/" + str(apid)
-    print(url)
-    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
-    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    zf = ZipFile(s, "w")
-    if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-        zip_path = os.path.join("지원서.pdf")
-        zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    if ap_target.business_file != "":
-        fdir, fname = os.path.split(ap_target.business_file.path)
-        zip_path = os.path.join("사업자등록증." + fname.split(".")[-1])
-        zf.write(ap_target.business_file.path, zip_path)
-    if ap_target.fund_file != "":
-        fdir, fname = os.path.split(ap_target.fund_file.path)
-        zip_path = os.path.join("투자증명서." + fname.split(".")[-1])
-        zf.write(ap_target.fund_file.path, zip_path)
-    if ap_target.etc_file != "":
-        fdir, fname = os.path.split(ap_target.etc_file.path)
-        zip_path = os.path.join("기타첨부파일." + fname.split(".")[-1])
-        zf.write(ap_target.etc_file.path, zip_path)
-    if ap_target.ir_file != "":
-        fdir, fname = os.path.split(ap_target.ir_file.path)
-        zip_path = os.path.join("사업소개서." + fname.split(".")[-1])
-        zf.write(ap_target.ir_file.path, zip_path)
-    if ap_target.ppt_file != "":
-        fdir, fname = os.path.split(ap_target.ppt_file.path)
-        zip_path = os.path.join("ppt파일." + fname.split(".")[-1])
-        zf.write(ap_target.ppt_file.path, zip_path)
-    if ap_target.tax_file != "":
-        fdir, fname = os.path.split(ap_target.tax_file.path)
-        zip_path = os.path.join("납세증명서." + fname.split(".")[-1])
-        zf.write(ap_target.tax_file.path, zip_path)
-    # for fpath in filenames:
-    #     # Calculate path for file in zip
-    #     fdir, fname = os.path.split(fpath)
-    #     zip_path = os.path.join(zip_subdir, fname)
-    #
-    #     # Add file, at correct path
-    #     zf.write(fpath, zip_path)
-
-    # Must close zip for all contents to be written
-    zf.close()
-
-    # Grab ZIP file from in-memory, make response with correct MIME-type
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
-
-
-import time
-
-
-def appliance_all_download(request, sb):
-    ap_list = Appliance.objects.filter(sb_id=sb)
-    zip_filename = "%s.zip" % (
-        str(ap_list[0].sb.apply_end).split("-")[
-            0] + "_" + ap_list[0].sb.title)
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for ap in ap_list:
-        zip_subdir = "applicance"
-        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
-        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
-            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-            time.sleep(1)
-        if ap.business_file != "":
-            fdir, fname = os.path.split(ap.business_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
-            zf.write(ap.business_file.path, zip_path)
-        if ap.fund_file != "":
-            fdir, fname = os.path.split(ap.fund_file.path)
-            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-            zf.write(ap.fund_file.path, zip_path)
-        if ap.etc_file != "":
-            fdir, fname = os.path.split(ap.etc_file.path)
-            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
-            zf.write(ap.etc_file.path, zip_path)
-        if ap.ir_file != "":
-            fdir, fname = os.path.split(ap.ir_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-            zf.write(ap.ir_file.path, zip_path)
-        if ap.ppt_file != "":
-            fdir, fname = os.path.split(ap.ppt_file.path)
-            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-            zf.write(ap.ppt_file.path, zip_path)
-        if ap.tax_file != "":
-            fdir, fname = os.path.split(ap.tax_file.path)
-            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-            zf.write(ap.tax_file.path, zip_path)
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원자 리스트")
-    sheet.write(0, 0, "순서")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "업종")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "사업자 등록번호")
-    sheet.write(0, 5, "이메일")
-    sheet.write(0, 6, "대표 전화번호")
-    sheet.write(0, 7, "필터")
-    k = 1
-    for a in ap_list:
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, a.startup.name)
-        sheet.write(k, 2, a.startup.category)
-        sheet.write(k, 3, a.startup.user.additionaluserinfo.name)
-        sheet.write(k, 4, Appliance.objects.all().filter(sb_id=sb).filter(startup_id=a.startup.id)[0].business_number)
-        sheet.write(k, 5, a.startup.user.username)
-        sheet.write(k, 6, a.startup.user.additionaluserinfo.tel)
-        filter_list = a.startup.filter.all()
-        f_arr = []
-        for fil in filter_list:
-            f_arr.append(fil.name)
-        sheet.write(k, 7, ",".join(f_arr))
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    zf.writestr("전체 리스트.xls", f.getvalue())
-
-    zf.close()
-
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
-
-
 
 
 def startup_sb_manage(request):
@@ -4496,7 +4327,7 @@ def vue_home_grant(request):
     print(request.GET.get('q'))
     tag_list = request.GET.get('q').split(",")
     for sp in SupportBusiness.objects.all():
-        print(request)
+#        print(request)
         obj = {}
         obj["tag"] = []
         obj["title"] = sp.title
@@ -4505,15 +4336,15 @@ def vue_home_grant(request):
         obj["due"] = str(sp.apply_end).split(" ")[0]
         obj["title_sub"] = sp.title_sub
         obj["short_desc"] = sp.short_desc
-        obj["int"] =  random.randrange(0, 100)
-        obj["comp"] = random.randrange(0, 100)
+        obj["int"] =  len(sp.additionaluserinfo_set.all())
+        obj["comp"] = (len(Appliance.objects.filter(sb=sp)))
 
         obj["rec"]=0
         for f in sp.filter.all():
             obj["tag"].append(f.name)
             if f.name in tag_list:
                 obj["rec"]= obj["rec"]+1
-        obj["title"] = obj["title"] + str(obj["rec"])
+        obj["title"] = obj["title"]
         # if random.randrange(0,10)%2==0:
         #     obj["img"] = img_list[random.randrange(0,9)]
 
@@ -4542,8 +4373,8 @@ def get_grant_detail(request):
     result["poster"] = sp.poster
     result["object"] = sp.object
     result["top_support_tag"]=[]
-    result["int"] = random.randrange(0, 100)
-    result["comp"] = random.randrange(0, 100)
+    result["int"] = len(sp.additionaluserinfo_set.all())
+    result["comp"] = str(len(Appliance.objects.filter(sb=sp))) + ":1"
     result["object_tag"]=[]
     for t in sp.filter.all():
         if t.cat_0 == "지원형태":
@@ -4653,6 +4484,8 @@ def get_static_info(request):
     result["total_hit_data"]=hit_arr
     result["total_hit_avg_data"] = hit_avg_arr
 
+
+    #TODO: MIN DATE
     result["min_date"] = sorted([hit_arr[0]["date"],
                                  datetime.date(year=int(apply_arr[0]["date"].split("-")[0]), month=int(apply_arr[0]["date"].split("-")[1]),
                                                    day=int(apply_arr[0]["date"].split("-")[2])),
@@ -4902,60 +4735,70 @@ def get_static_info(request):
 
 def get_grant_static_detail(request):
     result = {}
-
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
+    my_sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
     result["title"] = SupportBusiness.objects.all().get(id=request.GET.get("sb_id")).title
     print(result["title"])
     # 매니져가 올린 모든 지원사업 // 매니져 평균 좋아요 수
     q_objects = Q()
-    for s in sb:
+    for s in my_sb:
         q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).order_by("date").values("date").order_by("date").distinct()
+
+    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
+    q_u_objects = Q()
+    for u in user.boss.child_list():
+        q_u_objects = q_u_objects | Q(user_id=u.id)
+    sb_sibling = SupportBusiness.objects.all().filter(q_u_objects)
+
+    my_appliance= Appliance.objects.all().filter(q_objects)
+    my_interestlog= InterestLog.objects.all().filter(q_objects)
+    my_hitlog=  HitLog.objects.all().filter(q_objects)
+
+    sb_appliance= Appliance.objects.all().filter(sb_id=request.GET.get("sb_id"))
+    sb_hitlog = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id"))
+    sb_award= Award.objects.all().filter(sb_id=request.GET.get("sb_id"))
+
+    int_date = my_interestlog.order_by("date").values("date").order_by("date").distinct()
+
     k = 0
     inter_arr = []
     inter_avg_arr = []
     for inter in int_date:
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month,
-                                               day=inter["date"].day))
+        mother = my_sb.filter(apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month,
+                                               day=inter["date"].day, hour=23, minute=59, second=59))
         inter_avg_arr.append({"date": (inter["date"]),
-                              "number": (len(
-                                  InterestLog.objects.all().filter(q_objects).filter(date=inter["date"]))) / len(
-                                  mother)})
+                              "number": (len(my_interestlog.filter(date=inter["date"]))) / len(mother)})
     result["total_int_avg_data"] = inter_avg_arr
 
     # 매니져가 올린 모든 지원사업 //  매니져  일일 평균 지원 수
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
+    #for s in sb:
+    #    q_objects = q_objects | Q(sb_id=s.id)
     date_arr = []
 
-    for ap in Appliance.objects.all().filter(q_objects).order_by("created_at").dates("created_at", "day").values(
-            "created_at").distinct():
+    for ap in my_appliance.order_by("created_at").dates("created_at", "day").values("created_at").distinct():
         if str(ap["created_at"]).split(" ")[0] not in date_arr:
             date_arr.append(str(ap["created_at"]).split(" ")[0])
 
     apply_arr = []
     apply_avg_arr = []
     for k in date_arr:
-
-        ap = Appliance.objects.all().filter(q_objects).filter(
+        ap = my_appliance.filter(
             created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
+                                               day=int(k.split("-")[2]), hour=23, minute=59, second=59))
+        mother = sb.filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
+                                               day=int(k.split("-")[2]), hour=23, minute=59, second=59))
         apply_avg_arr.append({"date": k, "number": len(ap) / len(mother)})
     result["total_app_avg_data"] = apply_avg_arr
 
     # 매니져가 올린 모든 지원사업 //  매니져  일일 평균 방문 수
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
+    #q_objects = Q()
+    #for s in sb:
+    #    q_objects = q_objects | Q(sb_id=s.id)
+    hit = my_hitlog.values("date").distinct()
     hit_arr = []
     hit_avg_arr = []
     for h in hit:
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
+        mother = sb.filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
                                                day=int(k.split("-")[2])))
         hit_avg_arr.append({"date": h["date"],
@@ -4963,106 +4806,99 @@ def get_grant_static_detail(request):
     result["total_hit_avg_data"] = hit_avg_arr
     # 기관 평균 데이터 시작!!!
     # 기관 평균 좋아요 수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).values("date").order_by("date").distinct()
+
+
+
+    int_date = my_interestlog.values("date").order_by("date").distinct()
     k = 0
+    agency_interest_date= int_date[0]["date"]
     result["agency_int_avg_data"] = []
     for inter in int_date:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
+        mother = sb_sibling.filter(
             apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month,
-                                               day=inter["date"].day))
-        result["agency_int_avg_data"].append({"date": inter["date"], "number": len(
-            InterestLog.objects.all().filter(q_objects).filter(date=inter["date"])) / len(mother)})
+                                               day=inter["date"].day, hour=23, minute=59, second=59))
+        result["agency_int_avg_data"].append({"date": inter["date"], "number":
+            len(my_interestlog.filter(date=inter["date"])) / len(mother)})
 
     # 기관 평균 일일 방문자수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
+
+    hit = my_hitlog.values("date").distinct()
     result["agency_hit_avg_data"] = []
     for h in hit:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day))
+        mother = sb_sibling.filter(
+            apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day,
+                                               hour=23,minute=59,second=59))
         result["agency_hit_avg_data"].append(
             {
                 "date": h["date"],
-                "number": len(HitLog.objects.all().filter(q_objects).filter(date=h["date"])) / (len(mother))
+                "number": len(my_hitlog.filter(date=h["date"])) / (len(mother))
             }
         )
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
+
+
     date_arr = []
     result["agency_app_avg_data"] = []
-    for ap in Appliance.objects.all().filter(q_objects).dates("created_at", "day").values("created_at").distinct():
+    for ap in my_appliance.dates("created_at", "day").values("created_at").distinct():
         if str(ap["created_at"]).split(" ")[0] not in date_arr:
             date_arr.append(str(ap["created_at"]).split(" ")[0])
     for k in date_arr:
-        ap = Appliance.objects.all().filter(q_objects).filter(
+        ap = my_appliance.filter(
             created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
                                                day=int(k.split("-")[2])))
         print(k)
         print(len(ap))
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
+        mother = sb_sibling.filter(
             apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
+                                               day=int(k.split("-")[2], hour=23, minute=59, second=59)))
         print(len(mother))
         result["agency_app_avg_data"].append({
             "date": k,
             "number": len(ap) / len(mother)
         })
+
     # 태그 추출
-    ap = Appliance.objects.all().filter(sb_id=request.GET.get("sb_id")).values("startup")
+    app_startups = sb_appliance.values("startup")
     # 지원자의 지역 추출
     ap_local_tag = []
     ap_kind_tag = []
     ap_em_tag = []
     ap_tag_tag = []
+
     result["ap_startup_list"] = []
     k = 0
-    for a in ap:
-        filter = Startup.objects.get(id=a["startup"]).filter.all()
+    for a in app_startups:
+        this_startup= Startup.objects.get(id=a["startup"])
+        filter = this_startup.filter.all()
+        local_ap_kind = []
+        local_ap_local_tag = []
         for f in filter:
             if f.cat_1 == "소재지":
                 ap_local_tag.append(f.name)
+                local_ap_local_tag.append(f.name)
             if f.cat_0 == "영역" or f.cat_0 == "기본장르":
                 ap_kind_tag.append(f.name)
+                local_ap_kind.append(f.name)
             if f.cat_0 == "조건" and f.cat_1 != "소재지":
                 ap_tag_tag.append(f.name)
-        if Startup.objects.get(id=a["startup"]).employee_number == "" or Startup.objects.get(
-                id=a["startup"]).employee_number == None:
+        if this_startup.employee_number == "" or this_startup.employee_number == None:
             number = "무응답"
         else:
-            number = Startup.objects.get(id=a["startup"]).employee_number
+            number = this_startup.employee_number
         ap_em_tag.append(str(number))
-    print(ap)
-    temp_list = []
-    for a in ap:
-        temp_list.append(a["startup"])
-    for a in set(temp_list):
-        st = Startup.objects.get(id=a)
+
+        st = this_startup
         result["ap_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(ap_kind_tag[:2]),
-            "local": ",".join(ap_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
+            "index": k,
+            "email": st.user.username,
+            "name": st.name,
+            "kind": ",".join(local_ap_kind[:2]),
+            "local": ",".join(local_ap_local_tag[:2]),
+            "employee_num": st.employee_number,
+            "tel": st.user.additionaluserinfo.tel
         })
         k = k + 1
+
+
 
     result["ap_local_tag"] = (organize(ap_local_tag))
     result["ap_kind_tag"] = (organize(ap_kind_tag))
@@ -5073,32 +4909,39 @@ def get_grant_static_detail(request):
     hit_kind_tag = []
     hit_em_tag = []
     hit_tag_tag = []
-    hit = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).values("user").distinct()
+    hit_users = sb_hitlog.values("user").distinct()
     k = 0
     result["hit_startup_list"] = []
-    for h in hit:
-        if Startup.objects.all().filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
-            filter = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.filter.all()
+    for h in hit_users:
+        hit_user= AdditionalUserInfo.objects.get(id=h["user"])
+        if Startup.objects.all().filter(user_id=hit_user.user.id):
+            filter = hit_user.user.startup.filter.all()
+            local_hit_local_tag=[]
+            local_hit_kind_tag=[]
             for f in filter:
                 if f.cat_1 == "소재지":
                     hit_local_tag.append(f.name)
+                    local_hit_local_tag.append((f.name))
                 if f.cat_0 == "영역" or f.cat_0 == "기본장르":
                     hit_kind_tag.append(f.name)
+                    local_hit_kind_tag.append(f.name)
                 if f.cat_0 == "조건" and f.cat_1 != "소재지":
                     hit_tag_tag.append(f.name)
 
-            if AdditionalUserInfo.objects.get(
-                    id=h["user"]).user.startup.employee_number == "" or AdditionalUserInfo.objects.get(
-                id=h["user"]).user.startup.employee_number == None:
+            if hit_user.user.startup.employee_number == "" or hit_user.user.startup.employee_number == None:
                 number = "무응답"
             else:
-                number = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.employee_number
+                number = hit_user.user.startup.employee_number
             hit_em_tag.append(str(number))
-            st = AdditionalUserInfo.objects.get(id=h["user"]).user.startup
+            st = hit_user.user.startup
             result["hit_startup_list"].append({
-                "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(hit_kind_tag[:2]),
-                "local": ",".join(hit_local_tag[:2]),
-                "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
+                "index": k,
+                "email": st.user.username,
+                "name": st.name,
+                "kind": ",".join(local_hit_kind_tag[:2]),
+                "local": ",".join(local_hit_local_tag[:2]),
+                "employee_num": st.employee_number,
+                "tel": st.user.additionaluserinfo.tel
             })
             k = k + 1
 
@@ -5114,28 +4957,36 @@ def get_grant_static_detail(request):
     aw_startup_list = []
     result["aw_startup_list"] = []
     k = 0
-    award = Award.objects.all().filter(sb_id=request.GET.get("sb_id")).values("startup").distinct()
-    for aw in award:
-        filter = Startup.objects.get(id=aw["startup"]).filter.all()
+    award_startups = sb_award.values("startup").distinct()
+    for aw in award_startups:
+        this_startup= Startup.objects.get(id=aw["startup"])
+        filter = this_startup.filter.all()
+        local_aw_local_tag = []
+        local_aw_kind_tag = []
         for f in filter:
             if f.cat_1 == "소재지":
                 aw_local_tag.append(f.name)
+                local_aw_local_tag.append(f.name)
             if f.cat_0 == "영역" or f.cat_0 == "기본장르":
                 aw_kind_tag.append(f.name)
+                local_aw_kind_tag.append(f.name)
             if f.cat_0 == "조건" and f.cat_1 != "소재지":
                 aw_tag_tag.append(f.name)
 
-        if Startup.objects.get(id=aw["startup"]).employee_number == "" or Startup.objects.get(
-                id=aw["startup"]).employee_number == None:
+        if this_startup.employee_number == "" or this_startup.employee_number == None:
             number = "무응답"
         else:
-            number = Startup.objects.get(id=aw["startup"]).employee_number
+            number = this_startup.employee_number
         aw_em_tag.append(number)
-        st = Startup.objects.get(id=aw["startup"])
+        st = this_startup
         result["aw_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(aw_kind_tag[:2]),
-            "local": ",".join(aw_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
+            "index": k,
+            "email": st.user.username,
+            "name": st.name,
+            "kind": ",".join(local_aw_kind_tag[:2]),
+            "local": ",".join(local_aw_local_tag[:2]),
+            "employee_num": st.employee_number,
+            "tel": st.user.additionaluserinfo.tel
         })
         k = k + 1
 
@@ -5144,27 +4995,26 @@ def get_grant_static_detail(request):
     result["aw_em_tag"] = (organize(aw_em_tag))
     result["aw_tag_tag"] = (organize(aw_tag_tag))
 
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
-    q_objects = Q()
+
     startup_list = []
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    ap = Appliance.objects.all().filter(sb_id=request.GET.get("sb_id")).values("startup").distinct()
-    for a in ap:
+
+    for a in app_startups:
         startup_list.append(a["startup"])
-    hit = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).values("user").distinct()
-    for h in hit:
+
+    for h in hit_users:
         if len(Startup.objects.all().filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
             startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
 
-    award = Award.objects.all().filter(sb_id=request.GET.get("sb_id")).values("startup").distinct()
+    for aw in award_startups:
+        startup_list.append(aw["startup"])
+
 
     all_local_tag = []
     all_kind_tag = []
     all_tag_tag = []
     all_em_tag = []
-    for aw in award:
-        startup_list.append(aw["startup"])
+
+
     result["all_startup_list"] = []
     k = 1
     for id in set(startup_list):
@@ -5195,9 +5045,10 @@ def get_grant_static_detail(request):
     result["all_tag_tag"] = organize(all_tag_tag)
     result["all_em_tag"] = organize(all_em_tag)
 
+
    ### 개별 사업 정보
     #좋아요 데이터
-    int_date = InterestLog.objects.all().filter(sb_id=request.GET.get("sb_id")).order_by("date").values("date").order_by("date").distinct()
+    int_date = InterestLog.objects.all().filter(sb_id=request.GET.get("sb_id")).order_by("date").values("date").distinct()
     inter_arr = []
     for inter in int_date:
         inter_arr.append({"date": (inter["date"]),
@@ -5216,7 +5067,7 @@ def get_grant_static_detail(request):
     result["total_app_data"] = apply_arr
     #방문자 데이터
 
-    hit = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).values("date").distinct()
+    hit = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).values("date").order_by("date").distinct()
     hit_arr = []
     hit_avg_arr = []
     for h in hit:
@@ -5253,11 +5104,14 @@ def get_grant_static_detail(request):
         print("아오")
         print(e)
         inter_date = datetime.datetime.now()
-    print(type(inter_date))
-    print(type(apply_date))
-    print(type(hit_date))
 
-    result["min_date"] = str(sorted([hit_date,apply_date,inter_date])[0]).split(" ")[0]
+    # TODO: 가장 작은 값을 가져오는 것을 추가 할것.
+    result["min_date"] = str(sorted([hit_date.date(),apply_date.date(),inter_date.date()  ])[0]).split(" ")[0]
+    #result["min_date"] = str(sorted([hit_date, apply_date, inter_date])[0]).split(" ")[0]
+    print(str(hit_date))
+    print(str(apply_date))
+    print(str(inter_date))
+    #result["min_date"] = "2018-01-25"
 
 
 
@@ -5338,7 +5192,7 @@ def get_all_static_info(request):
         hit_avg_arr.append({"date":h["date"],"number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))/len(mother)})
     result["total_hit_data"]=hit_arr
     result["total_hit_avg_data"] = hit_avg_arr
-
+    #TODO: 최소 날짜 추가
     result["min_date"] = sorted([hit_arr[0]["date"],
                                  datetime.date(year=int(apply_arr[0]["date"].split("-")[0]), month=int(apply_arr[0]["date"].split("-")[1]),
                                                    day=int(apply_arr[0]["date"].split("-")[2])),
@@ -5645,7 +5499,7 @@ def vue_get_startup_detail(request):
 
     result["back_img"] = st.back_img
     result["logo"] = st.logo
-
+    result["category"] = st.category
     result["startup_id"] = st.id
     result["name"] = st.name
     # result["logo"] = st.thumbnail
@@ -5756,9 +5610,16 @@ def vue_update_startup_detail_base(request):
     st.website = rjd["information"]["homepage"]
     st.user.username = rjd["information"]["email"]
     st.youtube = rjd["youtube"]
+    st.category = rjd["category"]
     st.insta = rjd["insta"]
-    st.facebook = rjd["facebook"]
+    st.tag_string = rjd["tag_string"]
 
+
+    st.facebook = rjd["facebook"]
+    st.address_0= result["location"]
+    st.address_detail_0 = result["location2"]
+    st.user.additionaluserinfo.tel = rjd["tel"]
+    st.user.additionaluserinfo.save()
     st.tag.clear()
     for tag in rjd["information"]["tag"]:
         tag_origin ,created= Tag.objects.get_or_create(name=tag)
@@ -5857,11 +5718,9 @@ def vue_update_startup_detail(request):
             ser.name =service["name"]
             try:
                 for key in request.FILES.keys():
-
                     print(service["img_name"])
                     print(request.FILES[key])
                     if service["img_name"].strip()  == request.FILES[key].name :
-
                         path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
                                                                     rjd["startup_id"])
                         ser.img = path
@@ -6035,8 +5894,10 @@ def vue_get_application(request):
     result["id"] = app.id
     result["st_id"]= st.id
     result["sb_id"] = sb.id
-    result["location"] = app.address
+    result["location_1"] = st.address_0
+    result["location_2"] = st.address_detail_0
     result["name"] = st.name
+
     result["business_number"] = app.business_number
     result["found_date"] = app.found_date
     result["repre_name"] = app.repre_name
@@ -6232,9 +6093,10 @@ def vue_get_dashboard(request):
         result_due['title'] = sp.title
         result_due["start"] = sp.apply_start
         result_due["end"] = sp.apply_end
-        result_due["apply_num"] =len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["apply_num"] =len(Appliance.objects.all().filter(sb_id=sp.id))
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id))/int(sp.recruit_size),2)
+            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id))/int(sp.recruit_size),2)
+            pass
         else:
             result_due["comp"] = "없음"
         due_set.append(copy.deepcopy(result_due))
@@ -6247,9 +6109,10 @@ def vue_get_dashboard(request):
             result_due['title'] = sp.title
             result_due["start"] = sp.apply_start
             result_due["end"] = sp.apply_end
-            result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
             if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                pass
             else:
                 result_due["comp"] = "없음"
             blind_set.append(copy.deepcopy(result_due))
@@ -6263,10 +6126,11 @@ def vue_get_dashboard(request):
             result_due['title'] = sp.title
             result_due["start"] = sp.apply_start
             result_due["end"] = sp.apply_end
-            result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
 
             if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                pass
             else:
                 result_due["comp"] = "없음"
             writing_set.append(copy.deepcopy(result_due))
@@ -6281,10 +6145,11 @@ def vue_get_dashboard(request):
             result_due['title'] = sp.title
             result_due["start"] = sp.apply_start
             result_due["end"] = sp.apply_end
-            result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
 
             if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+                pass
             else:
                 result_due["comp"] = "없음"
                 ing_set.append(copy.deepcopy(result_due))
@@ -6434,7 +6299,7 @@ def vue_set_grant_1(request):
         sb.poster = handle_uploaded_file_poster(request.FILES['file'], str(request.FILES['file']))
     sb.business_period_start = rjd["start"]
     sb.business_period_end = rjd["end"]
-    sb.place = rjd["location"]
+
     sb.subject = rjd["subject"]
     sb.business_detail = rjd["business_detail"]
     sb.writing_step = 1
@@ -6534,6 +6399,9 @@ def vue_set_grant_6(request):
     sb.save()
     return JsonResponse({"result":"ok"})
 
+
+
+#TODO: 주석 풀고 PASS 지울것
 @csrf_exempt
 def vue_get_grant_info(request):
     result = {}
@@ -6549,13 +6417,14 @@ def vue_get_grant_info(request):
         result_due["author"] = sp.user.name
         
         result_due["end"] = sp.apply_end
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         result_due["status"] = "모집종료"
 
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = str(round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2))+":1"
+            #result_due["comp"] = str(round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2))+":1"
+            pass
         else:
             result_due["comp"] = "없음"
         due_set.append(copy.deepcopy(result_due))
@@ -6572,12 +6441,13 @@ def vue_get_grant_info(request):
         result_due["status"] = "승인대기"
         result_due["author"] = sp.user.name
         result_due["updated"] = sp.update_at
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = str(
-                round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)) + ":1"
+            #result_due["comp"] = str(
+            #    round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)) + ":1"
+            pass
         else:
             result_due["comp"] = "없음"
         waiting_set.append(copy.deepcopy(result_due))
@@ -6595,13 +6465,14 @@ def vue_get_grant_info(request):
         result_due["end"] = sp.apply_end
         result_due["updated"] = sp.update_at
 
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         result_due["status"] = "작성중"
 
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            pass
         else:
             result_due["comp"] = "없음"
         writing_set.append(copy.deepcopy(result_due))
@@ -6619,11 +6490,12 @@ def vue_get_grant_info(request):
         result_due["end"] = sp.apply_end
         result_due["status"] = "공고중"
 
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            pass
         else:
             result_due["comp"] = "없음"
         ing_set.append(copy.deepcopy(result_due))
@@ -6639,13 +6511,14 @@ def vue_get_grant_info(request):
         result_due["start"] = sp.apply_start
         result_due["end"] = sp.apply_end
         result_due["author"] = sp.user.name
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         result_due["status"] = "공고종료"
 
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            #esult_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            pass
         else:
             result_due["comp"] = "없음"
         comp_set.append(copy.deepcopy(result_due))
@@ -6660,13 +6533,14 @@ def vue_get_grant_info(request):
         result_due["start"] = sp.apply_start
         result_due["author"] = sp.user.name
         result_due["end"] = sp.apply_end
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         result_due["open_date"] = (sp.created_at)
         result_due["status"] = "블라인드"
 
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            pass
         else:
             result_due["comp"] = "없음"
         blind_set.append(copy.deepcopy(result_due))
@@ -6681,8 +6555,8 @@ def vue_get_grant_info(request):
         result_due["start"] = sp.apply_start
         result_due["author"] = sp.user.name
         result_due["end"] = sp.apply_end
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
+        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
+        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
         try:
             if sp.apply_end < datetime.datetime.now() and  sp.complete==0 :  #모집 종료 된 공고문
                 result["status"] = "모집종료"
@@ -6704,7 +6578,8 @@ def vue_get_grant_info(request):
             result_due["status"]="작성중"
         result_due["open_date"] = (sp.created_at)
         if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
+            pass
         else:
             result_due["comp"] = "없음"
         all_set.append(copy.deepcopy(result_due))
@@ -7409,14 +7284,18 @@ def vue_get_clip(request):
         result["another_clip"].append(copy.deepcopy(temp))
 
     result["another_course"] = []
-    for c in Course.objects.all().order_by("?")[:2]:
+    for c in Course.objects.all().order_by("?"):
         temp = {}
         temp["id"] = c.id
         temp["title"] = c.title
-        temp["play"] = c.play
+        temp["play"] = c.total_play
         temp["thumb"] = c.thumb
         temp["user"] = clip.user.name
         temp["created"] = clip.created_at
+        try:
+            temp["entry_point"] = "course/view/"+str(c.id) + "/"+ str(c.clips.all().first().id)
+        except Exception as e:
+            pass
         temp["youtube"] = clip.youtube
         result["another_course"].append(copy.deepcopy(temp))
 
@@ -7552,8 +7431,9 @@ def get_startup_application(request):
         if inte.recruit_size == "":
             temp["comp"] = "없음"
         else:
-            temp["comp"] = len(Appliance.objects.all().filter(sb=inte)) / int(inte.recruit_size)
-            temp["comp"] = round(temp["comp"],2)
+            # temp["comp"] = len(Appliance.objects.all().filter(sb=inte)) / int(inte.recruit_size)
+            # temp["comp"] = round(temp["comp"],2)
+            temp["comp"] = str(len(Appliance.objects.all().filter(sb=inte))) + ":1"
         temp["date"] = str(inte.apply_end).split(" ")[0]
         temp["start"] = str(inte.apply_start).split(" ")[0]
         temp["id"] = inte.id
@@ -7570,20 +7450,21 @@ def get_startup_application(request):
     #작성중인 지원서
     result["writing"]=[]
     for ap in Appliance.objects.all().filter(startup=st).filter(is_submit=False):
-        temp = {}
-        temp["title"] = ap.sb.title
-        temp["int"] = len(ap.sb.additionaluserinfo_set.all())
-        temp["sb_id"] = ap.sb.id
-        if ap.sb.recruit_size == "":
-            temp["comp"] = "없음"
-        else:
-            temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
-            temp["comp"] = round(temp["comp"], 2)
-        temp["date"] = str(ap.sb.apply_end).split(" ")[0]
-        temp["start"] = str(ap.sb.apply_start).split(" ")[0]
-        temp["id"] = ap.id
-        result["writing"].append(copy.deepcopy(temp))
-        # 지원완료 지원서
+        if ap.sb.apply_end > datetime.datetime.now():
+            temp = {}
+            temp["title"] = ap.sb.title
+            temp["int"] = len(ap.sb.additionaluserinfo_set.all())
+            temp["sb_id"] = ap.sb.id
+            if ap.sb.recruit_size == "":
+                temp["comp"] = "없음"
+            else:
+                #temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
+                temp["comp"] = str(len(Appliance.objects.all().filter(sb=ap.sb)))+":1"
+            temp["date"] = str(ap.sb.apply_end).split(" ")[0]
+            temp["start"] = str(ap.sb.apply_start).split(" ")[0]
+            temp["id"] = ap.id
+            result["writing"].append(copy.deepcopy(temp))
+            # 지원완료 지원서
     result["comp"] = []
     for ap in Appliance.objects.all().filter(startup=st).filter(is_submit=True):
         temp = {}
@@ -7592,8 +7473,9 @@ def get_startup_application(request):
         if ap.sb.recruit_size == "":
             temp["comp"] = "없음"
         else:
-            temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
-            temp["comp"] = round(temp["comp"], 2)
+            #temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
+            #temp["comp"] = round(temp["comp"], 2)
+            temp["comp"] = str(len(Appliance.objects.all().filter(sb=ap.sb))) + ":1"
         temp["date"] = str(ap.sb.apply_end).split(" ")[0]
         temp["start"] = str(ap.sb.apply_start).split(" ")[0]
         temp["id"] = ap.id
@@ -7662,9 +7544,6 @@ def get_home_info(request):
         team["poster"]= g.poster
         team["id"] = g.id
         result["sb_set"].append(copy.deepcopy(team))
-
-
-
     return JsonResponse(result)
 
 @csrf_exempt
@@ -7862,11 +7741,16 @@ def vue_get_startup_detail_manager(request):
     result["youtube"] = st.youtube
     result["insta"] = st.insta
     result["facebook"] = st.facebook
+    result["tag_string"] = st.tag_string
     result["found_date"]= st.established_date
-    result["select_tag"]= ""
 
+    result["select_tag"]= []
+    for f in st.filter.all():
+        result["select_tag"].append(f.name)
     result["startup_id"] = st.id
+    result["tel"]=st.user.additionaluserinfo.tel
     result["name"] = st.name
+    result["repre_name"] = st.user.additionaluserinfo.name
     # result["logo"] = st.thumbnail
     result["short_desc"] = st.short_desc
     result["intro_text"] = st.intro_text
@@ -7879,6 +7763,8 @@ def vue_get_startup_detail_manager(request):
     result['information']["homepage"] = st.website
     result['information']["email"] = st.user.username
     result["location"] = st.address_0
+    result["location2"] = st.address_detail_0
+
     try:
         result["business_file"] = st.business_file.split("/")[-1]
     except:
@@ -7972,14 +7858,18 @@ def vue_get_startup_detail_manager_base(request):
     result["logo"] = st.logo
     result["homepage"] = st.website
     result["youtube"] = st.youtube
+    result["category"] = st.category
     result["insta"] = st.insta
     result["facebook"] = st.facebook
-    result["found_date"]= st.established_date
+    result["found_date"]= str(st.established_date).split("T")[0]
     result["select_tag"]= ""
-
+    result["tel"] =st.user.additionaluserinfo.tel
     result["startup_id"] = st.id
     result["name"] = st.name
-    # result["logo"] = st.thumbnail
+    result["repre_name"] = st.user.additionaluserinfo.name
+    result["tag_string"] = st.tag_string
+    result["location"] = st.address_0
+    result["location2"] = st.address_detail_0
     result["short_desc"] = st.short_desc
     result["intro_text"] = st.intro_text
     result["information"] = {}
@@ -8121,6 +8011,9 @@ def toggle_int_course(request):
 
 @csrf_exempt
 def vue_hit_clip_log(request):
+    print(request)
+    print(request.body)
+    print(request.POST)
     clip = Clip.objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     HitClipLog.objects.get_or_create(clip=clip, user=ad)
@@ -8727,7 +8620,7 @@ def vue_get_all_fav(request):
 
 @csrf_exempt
 def hit_sb(request):
-    target = request.POST.get["target"]
+    target = request.POST.get("target")
     try:
         id= request.POST.get("id")
         h = HitLog()
@@ -8747,3 +8640,222 @@ def vue_get_grant_optional_data(request):
     sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
     result = sb.meta
     return JsonResponse({"result":result})
+
+
+
+
+@csrf_exempt
+def vue_login_user(request):
+    print(request.body)
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(request, user)
+            try:
+                if str(user.additionaluserinfo.auth) == "4" or (user.additionaluserinfo.auth) == "5":
+                    print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
+                    if len(user.additionaluserinfo.additionaluserinfo_set.all())>0:
+                        return JsonResponse({"result":"success", "user":"ma","id":user.additionaluserinfo.id})
+                    return JsonResponse({"result":"success","user": "m","id":user.additionaluserinfo.id})
+                else:
+                    return JsonResponse({"result":"success","user":"u","id":user.additionaluserinfo.id})
+            except:
+                return JsonResponse({})
+        else:
+            return JsonResponse({"result":'로그인 실패. 다시 시도 해보세요.'})
+
+
+
+
+import os
+import tempfile
+from zipfile import ZipFile
+import shutil
+
+
+def appliance_download(request, apid):
+    ap = apid
+    ap_target = Appliance.objects.get(id=ap)
+    # filenames = ["temp_folder/" + business_file.name.split("/")[-1], ]
+    zip_subdir = "applicance"
+    zip_filename = "%s.zip" % (
+        str(ap_target.sb.apply_end).split("-")[
+            0] + "_" + ap_target.sb.title + "_" + ap_target.startup.name + "_" + ap_target.startup.user.additionaluserinfo.name)
+    s = io.BytesIO()
+    url = "http://gconnect.kr/grant/" + str(ap_target.sb_id) + "/" + str(apid)
+    print(url)
+    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
+    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
+    zf = ZipFile(s, "w")
+    if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
+        zip_path = os.path.join("지원서.pdf")
+        zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
+        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
+    if ap_target.business_file != "":
+        fdir, fname = os.path.split(ap_target.business_file.path)
+        zip_path = os.path.join("사업자등록증." + fname.split(".")[-1])
+        zf.write(ap_target.business_file.path, zip_path)
+    if ap_target.fund_file != "":
+        fdir, fname = os.path.split(ap_target.fund_file.path)
+        zip_path = os.path.join("투자증명서." + fname.split(".")[-1])
+        zf.write(ap_target.fund_file.path, zip_path)
+    if ap_target.etc_file != "":
+        fdir, fname = os.path.split(ap_target.etc_file.path)
+        zip_path = os.path.join("기타첨부파일." + fname.split(".")[-1])
+        zf.write(ap_target.etc_file.path, zip_path)
+    if ap_target.ir_file != "":
+        fdir, fname = os.path.split(ap_target.ir_file.path)
+        zip_path = os.path.join("사업소개서." + fname.split(".")[-1])
+        zf.write(ap_target.ir_file.path, zip_path)
+    if ap_target.ppt_file != "":
+        fdir, fname = os.path.split(ap_target.ppt_file.path)
+        zip_path = os.path.join("ppt파일." + fname.split(".")[-1])
+        zf.write(ap_target.ppt_file.path, zip_path)
+    if ap_target.tax_file != "":
+        fdir, fname = os.path.split(ap_target.tax_file.path)
+        zip_path = os.path.join("납세증명서." + fname.split(".")[-1])
+        zf.write(ap_target.tax_file.path, zip_path)
+    # for fpath in filenames:
+    #     # Calculate path for file in zip
+    #     fdir, fname = os.path.split(fpath)
+    #     zip_path = os.path.join(zip_subdir, fname)
+    #
+    #     # Add file, at correct path
+    #     zf.write(fpath, zip_path)
+
+    # Must close zip for all contents to be written
+    zf.close()
+
+    # Grab ZIP file from in-memory, make response with correct MIME-type
+    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
+    return resp
+
+
+import time
+
+
+def appliance_all_download(request, sb):
+    ap_list = Appliance.objects.filter(sb_id=sb)
+    zip_filename = "%s.zip" % (
+        str(ap_list[0].sb.apply_end).split("-")[
+            0] + "_" + ap_list[0].sb.title)
+    s = io.BytesIO()
+    zf = ZipFile(s, "w")
+    for ap in ap_list:
+        zip_subdir = "applicance"
+        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
+        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
+        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
+        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
+            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
+            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
+            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
+            time.sleep(1)
+        if ap.business_file != "":
+            fdir, fname = os.path.split(ap.business_file.path)
+            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
+            zf.write(ap.business_file.path, zip_path)
+        if ap.fund_file != "":
+            fdir, fname = os.path.split(ap.fund_file.path)
+            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
+            zf.write(ap.fund_file.path, zip_path)
+        if ap.etc_file != "":
+            fdir, fname = os.path.split(ap.etc_file.path)
+            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
+            zf.write(ap.etc_file.path, zip_path)
+        if ap.ir_file != "":
+            fdir, fname = os.path.split(ap.ir_file.path)
+            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
+            zf.write(ap.ir_file.path, zip_path)
+        if ap.ppt_file != "":
+            fdir, fname = os.path.split(ap.ppt_file.path)
+            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
+            zf.write(ap.ppt_file.path, zip_path)
+        if ap.tax_file != "":
+            fdir, fname = os.path.split(ap.tax_file.path)
+            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
+            zf.write(ap.tax_file.path, zip_path)
+    f = io.BytesIO()
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("지원자 리스트")
+    sheet.write(0, 0, "순서")
+    sheet.write(0, 1, "기업명")
+    sheet.write(0, 2, "업종")
+    sheet.write(0, 3, "대표자명")
+    sheet.write(0, 4, "사업자 등록번호")
+    sheet.write(0, 5, "이메일")
+    sheet.write(0, 6, "대표 전화번호")
+    sheet.write(0, 7, "필터")
+    k = 1
+    for a in ap_list:
+        sheet.write(k, 0, k)
+        sheet.write(k, 1, a.startup.name)
+        sheet.write(k, 2, a.startup.category)
+        sheet.write(k, 3, a.startup.user.additionaluserinfo.name)
+        sheet.write(k, 4, Appliance.objects.all().filter(sb_id=sb).filter(startup_id=a.startup.id)[0].business_number)
+        sheet.write(k, 5, a.startup.user.username)
+        sheet.write(k, 6, a.startup.user.additionaluserinfo.tel)
+        filter_list = a.startup.filter.all()
+        f_arr = []
+        for fil in filter_list:
+            f_arr.append(fil.name)
+        sheet.write(k, 7, ",".join(f_arr))
+        k = k + 1
+    book.save(f)
+    out_content = f.getvalue()
+    zf.writestr("전체 리스트.xls", f.getvalue())
+
+    zf.close()
+
+    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
+    return resp
+
+
+def vue_get_alarm_startup(arr,msg, sb_id):
+    filter_list = arr
+    startup_list = Startup.objects.filter(filter__in=filter_list)
+    for s in startup_list:
+        a = Alarm()
+        a.user = s.user
+        a.content = msg
+        a.origin_sb =  sb_id
+        a.save()
+
+def vue_get_follow_startup(st_id):
+    follow_users =Startup.objects.get(id=st_id).additionaluserinfo_set
+    startup_name = Startup.objects,get(id=id).name
+    for a_follow_user in follow_users:
+        a= Alarm()
+        a.user = a_follow_user
+        a.content = startup_name + "의 정보가 변경되었습니다"
+        a.origin_st = Startup.objects.get(id=st_id)
+        a.save()
+
+
+def get_unread_alarm(request):
+    user_id = request.GET.get("id")
+    user = AdditionalUserInfo.objects.get(id= user_id)
+    alarm_set = Alarm.objects.filter(user = user).filter(read=False)
+    return JsonResponse(list(alarm_set), safe=False)
+
+def vue_fav_sb_list(request):
+    ad = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
+    list=[]
+    for f in ad.interest.all():
+        list.append(f.id)
+    return JsonResponse(list, safe=False)
+
+def get_sb_hit_log(request):
+    id = request.GET.get("id")
+    sb = SupportBusiness.objects.get(id=id)
+    hit_log_date = HitLog.objects.filter(sb=sb).order_by("date").values("date").distinct()
+    date_list=[]
+    for date in hit_log_date:
+        close = len(HitLog.objects.filter(sb=sb).filter(date=date["date"]))
+        date_list.append({"date":date["date"], "close":close})
+    return JsonResponse(date_list, safe=False)

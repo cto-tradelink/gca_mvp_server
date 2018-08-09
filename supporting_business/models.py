@@ -129,7 +129,7 @@ class Startup(models.Model):
     intro_text = models.TextField()
     logo = models.CharField(max_length=1000, blank=True, null=True)
     back_img = models.CharField(max_length=1000, blank=True, null=True)
-
+    tag_string = models.CharField(max_length=1000, blank=True, null=True)
     youtube = models.CharField(max_length=300, blank=True, null=True)
     facebook = models.CharField(max_length=300, blank=True, null=True)
     insta = models.CharField(max_length=300, blank=True, null=True)
@@ -551,7 +551,8 @@ class PageRate(models.Model):
 class Alarm(models.Model):
     user = models.ForeignKey(AdditionalUserInfo)
     content = models.CharField(max_length=500, blank=True, null=True)
-    origin_sb = models.ForeignKey(SupportBusiness)
+    origin_sb = models.ForeignKey(SupportBusiness, blank=True, null=True)
+    origin_st = models.ForeignKey(Startup, blank=True, null=True)
     category = models.CharField(max_length=2, blank=True, null=True)
     read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)

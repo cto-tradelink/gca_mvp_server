@@ -94,6 +94,19 @@ urlpatterns = [
     url(r'^change_stage/', views.change_stage, name='change_stage', ),
     url(r'^static_graph/', views.static, name='static', ),
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     url(r'^vue_home_grant/', views.vue_home_grant, name='vue_home_grant', ),
     url(r'^get_grant_detail/', views.get_grant_detail, name='get_grant_detail', ),
     url(r'^get_static_info/', views.get_static_info, name='get_static_info', ),
@@ -143,7 +156,7 @@ urlpatterns = [
     url(r'^vue_upload_course/', views.vue_upload_course, name='vue_upload_course', ),
     url(r'^vue_get_course/', views.vue_get_course, name='vue_get_course', ),
     url(r'^vue_upload_path/', views.vue_upload_path, name='vue_upload_path', ),
-    url(r'^vue_get_clip/', views.vue_get_clip, name='vue_get_clip', ),
+
     url(r'^vue_get_course/', views.vue_get_course, name='vue_get_course', ),
     url(r'^vue_get_path/', views.vue_get_path, name='vue_get_path', ),
     url(r'^get_startup_application/', views.get_startup_application, name='get_startup_application', ),
@@ -194,7 +207,9 @@ urlpatterns = [
     url(r'^vue_set_user_info/', views.vue_set_user_info, name='vue_set_user_info', ),
     url(r'^vue_get_startup_detail_manager_base/', views.vue_get_startup_detail_manager_base, name='vue_get_startup_detail_manager_base', ),
     url(r'^vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
-
+    url(r'^get_unread_alarm/', views.get_unread_alarm, name='get_unread_alarm', ),
+    url(r'^vue_fav_sb_list/', views.vue_fav_sb_list,name='vue_fav_sb_list', ),
+    url(r'^get_sb_hit_log/', views.get_sb_hit_log,name='get_sb_hit_log', ),
 
 
 ]
