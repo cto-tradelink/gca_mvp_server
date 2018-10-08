@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/urls.py" afterPath="$PROJECT_DIR$/supporting_business/urls.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -58,11 +59,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
+          <file leaf-file-name="views.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="260">
-                  <caret line="770" column="27" lean-forward="false" selection-start-line="770" selection-start-column="27" selection-end-line="770" selection-end-column="27" />
+                <state relative-caret-position="57">
+                  <caret line="786" column="19" lean-forward="false" selection-start-line="786" selection-start-column="4" selection-end-line="786" selection-end-column="19" />
                   <folding>
                     <element signature="e#24#59#0" expanded="true" />
                   </folding>
@@ -112,11 +113,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="urls.py" pinned="false" current-in-tab="false">
+          <file leaf-file-name="urls.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="209">
-                  <caret line="119" column="70" lean-forward="false" selection-start-line="119" selection-start-column="70" selection-end-line="119" selection-end-column="70" />
+                <state relative-caret-position="368">
+                  <caret line="127" column="43" lean-forward="true" selection-start-line="127" selection-start-column="43" selection-end-line="127" selection-end-column="43" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -176,8 +177,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>simia</find>
-      <find>dataurl</find>
       <find>downloa</find>
       <find>.zip</find>
       <find>def</find>
@@ -206,6 +205,8 @@
       <find>vue_set_mng_acc</find>
       <find>vue_get_opr_acc</find>
       <find>vue_set_opr_a</find>
+      <find>vue_get_mng_acc</find>
+      <find>vue_set_opr_acc</find>
     </findStrings>
     <replaceStrings>
       <replace>apply_end|date:&quot; Y m d &quot;</replace>
@@ -295,8 +296,8 @@
         <option value="$PROJECT_DIR$/supporting_business/annotation.py" />
         <option value="$PROJECT_DIR$/gca_mvp/settings.py" />
         <option value="$PROJECT_DIR$/supporting_business/tests.py" />
-        <option value="$PROJECT_DIR$/supporting_business/urls.py" />
         <option value="$PROJECT_DIR$/supporting_business/views.py" />
+        <option value="$PROJECT_DIR$/supporting_business/urls.py" />
       </list>
     </option>
   </component>
@@ -574,7 +575,14 @@
       <option name="project" value="LOCAL" />
       <updated>1538972235935</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="set_password 적용안되었던 문제 수정">
+      <created>1538977223250</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1538977223251</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TodoView">
@@ -593,7 +601,7 @@
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32899022" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.13369565" sideWeight="0.4824094" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2423913" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.34347826" sideWeight="0.49573562" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.175" sideWeight="0.49573562" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32608697" sideWeight="0.4978678" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2804348" sideWeight="0.51759064" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.021855012" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -653,7 +661,8 @@
     <MESSAGE value="공고문 작성 중 - 기타 값이 없을떄 예외 처리" />
     <MESSAGE value="세션 체크 - 예외 상황시 오류 정리" />
     <MESSAGE value="opr - 계정 관리 페이지 url 따로 생성, 계정 관리 라우팅 함수 수정" />
-    <option name="LAST_COMMIT_MESSAGE" value="opr - 계정 관리 페이지 url 따로 생성, 계정 관리 라우팅 함수 수정" />
+    <MESSAGE value="set_password 적용안되었던 문제 수정" />
+    <option name="LAST_COMMIT_MESSAGE" value="set_password 적용안되었던 문제 수정" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -934,22 +943,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
+    <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="209">
-          <caret line="119" column="70" lean-forward="false" selection-start-line="119" selection-start-column="70" selection-end-line="119" selection-end-column="70" />
+        <state relative-caret-position="57">
+          <caret line="786" column="19" lean-forward="false" selection-start-line="786" selection-start-column="4" selection-end-line="786" selection-end-column="19" />
           <folding>
-            <element signature="e#0#41#0" expanded="true" />
+            <element signature="e#24#59#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
+    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="260">
-          <caret line="770" column="27" lean-forward="false" selection-start-line="770" selection-start-column="27" selection-end-line="770" selection-end-column="27" />
+        <state relative-caret-position="368">
+          <caret line="127" column="43" lean-forward="true" selection-start-line="127" selection-start-column="43" selection-end-line="127" selection-end-column="43" />
           <folding>
-            <element signature="e#24#59#0" expanded="true" />
+            <element signature="e#0#41#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -758,7 +758,6 @@ def vue_get_opr_acc(request):
 def vue_set_opr_acc(request):
     if gca_check_session(request)== False:
             return HttpResponse("{}")
-
     try:
         username = request.POST.get("opr_id")
         additional_user_info_id = request.POST.get("opr_additional_user_id")
@@ -784,6 +783,34 @@ def vue_set_opr_acc(request):
     except:
         return JsonResponse({"result": "false"}, safe=False)
 
+@csrf_exempt
+def vue_set_mng_acc(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    try:
+        username = request.POST.get("mng_id")
+        additional_user_info_id = request.POST.get("mng_additional_user_id")
+        mng_acc = AdditionalUserInfo.objects.get(id=additional_user_info_id)
+        print(request.POST.get("mng_pw1"))
+        if request.POST.get("mng_pw0") == request.POST.get("mng_pw1"):
+            if request.POST.get("mng_pw0") != "":
+                user = User.objects.get(id=AdditionalUserInfo.objects.get(id=additional_user_info_id).user.id)
+                user.set_password(request.POST.get("mng_pw1"))
+                user.save()
+
+        mng_acc.mng_name = request.POST.get("mng_name")
+        # mng_acc.mng_kikwan = request.POST.get("mng_kikwan")
+        # mng_acc.mng_bonbu= request.POST.get("mng_bonbu")
+        # mng_acc.mng_team= request.POST.get("mng_team")
+        # mng_acc.mng_position= request.POST.get("mng_position")
+        mng_acc.mng_tel = request.POST.get("mng_tel")
+        mng_acc.mng_phone = request.POST.get("mng_phone")
+        # mng_acc.mng_email = request.POST.get("mng_email")
+        # mng_acc.mng_website = request.POST.get("mng_website")
+        mng_acc.save()
+        return JsonResponse({"result": "true"}, safe=False)
+    except:
+        return JsonResponse({"result": "false"}, safe=False)
 #-----------------------------------------------------------------------------------------------------------------------
 # [매니저]
 #-----------------------------------------------------------------------------------------------------------------------
