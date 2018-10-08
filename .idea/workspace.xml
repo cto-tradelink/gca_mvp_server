@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -557,7 +556,14 @@
       <option name="project" value="LOCAL" />
       <updated>1538967070771</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="공고문 작성 중 - 기타 값이 없을떄 예외 처리">
+      <created>1538967422932</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1538967422932</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TodoView">
@@ -657,7 +663,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="스타트어 소식 잘게 나누기" />
     <MESSAGE value="스타트업 소식 잘게 나누기" />
-    <option name="LAST_COMMIT_MESSAGE" value="스타트업 소식 잘게 나누기" />
+    <MESSAGE value="공고문 작성 중 - 기타 값이 없을떄 예외 처리" />
+    <option name="LAST_COMMIT_MESSAGE" value="공고문 작성 중 - 기타 값이 없을떄 예외 처리" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
