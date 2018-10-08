@@ -2149,24 +2149,34 @@ def vue_set_mng_support_business_step_6(request):
         support_business.mng_support_business_step_6_etc_input = rjd["mng_support_business_step_6_etc_input"]
     except Exception as e:
         print(e)
-
-    if rjd["mng_support_business_step_6_etc_input_chk"] == True:
-        support_business.mng_support_business_step_6_etc_input_chk = True
-    else:
-        support_business.mng_support_business_step_6_etc_input_chk = False
-    if rjd["support_business_ceremony_chk"] == True:
-        support_business.support_business_ceremony_chk = True
-    else:
-        support_business.support_business_ceremony_chk = False
-    if  rjd["support_business_faq_chk"] == True:
-        support_business.support_business_faq_chk = True
-    else:
-        support_business.support_business_faq_chk = False
-    if rjd["support_business_additional_faq_chk"]== True:
-        support_business.support_business_additional_faq_chk = True
-    else:
-        support_business.support_business_additional_faq_chk = False
-
+    try:
+        if rjd["mng_support_business_step_6_etc_input_chk"] == True:
+            support_business.mng_support_business_step_6_etc_input_chk = True
+        else:
+            support_business.mng_support_business_step_6_etc_input_chk = False
+    except Exception as e:
+        print(e)
+    try:
+        if rjd["support_business_ceremony_chk"] == True:
+            support_business.support_business_ceremony_chk = True
+        else:
+            support_business.support_business_ceremony_chk = False
+    except Exception as e:
+        print(e)
+    try:
+        if  rjd["support_business_faq_chk"] == True:
+            support_business.support_business_faq_chk = True
+        else:
+            support_business.support_business_faq_chk = False
+    except Exception as e:
+        print(e)
+    try:
+        if rjd["support_business_additional_faq_chk"]== True:
+            support_business.support_business_additional_faq_chk = True
+        else:
+            support_business.support_business_additional_faq_chk = False
+    except Exception as e:
+        print(e)
     support_business.save()
     return JsonResponse({"result":"ok"})
 
