@@ -758,28 +758,31 @@ def vue_get_opr_acc(request):
 def vue_set_opr_acc(request):
     if gca_check_session(request)== False:
             return HttpResponse("{}")
-    username = request.POST.get("opr_id")
-    additional_user_info_id = request.POST.get("opr_additional_user_id")
-    mng_acc = AdditionalUserInfo.objects.get(id=additional_user_info_id)
-    if request.POST.get("opr_pw0") ==  request.POST.get("opr_pw1"):
-        AdditionalUserInfo.objects.get(id=additional_user_info_id).user.set_password(request.POST.get("opr_pw1"))
 
-    mng_acc.mng_name = request.POST.get("opr_name")
-    # mng_acc.mng_kikwan = request.POST.get("opr_kikwan")
-    # mng_acc.mng_bonbu= request.POST.get("opr_bonbu")
-    # mng_acc.mng_team= request.POST.get("opr_team")
-    # mng_acc.mng_position= request.POST.get("opr_position")
-    mng_acc.mng_tel= request.POST.get("opr_tel")
-    mng_acc.mng_phone = request.POST.get("opr_phone")
-    # mng_acc.mng_email = request.POST.get("opr_email")
-    # mng_acc.mng_website = request.POST.get("opr_website")
-    mng_acc.save()
+    try:
+        username = request.POST.get("opr_id")
+        additional_user_info_id = request.POST.get("opr_additional_user_id")
+        mng_acc = AdditionalUserInfo.objects.get(id=additional_user_info_id)
+        print( request.POST.get("opr_pw1") )
+        if request.POST.get("opr_pw0") ==  request.POST.get("opr_pw1"):
+            if request.POST.get("opr_pw0") != "":
+                user = User.objects.get(id = AdditionalUserInfo.objects.get(id=additional_user_info_id).user.id)
+                user.set_password(request.POST.get("opr_pw1"))
+                user.save()
 
-
-
-
-    return JsonResponse({"result":"ok"}, safe = False)
-
+        mng_acc.mng_name = request.POST.get("opr_name")
+        # mng_acc.mng_kikwan = request.POST.get("opr_kikwan")
+        # mng_acc.mng_bonbu= request.POST.get("opr_bonbu")
+        # mng_acc.mng_team= request.POST.get("opr_team")
+        # mng_acc.mng_position= request.POST.get("opr_position")
+        mng_acc.mng_tel= request.POST.get("opr_tel")
+        mng_acc.mng_phone = request.POST.get("opr_phone")
+        # mng_acc.mng_email = request.POST.get("opr_email")
+        # mng_acc.mng_website = request.POST.get("opr_website")
+        mng_acc.save()
+        return JsonResponse({"result":"true"}, safe = False)
+    except:
+        return JsonResponse({"result": "false"}, safe=False)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # [매니저]
