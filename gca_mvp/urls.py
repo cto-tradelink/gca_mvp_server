@@ -15,7 +15,7 @@ urlpatterns = [
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-
-handler404 = sp_views.error_404
-handler500 = sp_views.error_500
-handler500 = sp_views.error_500
+#
+# handler404 = sp_views.error_404
+# handler500 = sp_views.error_500
+# handler500 = sp_views.error_500

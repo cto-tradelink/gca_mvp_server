@@ -170,29 +170,7 @@
             $("#mypage_popup").mouseleave(function () {
                 $("#mypage_popup").addClass("hidden")
             })
-            $(function () {
-                $("#rateYo").rateYo({
-                    rating: 3.6,
-                    starWidth: "33px"
-                }).on("rateyo.set", function (e, data) {
-                    //  alert("The rating is set to " + data.rating + "!");
-                    $.ajax({
-                        url: '{% url "rate_page" %}',
-                        method: "post",
-                        data: {
-                            "page": "{{ request.get_full_path  }}",
-                            "user": "{{ request.user.id }}",
-                            "rate": data.rating
-                        },
-                        success: function (data) {
 
-                        },
-                        error: function (e) {
-                            console.log(e)
-                        }
-                    })
-                });
-                ;
             });
             $(".del_btn").on("click", function () {
 

@@ -1,11 +1,10 @@
-
-
-
-
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
 from django.http import HttpResponse
+import string
+import random
 from .forms import *
+from django.utils import timezone
 from django.contrib.auth.views import login as auth_login
 from allauth.socialaccount.models import SocialApp
 from allauth.socialaccount.templatetags.socialaccount import get_providers
@@ -45,65 +44,68 @@ from django.contrib import messages
 import copy
 from django.views.decorators.csrf import csrf_exempt
 import itertools
-def repeated_email(request):
-    return HttpResponse("이미 가입된 이메일 입니다. 다른 방법으로 로그인 하세요.")
+from zipfile import ZipFile
+import ffmpeg
+import requests
+import urllib.request
 
+### for auth
+try:
+     # Django versions >= 1.9
 
-def login_user3(request):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
+    from django.utils.module_loading import import_module
+except ImportError:
+    # Django versions < 1.9
+    from django.utils.importlib import import_module
 
-        if user is not None:
-            login(request, user)
-            # try:
-            #     AdditionalUserInfo(user=request.user).save()
-            # except:
-            #     pass
-            # print("here")
+from django.conf import settings
+from django.contrib.auth import get_user
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 
+@csrf_exempt
+def is_in_favor_list(target,id, additionaluserinfo_id):
+    print("clip list check")
+    try:
+        user = AdditionalUserInfo.objects.get(id=additionaluserinfo_id)
 
+        if target  == "support_business":
+            if SupportBusiness.objects.get(id=id) in user.favorite.all():
+                return True
+            else:
+                return False
+        if target  == "clip":
+            if Clip.objects.get(id=id) in user.favorite_clip.all():
+                return True
+            else:
+                return False
+        if target  == "course":
+            print("course check")
+            if Course.objects.get(id=id) in user.favorite_course.all():
+                return True
+            else:
+                return False
+        if target  == "path":
+            if Path.objects.get(id=id) in user.favorite_path.all():
+                return True
+            else:
+                return False
 
-
-            try:
-                if str(user.additionaluserinfo.auth) == "4" or (user.additionaluserinfo.auth) == "5":
-
-                    print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
-                    return redirect("dashboard")
-                else:
-                    return redirect('index')
-            except:
-                return redirect('index')
-        else:
-            return HttpResponse('로그인 실패. 다시 시도 해보세요.')
-    else:
-        providers = []
-        for provider in get_providers():
-            # social_app속성은 provider에는 없는 속성입니다.
-            try:
-                provider.social_app = SocialApp.objects.get(provider=provider.id, sites=settings.SITE_ID)
-            except SocialApp.DoesNotExist:
-                provider.social_app = None
-        providers.append(provider)
-        login_form = LoginForm()
-    return render(request, 'pc/accounts/login.html', {"form": login_form})
-
-def logout_user(request):
-    logout(request)
-    return redirect('search')
-
-
-
-
+        if target  == "startup":
+            print("startup check!!!")
+            if Startup.objects.get(id=id) in user.favorite_startup.all():
+                return True;
+            else :
+                return False
+    except:
+        return False
+@csrf_exempt
 def login_user(request):
     if request.method == "POST":
         form = LoginForm(request.POST)
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(username=username, password=password)
-
         if user is not None:
             login(request, user)
             # try:
@@ -111,11 +113,9 @@ def login_user(request):
             # except:
             #     pass
             # print("here")
-
-
             try:
-                if str(user.additionaluserinfo.auth) == "4" or (user.additionaluserinfo.auth) == "5":
 
+                if str(user.additionaluserinfo.auth) == "MNG" or (user.additionaluserinfo.auth) == "OPR":
                     print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
                     return redirect("dashboard")
                 else:
@@ -136,6044 +136,38 @@ def login_user(request):
         login_form = LoginForm()
     return render(request, 'pc/accounts/login.html', {"form": login_form})
 
-def qs_al(qs, startup, user):
-    sp= qs
-    startup = Startup.objects.get(user=user)
-    for s in sp:
-        k = list(set((s.filter.all())).intersection(startup.filter.all()))
-        s.k_val = len(k)
-
-    sp =sorted(sp, key=lambda q: (q.k_val) , reverse=True)
-    final_sp = []
-    for q in sp:
-        if q.k_val != 0:
-            final_sp.append(q)
-
-    pk_list = []
-    for q in final_sp:
-        pk_list.append(q.id)
-    clauses = ' '.join(
-        ['WHEN supporting_business_supportbusiness.id=%s THEN %s' % (pk, i) for i, pk in enumerate(pk_list)])
-    ordering = 'CASE %s END' % clauses
-    queryset = SupportBusiness.objects.filter(pk__in=pk_list).extra(select={'ordering': ordering},
-                                                                    order_by=('ordering',))
-    sp = queryset
-
-    return sp;
 
 
-def index(request):
-    today_min = datetime.datetime.now()
-    total_sb = SupportBusiness.objects.all().distinct()
-    total_amount_list = SupportBusiness.objects.all()
-    many_view = SupportBusiness.objects.order_by("-hit").filter(open_status=1).filter(is_blind=False).filter(
-        apply_start__lt=today_min).filter(apply_end__gt=today_min).distinct()[:3]
-    random = SupportBusiness.objects.all().filter(open_status=1).filter(apply_start__lt=today_min).filter(apply_end__gt=today_min).filter(
-        is_blind=False).order_by("?").distinct()[:3]
+ #세션 인증
+ #TODO : 인증 이수복 선생님께 여쭤보기 : 클라이언트에서 ID 가 넘어오지 않음.
+def gca_check_session(request):
+    my_session_key= request.GET.get("session_key")
+    my_id = request.GET.get("gca_id")
 
-    sum = 0
-    #for t in total_amount_list:
-    #    sum += t.finance_amount
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
+    engine = import_module(settings.SESSION_ENGINE)
+    session = engine.SessionStore(my_session_key)
+    session_user_id = ""
 
-    today_min = datetime.datetime.now()
-    if request.user.is_authenticated():
-
-        if len(AdditionalUserInfo.objects.all().filter(user=request.user)) == 0:
-            AdditionalUserInfo(user=request.user).save()
-        try:
-            interest = request.user.additionaluserinfo.interest.all()
-        except:
-            interest = ""
-        print(interest)
-
-        if len(Startup.objects.all().filter(user=request.user)) != 0:
-            startup = Startup.objects.get(user=request.user)
-            filter_string = request.user.startup.filter.all()
-            em = request.user.startup.employee_number
-            if em == None or em == "":
-                em = 0;
-            sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-            k = []
-            for f in filter_string:
-                k.append(str(f.id))
-            startup_filter = startup.filter.all()
-            sb_total =qs_al(sp , startup, request.user)
-            sb_0 = qs_al( sp.filter(filter__cat_1="자금지원").distinct()         , startup, request.user)
-            sb_1 = qs_al( sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct()  , startup, request.user)
-            sb_2 = qs_al( sp.filter(filter__cat_1="교육").distinct()           , startup, request.user)
-            sb_3 = qs_al( sp.filter(filter__cat_1="판로").distinct()           , startup, request.user)
-            sb_4 = qs_al( sp.filter(filter__cat_1="네트워킹").distinct()         , startup, request.user)
-            sb_5 = qs_al( sp.filter(filter__cat_1="공간지원").distinct()         , startup, request.user)
-            sb_6 = qs_al( sp.filter(filter__cat_1="기타지원").distinct()         , startup, request.user)
-            sb_7 = qs_al( sp.filter(filter__cat_1="피칭").distinct()           , startup, request.user)
-        else:
-            k = []
-            sb_0 = ""
-            sb_1 = ""
-            sb_2 = ""
-            sb_3 = ""
-            sb_4 = ""
-            sb_5 = ""
-            sb_6 = ""
-            sb_total = ""
-            sb_7 = ""
-        return render(request, 'pc/index.html', {
-            "form": "", "random": random, "interest": interest,
-            "filter_0": filter_0, "filter_1": filter_1,
-            "filter_2": filter_2, "filter_3": filter_3,
-            "filter_4": filter_4, "filter_5": filter_5,
-            "filter_6": filter_6, "filter_7": filter_7,
-            "filter_8": filter_8, "filter_9": filter_9,
-            "filter_10": filter_10, "filter_11": filter_11,
-            "sb_0": sb_0, "sb_1": sb_1, "sb_2": sb_2, "sb_3": sb_3, "sb_4": sb_4,
-            "sb_5": sb_5, "sb_6": sb_6,
-            "sb_total": sb_total,
-            "many_view": many_view,
-            "total": total_sb,
-            "sum": sum, "sb_7": sb_7,
-            "filter_string": ",".join(k)
-        })
-    else:
-        return render(request, 'pc/index.html', {"form": "", "random": random,
-                                                 "many_view": many_view,
-                                                 "total": total_sb,
-                                                 "sum": sum,
-                                                 })
-
-
-def matching_business(request):
-    if request.user.is_authenticated():
-        if (len(Startup.objects.all().filter(user=request.user)) == 0):
-            return render(request, 'pc/matching_temporary.html')
-        else:
-            return redirect("index")
-    else:
-        return render(request, 'pc/matching_temporary.html')
-
-
-def startup_list(request):
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    qs = Startup.objects.all()
-    if request.GET.get("filter", ",") != ",":
-
-        filter_string = request.GET.get("filter").split(",")
-        if filter_string == [""]:
-            filter_string = []
-        em = request.GET.get("em", 0)
-        q_obj = Q()
-        filter_list = []
-        for f in filter_string:
-            filter_list.append(Filter.objects.get(id=f))
-        for filter in filter_list:
-            if filter.cat_0 != "조건" and filter.cat_1 != "업력":
-                # q_obj.add(Q(filter__id=filter.id), Q.AND)
-                qs = qs.filter(filter=filter)
-        if Filter.objects.filter(cat_0="조건").filter(cat_1="업력").filter(name="제한없음")[0] not in filter_list:
-            for filter in filter_list:
-                if filter.cat_0 == "조건" and filter.cat_1 == "업력":
-                    qs = qs.filter(filter=filter)
-        if (em != 0):
-            qs = qs.filter(Q(employee_number__lte=em) | Q(employee_number__lte=""))
-    if (request.GET.get("search", "") != ""):
-        word = request.GET.get("search")
-        qs = qs.filter(Q(name__contains=word) | Q(desc__contains=word) | Q(short_desc__contains=word) | Q(
-            tag__name__contains=word)).distinct()
-    elif (request.GET.get("search", "") == "" and request.GET.get("filter", ",") == ","):
-        qs = Startup.objects.all()
-    return render(request, 'pc/startup_list.html', {"qs": qs,
-                                                    "filter_0": filter_0, "filter_1": filter_1,
-                                                    "filter_2": filter_2, "filter_3": filter_3,
-                                                    "filter_4": filter_4, "filter_5": filter_5,
-                                                    "filter_6": filter_6, "filter_7": filter_7,
-                                                    "filter_8": filter_8, "filter_9": filter_9,
-                                                    "filter_10": filter_10, "filter_11": filter_11,
-                                                    })
-
-
-def startup_detail(request, id):
-    startup = get_object_or_404(Startup, id=id)
-    return render(request, 'pc/startup_detail.html', {"startup": startup})
-
-
-def new_startup(request):
-    if len(Startup.objects.all().filter(user=request.user)) != 0:
-        data = Startup.objects.all().filter(user=request.user)[0]
-        name = data.name
-        found_date = data.established_date
-        address = data.address
-        employee = data.employee_number
-        email = data.email
-        website = data.website
-        field = data.category
-    else:
-        field = ""
-        name = ""
-        found_date = ""
-        address = ""
-        employee = ""
-        email = ""
-        website = ""
-    form_0 = NewStartupUp(initial={
-        "name": name,
-        "field": field,
-        "found_date": found_date,
-        "location": address,
-        "employee": employee,
-        "email": email,
-        "website": website
-    })
-    form_1 = NewStartupBot
-
-    return render(request, 'pc/new_company.html', {"form_up": form_0, "form_bot": form_1})
-
-
-def startup_edit(request):
-    if request.method == "POST":
-        form_data_0 = NewStartupUp(request.POST)
-        form_data_1 = NewStartupBot(request.POST)
-
-        if form_data_0.is_valid() and form_data_1.is_valid():
-            if len(Startup.objects.all().filter(user=request.user)) != 0:
-                target = Startup.objects.all().filter(user=request.user)[0]
-                target.name = form_data_0.cleaned_data["name"]
-                target.found_date = form_data_0.cleaned_data["found_date"]
-                target.address = form_data_0.cleaned_data["location"]
-                target.category = form_data_0.cleaned_data["field"]
-                target.employee = form_data_0.cleaned_data["employee"]
-                target.email = form_data_0.cleaned_data["email"]
-                target.website = form_data_0.cleaned_data["website"]
-                target.keyword = form_data_1.cleaned_data["keyword"]
-                target.save()
-            else:
-                Startup(
-                    user=request.user,
-                    name=form_data_0.cleaned_data["name"],
-                    category=form_data_0.cleaned_data["field"],
-                    established_date=form_data_0.cleaned_data["found_date"],
-                    address=form_data_0.cleaned_data["location"],
-                    employee=form_data_0.cleaned_data["employee"],
-                    email=form_data_0.cleaned_data["email"],
-                    website=form_data_0.cleaned_data["website"]
-                ).save()
-    return redirect("new_startup")
-
-
-def edit_mypage(request):
-    if request.method == "POST":
-        form_data_0 = MyPageUp(request.POST)
-        form_data_1 = MyPageBot(request.POST)
-        if form_data_0.is_valid() and form_data_1.is_valid():
-            user = AdditionalUserInfo.objects.all().filter(user=request.user)
-            if (len(user) != 0):
-                target = AdditionalUserInfo.objects.get(user=request.user)
-                target.tel = form_data_1.cleaned_data["phone"]
-                target.name = form_data_0.cleaned_data["name"]
-                target.additional_email = form_data_0.cleaned_data["additional_email"]
-                target.save()
-            else:
-                AdditionalUserInfo(
-                    user=request.user,
-                    tel=form_data_1.cleaned_data["phone"],
-                    name=form_data_0.cleaned_data["name"],
-                    additional_email=form_data_0.cleaned_data["additional_email"]
-                ).save()
-
-        return redirect("edit_mypage")
-
-    else:
-        user = AdditionalUserInfo.objects.all().filter(user=request.user)
-        id = request.user.username
-        if (len(user) != 0):
-            name = user[0].name
-            tel = user[0].tel
-            agree = user[0].agreement
-            additional_email = user[0].additional_email
-        else:
-            name = ""
-            tel = ""
-            agree = ""
-        form_0 = MyPageUp(initial={
-            "id": id,
-            "name": name
-        })
-        form_1 = MyPageBot(initial={
-            "phone": tel,
-            "agree": agree,
-            "additional_email": additional_email,
-        })
-        email_confirm = 0
-        if additional_email != "" and len(
-                EmailConfirmation.objects.all().filter(email=additional_email).filter(confirm=True)) != 0:
-            email_confirm = 1
-
-        return render(request, 'pc/edit_mypage.html',
-                      {"form_up": form_0, "form_bot": form_1, "email_confirm": email_confirm})
-
-
-def mypage(request):
-    #if len(Startup.objects.all().filter(user=request.user)) == 0:
-    #    return redirect("company_profile")
-    #else:
     try:
-         qs_int = request.user.additionaluserinfo.interest.all()
-         qs_write = Appliance.objects.all().filter(startup=request.user.startup).filter(is_submit=False)
-         qs_com = Appliance.objects.all().filter(startup=request.user.startup).filter(is_submit=True).filter(
-             sb__complete=0)
-         award_list = []
-         q_obj = Q()
-         q_obj_not = Q()
-
-         if Award.objects.all().filter(startup=request.user.startup):
-             for award in Award.objects.all().filter(startup=request.user.startup):
-                 q_obj |= Q(sb_id=award.sb_id)
-                 q_obj_not |= Q(sb_id=award.sb_id)
-             qs_result_win = Appliance.objects.all().filter(sb__complete=1).filter(startup=request.user.startup).filter(
-                 q_obj)
-         else:
-             qs_result_win = ""
-
-         lose_arr = []
-         for qs in Appliance.objects.all().filter(startup=request.user.startup).filter(sb__complete=1).filter(
-                 is_submit=True):
-             if len(Award.objects.all().filter(startup=request.user.startup).filter(sb_id=qs.sb_id)) == 0:
-                 lose_arr.append(qs)
-    except Exception as e:
-        qs_int = request.user.additionaluserinfo.interest.all()
-        qs_write =""
-        qs_com =""
-        award_list = []
-        q_obj = Q()
-        q_obj_not = Q()
-        qs_result_win = ""
-
-        lose_arr = []
-
-    return render(request, 'pc/mypage_apply.html', {"qs_int": qs_int,
-                                                    "qs_write": qs_write,
-                                                        "qs_com": qs_com,
-                                                        "qs_result_win": qs_result_win,
-                                                        "qs_result_lose": lose_arr,
-                                                        })
-
-
-def support(request, id):
-    today_min = datetime.datetime.now()
-    support = get_object_or_404(SupportBusiness, id=id)
-    sp = get_object_or_404(SupportBusiness, id=id)
-    random = SupportBusiness.objects.all().filter(open_status=1).filter(
-        apply_start__lt=today_min).filter(apply_end__gt=today_min).filter(is_blind=False).exclude(id=sp.id).order_by("?")[0]
-    if request.user.is_authenticated:
-        if request.user.additionaluserinfo.auth!="4" and request.user.additionaluserinfo.auth!="5":
-            support.hit = support.hit + 1
-            support.save()
-            HitLog(sb=support).save()
-    else:
-        support.hit = support.hit + 1
-        support.save()
-        HitLog(sb=support).save()
-    total_win=""
-    try:
-        print("here")
-        if request.user.is_authenticated and request.user.startup:
-            interest = request.user.additionaluserinfo.interest.all()
-            alarm_set = Alarm.objects.all().filter(origin_sb=support).filter(user=request.user.additionaluserinfo)
-            alarm_set.update(read=True)
-        else:
-            interest = ""
-        apply_status = Appliance.objects.all().filter(startup=request.user.startup).filter(sb=support).order_by("-id")
-        print(apply_status)
-        if len(apply_status) != 0:
-            status = "true"
-            app = apply_status[0].id
-            is_submit = apply_status[0].is_submit
-        else:
-            status = "false"
-            app = ""
-            is_submit = ""
-    except Exception as e:
+        session_user_id = session[SESSION_KEY]
+        backend_path = session[BACKEND_SESSION_KEY]
+        backend = load_backend(backend_path)
+        user = backend.get_user(session_user_id) or AnonymousUser()
+    except KeyError:
         print(e)
-        status = "false"
-        app = ""
-        is_submit = ""
-        interest = ""
-    hitlog = []
-    date_arr = []
-    applog = []
-    for k in range(1, 30):
-        from_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k + 1)
-        to_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k)
-        date_arr.append(from_da.isoformat().split("T")[0])
-        hitlog.append(len(HitLog.objects.all().filter(date__gt=to_da).filter(sb=sp).filter(date__lte=from_da)))
-        applog.append(
-            len(Appliance.objects.all().filter(sb=sp).filter(update_at__gt=to_da).filter(update_at__lt=from_da)))
-    if support.relate_sb != None:
-        hit_log_rel_sb = []
-        hit_day_arr_rel_sb = []
-        app_dat_rel_sb = []
-        for k in range(0, ( support.relate_sb.apply_end-support.relate_sb.apply_start).days +1 ):
-            hit_day_arr_rel_sb.append( (support.relate_sb.apply_start + datetime.timedelta(days=k) ).isoformat().split("T")[0])
-            hit_log_rel_sb.append(len(HitLog.objects.all().filter(sb=support.relate_sb).filter(date__gte=support.relate_sb.apply_start + datetime.timedelta(days=k)).filter(date__lt=support.relate_sb.apply_start + datetime.timedelta(days=k+1))))
-            app_dat_rel_sb.append(
-                len(Appliance.objects.all().filter(sb=support.relate_sb).filter(update_at__gt=support.relate_sb.apply_start + datetime.timedelta(days=k)).filter(update_at__lt=support.relate_sb.apply_start + datetime.timedelta(days=k+1))))
-        print(hit_day_arr_rel_sb)
-        print(hit_log_rel_sb)
-        winner_list = Award.objects.all().filter(sb=support.relate_sb)
-        total_app = len(Appliance.objects.all().filter(sb=support.relate_sb))
-        total_view = len(HitLog.objects.all().filter(sb=support.relate_sb).filter(date__gte=support.relate_sb.apply_start).filter(date__lte=support.relate_sb.apply_end))
-        total_win = len(winner_list)
-        q_obj = Q()
-        if len(winner_list) != 0:
-            for winner in winner_list:
-                q_obj |= Q(startup_id=winner.startup) & Q(sb=support.relate_sb)
-            win_filter = []
-            for a in winner_list:
-                for f in a.startup.filter.all():
-                    if f.cat_1 != "소재지" and f.cat_1 != "기업형태" and f.cat_0 !="지원형태":
-                        win_filter.append(f.name)
-            win_dict = {i: win_filter.count(i) for i in win_filter}
-            print(win_dict)
-            local_filter = []
-            for a in winner_list:
-                for f in a.startup.filter.all():
-                    if f.cat_1 == "소재지":
-                        local_filter.append(f.name)
-            win_local_dict = {i: local_filter.count(i) for i in local_filter}
-            case_filter = []
-            for a in winner_list:
-                for f in a.startup.filter.all():
-                    if f.cat_1 == "기업형태":
-                        case_filter.append(f.name)
-            win_case_dict = {i: case_filter.count(i) for i in case_filter}
-            ap_winner = Appliance.objects.all().filter(q_obj)
-            re_0 = zip(hit_day_arr_rel_sb, hit_log_rel_sb)
-            re_1 = zip( hit_day_arr_rel_sb, app_dat_rel_sb)
-        else:
-            total_app=""
-            total_view=""
-            ap_winner = ""
-            win_case_dict = ""
-            win_dict = ""
-            win_local_dict = []
-            hit_log_rel_sb =[]
-            hit_day_arr_rel_sb = []
-            app_dat_rel_sb=[]
-            re_0 = ""
-            re_1 =""
-            total_win=""
+        user = AnonymousUser()
 
+    sk_user_id= str(AdditionalUserInfo.objects.get(id=my_id).user.id)
+
+    print("sk check")
+
+    if user.is_authenticated() and str(session_user_id) == sk_user_id :
+        return True
     else:
-        ap_winner = ""
-        win_case_dict = ""
-        win_dict = ""
-        win_local_dict = ""
-        total_app = ""
-        total_view = ""
-        ap_winner = ""
-        win_case_dict = ""
-        win_dict = ""
-        win_local_dict = []
-        hit_log_rel_sb = []
-        total_win=""
-        re_0=""
-        re_1=""
+        return False
 
-    return render(request, 'pc/support_back.html',
-                  {"random": random, "is_submit": is_submit, "support": support, "status": status, "app": app,"hitlog":hitlog,"applog":applog, "date_arr":date_arr,
-                   "total_view":total_view, "total_app":total_app,"total_win":total_win,
-                   "hit_log_rel_sb":hit_log_rel_sb, "hit_day_arr_rel_sb":re_0,"app_dat_rel_sb":re_1,
-                   "interest": interest,"ap_winner":ap_winner,"win_case_dict":win_case_dict,"win_dict":win_dict,"win_local_dic":win_local_dict})
 
 
-@login_required
-def manage_support_detail(request, id):
-    try:
-        if request.user.additionaluserinfo.category == "1":
-            support = get_object_or_404(SupportBusiness, id=id)
-            return render(request, "pc/manage_support_detail.html", {"support": support, "id": id})
-        else:
-            return HttpResponse('권한 없음.')
-    except Exception as e:
-        print(e)
-        return HttpResponse('권한 없음.')
-
-
-@login_required
-def new_support(request):
-    print(inspect.getmembers(request.user))
-    try:
-        if request.user.additionaluserinfo.category == "1":
-            if request.method == "POST":
-                form = SupportForm(request.POST)
-                print(form)
-                print(form.is_valid())
-                if form.is_valid():
-                    support = form.save(commit=False)
-                    support.open_date = timezone.localtime(timezone.now()).date()
-                    support.createdate = timezone.localtime(timezone.now()).date()
-                    support.hit = 0
-                    support.apply_num = 0
-                    support.author = request.user
-                    support.save()
-                    if (request.POST.get("filter") != ""):
-                        filter_list = request.POST.get("filter").split(",")
-                        for filter in filter_list:
-                            support.filter.add(Filter.objects.get(id=filter))
-                            support.save()
-                        return redirect('support', id=support.id)
-            else:
-                form = SupportForm()
-                filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-                filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-                filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-                filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-                filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-                filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-                filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-                filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-                filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-                filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-                filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-                filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-                filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-                filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-                filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-                filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-                filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-                filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-                filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-                return render(request, 'pc/new_support_business.html',
-                              {"form": form,
-                               "filter_0": filter_0,
-                               "filter_1": filter_1,
-                               "filter_2": filter_2,
-                               "filter_3": filter_3,
-                               "filter_4": filter_4,
-                               "filter_5": filter_5,
-                               "filter_6": filter_6,
-                               "filter_7": filter_7,
-                               "filter_8": filter_8,
-                               "filter_9": filter_9,
-                               "filter_10": filter_10,
-                               "filter_11": filter_11,
-                               "filter_12": filter_12,
-                               "filter_13": filter_13,
-                               "filter_14": filter_14,
-                               "filter_15": filter_15,
-                               "filter_16": filter_16,
-                               "filter_17": filter_17,
-                               "filter_18": filter_18,
-                               })
-        else:
-            return HttpResponse('권한 없음.')
-    except Exception as e:
-        print(e)
-        return HttpResponse('권한 없음.')
-
-
-def company_profile_new(request):
-    if len(Startup.objects.all().filter(user=request.user)) != 0:
-        return redirect("company_profile_edit")
-    if request.method == "POST":
-        print(request.POST)
-        fu = NewStartupUp(request.POST)
-        fb = NewStartupBot(request.POST)
-        if fu.is_valid() and fb.is_valid():
-            startup = Startup(
-                user=request.user,
-                name=fu.cleaned_data["name"],
-                desc=fb.cleaned_data["desc"],
-
-                established_date=fu.cleaned_data["established_date"],
-                category=fu.cleaned_data["category"],
-                address_0=fu.cleaned_data["address_0"],
-                address_detail_0=fu.cleaned_data["address_0_detail"],
-                address_0_title=fu.cleaned_data["address_0_title"],
-                address_1=fu.cleaned_data["address_1"],
-                address_detail_1=fu.cleaned_data["address_1_detail"],
-                address_1_title=fu.cleaned_data["address_1_title"],
-                address_2=fu.cleaned_data["address_2"],
-                address_detail_2=fu.cleaned_data["address_2_detail"],
-                address_2_title=fu.cleaned_data["address_2_title"],
-                employee_number=fu.cleaned_data["employee_number"],
-                email=fu.cleaned_data["email"],
-                website=fu.cleaned_data["website"],
-                service_products=fb.cleaned_data["service_products"],
-                short_desc=fb.cleaned_data["short_desc"],
-                revenue_before_year_0=fb.cleaned_data["revenue_before_year_0"],
-                revenue_before_year_1=fb.cleaned_data["revenue_before_year_1"],
-                revenue_before_year_2=fb.cleaned_data["revenue_before_year_2"],
-                revenue_before_0=fb.cleaned_data["revenue_before_0"],
-                revenue_before_1=fb.cleaned_data["revenue_before_1"],
-                revenue_before_2=fb.cleaned_data["revenue_before_2"],
-                export_before_year_0=fb.cleaned_data["export_before_year_0"],
-                export_before_year_1=fb.cleaned_data["export_before_year_1"],
-                export_before_year_2=fb.cleaned_data["export_before_year_2"],
-                export_before_0=fb.cleaned_data["export_before_0"],
-                export_before_1=fb.cleaned_data["export_before_1"],
-                export_before_2=fb.cleaned_data["export_before_2"],
-                fund_before_0=fb.cleaned_data["fund_before_0"],
-                fund_before_1=fb.cleaned_data["fund_before_1"],
-                fund_before_2=fb.cleaned_data["fund_before_2"],
-                fund_before_3=fb.cleaned_data["fund_before_3"],
-                fund_before_4=fb.cleaned_data["fund_before_4"],
-                fund_before_5=fb.cleaned_data["fund_before_5"],
-                fund_before_6=fb.cleaned_data["fund_before_6"],
-                fund_before_7=fb.cleaned_data["fund_before_7"],
-                fund_before_8=fb.cleaned_data["fund_before_8"],
-                fund_before_9=fb.cleaned_data["fund_before_9"],
-                fund_before_year_0=fb.cleaned_data["fund_before_year_0"],
-                fund_before_year_1=fb.cleaned_data["fund_before_year_1"],
-                fund_before_year_2=fb.cleaned_data["fund_before_year_2"],
-                fund_before_year_3=fb.cleaned_data["fund_before_year_3"],
-                fund_before_year_4=fb.cleaned_data["fund_before_year_4"],
-                fund_before_year_5=fb.cleaned_data["fund_before_year_5"],
-                fund_before_year_6=fb.cleaned_data["fund_before_year_6"],
-                fund_before_year_7=fb.cleaned_data["fund_before_year_7"],
-                fund_before_year_8=fb.cleaned_data["fund_before_year_8"],
-                fund_before_year_9=fb.cleaned_data["fund_before_year_9"],
-                fund_before_agent_0=fb.cleaned_data["fund_before_agent_0"],
-                fund_before_agent_1=fb.cleaned_data["fund_before_agent_1"],
-                fund_before_agent_2=fb.cleaned_data["fund_before_agent_2"],
-                fund_before_agent_3=fb.cleaned_data["fund_before_agent_3"],
-                fund_before_agent_4=fb.cleaned_data["fund_before_agent_4"],
-                fund_before_agent_5=fb.cleaned_data["fund_before_agent_5"],
-                fund_before_agent_6=fb.cleaned_data["fund_before_agent_6"],
-                fund_before_agent_7=fb.cleaned_data["fund_before_agent_7"],
-                fund_before_agent_8=fb.cleaned_data["fund_before_agent_8"],
-                fund_before_agent_9=fb.cleaned_data["fund_before_agent_9"]
-
-            )
-            startup.save()
-            try:
-                startup.thumbnail = request.FILES["FILE_TAG"]
-            except:
-                pass
-            filter_list = request.POST.get("filter_list").split(",")
-            for f in filter_list:
-                if f != "":
-                    startup.filter.add(Filter.objects.get(id=f))
-            tag_list = fb.cleaned_data["keyword"].split("#")[1:]
-            for t in tag_list:
-                tag, created = Tag.objects.get_or_create(name=t)
-                startup.tag.add(tag)
-        return redirect("company_profile")
-    else:
-        print("new")
-        form_up_basic = NewStartupUp(
-            initial={
-                "uid": "none"
-            }
-        )
-        form_bot_basic = NewStartupBot
-        int_sup = Filter.objects.all().filter(cat_0="지원형태")
-        filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-        filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-        filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-        filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-        filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-        filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-        filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-        filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-        filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-        filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-        filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-        filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-        filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-        filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-        filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-        filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-        filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-        filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-        filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-        email_confirm=0
-        return render(request, "pc/edit_company.html",
-                      {"form_basic": form_up_basic, "form_basic_bot": form_bot_basic, "int_sup": int_sup,
-                       "filter_0": filter_0,
-                       "filter_1": filter_1,
-                       "filter_2": filter_2,
-                       "filter_3": filter_3,
-                       "filter_4": filter_4,
-                       "filter_5": filter_5,
-                       "filter_6": filter_6,
-                       "filter_7": filter_7,
-                       "filter_8": filter_8,
-                       "filter_9": filter_9,
-                       "filter_10": filter_10,
-                       "filter_11": filter_11,
-                       "filter_12": filter_12,
-                       "filter_13": filter_13,
-                       "filter_14": filter_14,
-                       "filter_15": filter_15,
-                       "filter_16": filter_16,
-                       "filter_17": filter_17,
-                       "filter_18": filter_18,
-                       "email_confirm":email_confirm
-                       })
-
-
-def company_profile_edit(request):
-    if request.method == "POST":
-        fu = NewStartupUp(request.POST)
-        fb = NewStartupBot(request.POST)
-        if request.method == "POST":
-            fu = NewStartupUp(request.POST)
-            fb = NewStartupBot(request.POST)
-            print(fu)
-            print(fb)
-            if fu.is_valid() and fb.is_valid():
-                startup = Startup.objects.all().get(id=request.POST.get("uid"))
-                startup.user = request.user
-                startup.name = fu.cleaned_data["name"]
-                startup.desc = fb.cleaned_data["desc"]
-                startup.established_date = fu.cleaned_data["established_date"]
-                startup.category = fu.cleaned_data["category"]
-                startup.address_0 = fu.cleaned_data["address_0"]
-                startup.address_detail_0 = fu.cleaned_data["address_0_detail"]
-                startup.address_0_title = fu.cleaned_data["address_0_title"]
-                startup.address_1 = fu.cleaned_data["address_1"]
-                startup.address_detail_1 = fu.cleaned_data["address_1_detail"]
-                startup.address_1_title = fu.cleaned_data["address_1_title"]
-                startup.address_2 = fu.cleaned_data["address_2"]
-                startup.address_detail_2 = fu.cleaned_data["address_2_detail"]
-                startup.address_2_title = fu.cleaned_data["address_2_title"]
-                startup.employee_number = fu.cleaned_data["employee_number"]
-                startup.email = fu.cleaned_data["email"]
-                startup.website = fu.cleaned_data["website"]
-                startup.service_products = fb.cleaned_data["service_products"]
-                startup.short_desc = fb.cleaned_data["short_desc"]
-                # startup.fund_status = fb.cleaned_data["fund_status"]
-                startup.revenue_before_year_0 = fb.cleaned_data["revenue_before_year_0"]
-                startup.revenue_before_year_1 = fb.cleaned_data["revenue_before_year_1"]
-                startup.revenue_before_year_2 = fb.cleaned_data["revenue_before_year_2"]
-                startup.revenue_before_0 = fb.cleaned_data["revenue_before_0"]
-                startup.revenue_before_1 = fb.cleaned_data["revenue_before_1"]
-                startup.revenue_before_2 = fb.cleaned_data["revenue_before_2"]
-                startup.export_before_year_0 = fb.cleaned_data["export_before_year_0"]
-                startup.export_before_year_1 = fb.cleaned_data["export_before_year_1"]
-                startup.export_before_year_2 = fb.cleaned_data["export_before_year_2"]
-                startup.export_before_0 = fb.cleaned_data["export_before_0"]
-                startup.export_before_1 = fb.cleaned_data["export_before_1"]
-                startup.export_before_2 = fb.cleaned_data["export_before_2"]
-                startup.fund_before_0 = fb.cleaned_data["fund_before_0"]
-                startup.fund_before_1 = fb.cleaned_data["fund_before_1"]
-                startup.fund_before_2 = fb.cleaned_data["fund_before_2"]
-                startup.fund_before_3 = fb.cleaned_data["fund_before_3"]
-                startup.fund_before_4 = fb.cleaned_data["fund_before_4"]
-                startup.fund_before_5 = fb.cleaned_data["fund_before_5"]
-                startup.fund_before_6 = fb.cleaned_data["fund_before_6"]
-                startup.fund_before_7 = fb.cleaned_data["fund_before_7"]
-                startup.fund_before_8 = fb.cleaned_data["fund_before_8"]
-                startup.fund_before_9 = fb.cleaned_data["fund_before_9"]
-                startup.fund_before_year_0 = fb.cleaned_data["fund_before_year_0"]
-                startup.fund_before_year_1 = fb.cleaned_data["fund_before_year_1"]
-                startup.fund_before_year_2 = fb.cleaned_data["fund_before_year_2"]
-                startup.fund_before_year_3 = fb.cleaned_data["fund_before_year_3"]
-                startup.fund_before_year_4 = fb.cleaned_data["fund_before_year_4"]
-                startup.fund_before_year_5 = fb.cleaned_data["fund_before_year_5"]
-                startup.fund_before_year_6 = fb.cleaned_data["fund_before_year_6"]
-                startup.fund_before_year_7 = fb.cleaned_data["fund_before_year_7"]
-                startup.fund_before_year_8 = fb.cleaned_data["fund_before_year_8"]
-                startup.fund_before_year_9 = fb.cleaned_data["fund_before_year_9"]
-                startup.fund_before_agent_0 = fb.cleaned_data["fund_before_agent_0"]
-                startup.fund_before_agent_1 = fb.cleaned_data["fund_before_agent_1"]
-                startup.fund_before_agent_2 = fb.cleaned_data["fund_before_agent_2"]
-                startup.fund_before_agent_3 = fb.cleaned_data["fund_before_agent_3"]
-                startup.fund_before_agent_4 = fb.cleaned_data["fund_before_agent_4"]
-                startup.fund_before_agent_5 = fb.cleaned_data["fund_before_agent_5"]
-                startup.fund_before_agent_6 = fb.cleaned_data["fund_before_agent_6"]
-                startup.fund_before_agent_7 = fb.cleaned_data["fund_before_agent_7"]
-                startup.fund_before_agent_8 = fb.cleaned_data["fund_before_agent_8"]
-                startup.fund_before_agent_9 = fb.cleaned_data["fund_before_agent_9"]
-                startup.save()
-                filter_list = request.POST.get("filter_list").split(",")
-                startup.filter.clear()
-                for f in filter_list:
-                    if f != "":
-                        startup.filter.add(Filter.objects.get(id=f))
-                tag_list = fb.cleaned_data["keyword"].split("#")[1:]
-                startup.tag.clear()
-                for t in tag_list:
-                    tag, created = Tag.objects.get_or_create(name=t)
-                    startup.tag.add(tag)
-            return redirect("company_profile")
-    else:
-        filter_qs = request.user.startup.filter.all()
-        filter_list = [filter_qs.id for filter_qs in filter_qs]
-        tag_qs = request.user.startup.tag.all()
-        tag_list = [tag_qs.name for tag_qs in tag_qs]
-        form_up_basic = NewStartupUp(
-            initial={
-                "uid": request.user.startup.id,
-                "name": request.user.startup.name,
-                "established_date": request.user.startup.established_date,
-                "category": request.user.startup.category,
-                "address_0": request.user.startup.address_0,
-                "address_1": request.user.startup.address_1,
-                "address_2": request.user.startup.address_2,
-                "address_0_title": request.user.startup.address_0_title,
-                "address_1_title": request.user.startup.address_1_title,
-                "address_2_title": request.user.startup.address_2_title,
-                "address_0_detail": request.user.startup.address_detail_0,
-                "address_1_detail": request.user.startup.address_detail_1,
-                "address_2_detail": request.user.startup.address_detail_2,
-                "employee_number": request.user.startup.employee_number,
-                "email": request.user.startup.email,
-                "website": request.user.startup.website,
-
-            }
-        )
-        form_bot_basic = NewStartupBot(
-            initial={
-                "desc": request.user.startup.desc,
-                "service_products": request.user.startup.service_products,
-                "short_desc": request.user.startup.short_desc,
-                "fund_status": request.user.startup.fund_status,
-                "export_before_year_0": request.user.startup.export_before_year_0,
-                "export_before_year_1": request.user.startup.export_before_year_1,
-                "export_before_year_2": request.user.startup.export_before_year_2,
-                "export_before_0": request.user.startup.export_before_0,
-                "export_before_1": request.user.startup.export_before_1,
-                "export_before_2": request.user.startup.export_before_2,
-                "revenue_before_0": request.user.startup.revenue_before_0,
-                "revenue_before_1": request.user.startup.revenue_before_1,
-                "revenue_before_2": request.user.startup.revenue_before_2,
-                "revenue_before_year_0": request.user.startup.revenue_before_year_0,
-                "revenue_before_year_1": request.user.startup.revenue_before_year_1,
-                "revenue_before_year_2": request.user.startup.revenue_before_year_2,
-                "fund_before_0": request.user.startup.fund_before_0,
-                "fund_before_1": request.user.startup.fund_before_1,
-                "fund_before_2": request.user.startup.fund_before_2,
-                "fund_before_3": request.user.startup.fund_before_3,
-                "fund_before_4": request.user.startup.fund_before_4,
-                "fund_before_5": request.user.startup.fund_before_5,
-                "fund_before_6": request.user.startup.fund_before_6,
-                "fund_before_7": request.user.startup.fund_before_7,
-                "fund_before_8": request.user.startup.fund_before_8,
-                "fund_before_9": request.user.startup.fund_before_9,
-                "fund_before_year_0": request.user.startup.fund_before_year_0,
-                "fund_before_year_1": request.user.startup.fund_before_year_1,
-                "fund_before_year_2": request.user.startup.fund_before_year_2,
-                "fund_before_year_3": request.user.startup.fund_before_year_3,
-                "fund_before_year_4": request.user.startup.fund_before_year_4,
-                "fund_before_year_5": request.user.startup.fund_before_year_5,
-                "fund_before_year_6": request.user.startup.fund_before_year_6,
-                "fund_before_year_7": request.user.startup.fund_before_year_7,
-                "fund_before_year_8": request.user.startup.fund_before_year_8,
-                "fund_before_year_9": request.user.startup.fund_before_year_9,
-                "fund_before_agent_0": request.user.startup.fund_before_agent_0,
-                "fund_before_agent_1": request.user.startup.fund_before_agent_1,
-                "fund_before_agent_2": request.user.startup.fund_before_agent_2,
-                "fund_before_agent_3": request.user.startup.fund_before_agent_3,
-                "fund_before_agent_4": request.user.startup.fund_before_agent_4,
-                "fund_before_agent_5": request.user.startup.fund_before_agent_5,
-                "fund_before_agent_6": request.user.startup.fund_before_agent_6,
-                "fund_before_agent_7": request.user.startup.fund_before_agent_7,
-                "fund_before_agent_8": request.user.startup.fund_before_agent_8,
-                "fund_before_agent_9": request.user.startup.fund_before_agent_9,
-            }
-        )
-        int_sup = Filter.objects.all().filter(cat_0="지원형태")
-        filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-        filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-        filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-        filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-        filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-        filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-        filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-        filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-        filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-        filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-        filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-        filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-        filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-        filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-        filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-        filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-        filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-        filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-        filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-        email_confirm = 0
-        if request.user.startup.email != "" and len(
-                EmailConfirmation.objects.all().filter(email=request.user.startup.email).filter(confirm=True)) != 0:
-            email_confirm = 1
-        print(email_confirm)
-        return render(request, "pc/edit_company.html", {
-            "email_confirm": email_confirm,
-            "form_basic": form_up_basic, "form_basic_bot": form_bot_basic,
-            "filter_list": filter_list,
-            "tag_list": tag_list,
-            "int_sup": int_sup,
-            "filter_0": filter_0,
-            "filter_1": filter_1,
-            "filter_2": filter_2,
-            "filter_3": filter_3,
-            "filter_4": filter_4,
-            "filter_5": filter_5,
-            "filter_6": filter_6,
-            "filter_7": filter_7,
-            "filter_8": filter_8,
-            "filter_9": filter_9,
-            "filter_10": filter_10,
-            "filter_11": filter_11,
-            "filter_12": filter_12,
-            "filter_13": filter_13,
-            "filter_14": filter_14,
-            "filter_15": filter_15,
-            "filter_16": filter_16,
-            "filter_17": filter_17,
-            "filter_18": filter_18,
-        })
-
-
-def new_apply(request):
-    return render(request, "pc/new_apply.html")
-
-
-def my_profile(request):
-    return render(request, "pc/mypage.html")
-
-
-def my_profile_edit(request):
-    if request.method == "POST":
-        if request.POST.get("pre_pass") != "":
-            if request.POST.get("new_pass") != request.POST.get("pre_pass") :
-                user = User.objects.get(id=request.user.id)
-                if request.POST.get("new_pass") == request.POST.get("new_pass_conf") and user.check_password(
-                        request.POST.get("pre_pass")):
-                    user.set_password(request.POST.get("new_pass"))
-                    user.save()
-                    update_session_auth_hash(request, user)
-            else:
-                messages.warning(request, "변경하려는 비밀번호가 과거의 비밀번호와 동일합니다.")
-                return redirect("my_profile_edit")
-        fu = MyPageUp(request.POST)
-        fb = MyPageBot(request.POST)
-        print(fu)
-        print(fb)
-        if fu.is_valid() and fb.is_valid():
-            if len(AdditionalUserInfo.objects.all().filter(user=request.user)) != 0:
-                additionaluserinfo = AdditionalUserInfo.objects.get(id=fu.cleaned_data["uid"])
-                additionaluserinfo.name = fu.cleaned_data["name"]
-                additionaluserinfo.tel = fb.cleaned_data["tel"]
-                additionaluserinfo.agreement = fb.cleaned_data["agreement"]
-                additionaluserinfo.additional_email = fb.cleaned_data["additional_email"]
-                additionaluserinfo.save();
-            else:
-                AdditionalUserInfo(
-                    user=request.user,
-                    name=fu.cleaned_data["name"],
-                    tel=fb.cleaned_data["tel"],
-                    agreement=fb.cleaned_data["agreement"],
-                    additional_email=fb.cleaned_data["additional_email"],
-                ).save()
-        return redirect("my_profile")
-
-
-    else:
-        if len(AdditionalUserInfo.objects.all().filter(user=request.user)) == 0:
-            form_up = MyPageUp(
-                initial={
-                    "uid": "none"
-                }
-            )
-            form_bot = MyPageBot(
-                initial={
-                }
-            )
-            return render(request, "pc/mypage_edit.html", {"fu": form_up, "fb": form_bot})
-        else:
-            form_up = MyPageUp(
-                initial={
-                    "name": AdditionalUserInfo.objects.get(user=request.user).name,
-                    "uid": AdditionalUserInfo.objects.get(user=request.user).id
-                }
-            )
-            form_bot = MyPageBot(
-                initial={
-                    "tel": AdditionalUserInfo.objects.get(user=request.user).tel,
-                    "additional_email": AdditionalUserInfo.objects.get(user=request.user).additional_email,
-                    "agreement": AdditionalUserInfo.objects.get(user=request.user).agreement,
-                    "position": AdditionalUserInfo.objects.get(user=request.user).position
-                }
-            )
-
-            email_confirm = 0
-            if AdditionalUserInfo.objects.get(user=request.user).additional_email != "" and len(
-                    EmailConfirmation.objects.all().filter(
-                        email=AdditionalUserInfo.objects.get(user=request.user).additional_email).filter(
-                        confirm=True)) != 0:
-                email_confirm = 1
-            print(email_confirm)
-
-            return render(request, "pc/mypage_edit.html",
-                          {"fu": form_up, "fb": form_bot, "email_confirm": email_confirm})
-
-
-def manage_mypage(request):
-    if request.method == "POST":
-        info = AdditionalUserInfo.objects.all().get(user=request.user)
-        form_data = ManagerForm(request.POST)
-        if form_data.is_valid():
-            info.name = form_data.cleaned_data["name"]
-            info.position = form_data.cleaned_data["position"]
-            info.tel = form_data.cleaned_data["tel"]
-            info.web = form_data.cleaned_data["web"]
-            info.save()
-        return redirect("manage_mypage")
-
-    else:
-        add_info = AdditionalUserInfo.objects.all().filter(user=request.user)
-        if (len(add_info) != 0):
-            form = ManagerForm(initial={
-                "name": add_info[0].name,
-                "position": add_info[0].position,
-                "tel": add_info[0].tel,
-                "web": add_info[0].web
-            })
-            # 정보가 있다면
-        else:
-            # 정보가 없으면
-            form = ManagerForm
-        return render(request, 'pc/manager_mypage.html', {"form": form})
-
-
-@login_required
-def manage_support(request):
-    try:
-        if request.user.additionaluserinfo.category == "1":
-            qs = SupportBusiness.objects.all().filter(author=request.user)
-            return render(request, "pc/manage_support_list.html", {"qs": qs})
-        else:
-            return HttpResponse('권한 없음.')
-    except Exception as e:
-        print(e)
-        return HttpResponse('권한 없음.')
-
-def search2(request):
-    query1 = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")))
-    query2 = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1))
-    return render(request, 'pc/search.html', {     })
-
-def search(request):
-    today_min = datetime.datetime.now()
-    if request.user.is_authenticated:
-        interest = request.user.additionaluserinfo.interest.all()
-    else:
-        interest = ""
-    num_0 = len(
-        SupportBusiness.objects.filter(filter__cat_1="자금지원").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_1 = len(
-        SupportBusiness.objects.filter(filter__cat_1="엑셀러레이팅 투자연계").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_2 = len(
-        SupportBusiness.objects.filter(filter__cat_1="교육").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_3 = len(
-        SupportBusiness.objects.filter(filter__cat_1="판로").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_4 = len(
-        SupportBusiness.objects.filter(filter__cat_1="네트워킹").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_5 = len(
-        SupportBusiness.objects.filter(filter__cat_1="기타지원").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    num_6 = len(
-        SupportBusiness.objects.filter(filter__cat_1="공간지원").filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min))
-    try:
-        cat = request.GET.get("cat", "")
-        print(cat)
-        if cat == "0":
-            qs = SupportBusiness.objects.filter(filter__cat_1="자금지원").filter(is_blind=False).filter(
-                open_status=1).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "1":
-            qs = SupportBusiness.objects.filter(filter__cat_1="엑셀러레이팅 투자연계").filter(is_blind=False).filter(
-                open_status=1).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "2":
-            qs = SupportBusiness.objects.filter(filter__cat_1="교육").filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "3":
-            qs = SupportBusiness.objects.filter(filter__cat_1="판로").filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "4":
-            qs = SupportBusiness.objects.filter(filter__cat_1="네트워킹").filter(open_status=1).filter(
-                is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "5":
-            qs = SupportBusiness.objects.filter(filter__cat_1="기타지원").filter(open_status=1).filter(
-                is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "6":
-            qs = SupportBusiness.objects.filter(filter__cat_1="공간지원").filter(open_status=1).filter(
-                is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        elif cat == "":
-            qs = SupportBusiness.objects.all().order_by("-id").filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-    except Exception as e:
-        qs = SupportBusiness.objects.all().order_by("-id")
-    return render(request, 'pc/search.html', {
-        "num_0": num_0,
-        "num_1": num_1,
-        "num_2": num_2,
-        "num_3": num_3,
-        "num_4": num_4,
-        "num_5": num_5,
-        "num_6": num_6,
-        "qs": qs,
-        "interest": interest
-    })
-
-
-
-def qs_su(qs, filter_set):
-    sp = qs
-
-    for s in sp:
-        k = list(set((s.filter.all())).intersection(filter_set))
-        s.k_val = len(k)
-        print(s.k_val)
-    sp =sorted(sp, key=lambda q: (q.k_val) , reverse=True)
-    final_sp = []
-    for q in sp:
-        if q.k_val != 0:
-            final_sp.append(q)
-
-    pk_list = []
-
-    for q in final_sp:
-        pk_list.append(q.id)
-
-    clauses = ' '.join(
-        ['WHEN supporting_business_supportbusiness.id=%s THEN %s' % (pk, i) for i, pk in enumerate(pk_list)])
-    ordering = 'CASE %s END' % clauses
-    queryset = SupportBusiness.objects.filter(pk__in=pk_list).extra(select={'ordering': ordering},
-                                                                    order_by=('ordering',))
-    sp = queryset
-
-    return sp;
-
-def support_list(request):
-    today_min = datetime.datetime.now()
-    if request.user.is_authenticated:
-        interest = request.user.additionaluserinfo.interest.all()
-    else:
-        interest = ""
-
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-    filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-    filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-    filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-    filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-    filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-    filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-    filter_19 = Filter.objects.all().filter(cat_0="지원형태", cat_1="피칭")
-    if request.GET.get("cat", "") == "":
-        if request.GET.get("filter", "") == "":
-            sp = SupportBusiness.objects.filter(open_status=1).filter(apply_start__lt=today_min).filter(is_blind=False).filter(apply_end__gt=today_min)
-            if request.GET.get("em", "") != "":
-                sp = sp.filter(employee_num__gte=request.GET.get("em"))
-            if request.GET.get("q") != "":
-                q = request.GET.get("q", "")
-                sp = sp.filter(Q(title__contains=q) | Q(short_desc__contains=q) | Q(object__contains=q) | Q(
-                    condition__contains=q) | Q(prefer__contains=q) | Q(condition__contains=q)).distinct()
-            all = len(sp.distinct())
-            num_0 = len(sp.filter(filter__cat_1="자금지원").distinct())
-            num_1 = len(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct())
-            num_2 = len(sp.filter(filter__cat_1="교육").distinct())
-            num_3 = len(sp.filter(filter__cat_1="판로").distinct())
-            num_4 = len(sp.filter(filter__cat_1="네트워킹").distinct())
-            num_5 = len(sp.filter(filter__cat_1="기타지원").distinct())
-            num_6 = len(sp.filter(filter__cat_1="공간지원").distinct())
-            num_7 = len(sp.filter(filter__cat_1="피칭").distinct())
-            qs_0 = sp.filter(filter__cat_1="자금지원").distinct()
-            qs_1 = sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct()
-            qs_2 = sp.filter(filter__cat_1="교육").distinct()
-            qs_3 = sp.filter(filter__cat_1="판로").distinct()
-            qs_4 = sp.filter(filter__cat_1="네트워킹").distinct()
-            qs_5 = sp.filter(filter__cat_1="공간지원").distinct()
-            qs_6 = sp.filter(filter__cat_1="기타지원").distinct()
-            qs_7 = sp.filter(filter__cat_1="피칭").distinct()
-            detail_0 = len(sp.filter(filter__id=48).distinct())
-            detail_1 = len(sp.filter(filter__id=49).distinct())
-            detail_2 = len(sp.filter(filter__id=50).distinct())
-            detail_3 = len(sp.filter(filter__id=51).distinct())
-            detail_4 = len(sp.filter(filter__id=52).distinct())
-            detail_5 = len(sp.filter(filter__id=53).distinct())
-            detail_6 = len(sp.filter(filter__id=54).distinct())
-            detail_7 = len(sp.filter(filter__id=55).distinct())
-            detail_8 = len(sp.filter(filter__id=56).distinct())
-            detail_9 = len(sp.filter(filter__id=57).distinct())
-            detail_10 = len(sp.filter(filter__id=58).distinct())
-            detail_11 = len(sp.filter(filter__id=64).distinct())
-            detail_12 = len(sp.filter(filter__id=65).distinct())
-            detail_13 = len(sp.filter(filter__id=59).distinct())
-            detail_14 = len(sp.filter(filter__id=60).distinct())
-            detail_15 = len(sp.filter(filter__id=61).distinct())
-            detail_16 = len(sp.filter(filter__id=62).distinct())
-            detail_17 = len(sp.filter(filter__id=63).distinct())
-            detail_18 = len(sp.filter(filter__id=68).distinct())
-            detail_19 = len(sp.filter(filter__id=70).distinct())
-            return render(request, 'pc/search_filter.html',
-                          {"all": all,
-                           "interest": interest,
-                           "filter_0": filter_0, "filter_1": filter_1, "filter_2": filter_2,
-                           "filter_3": filter_3, "filter_4": filter_4, "filter_5": filter_5,
-                           "filter_6": filter_6, "filter_7": filter_7, "filter_8": filter_8,
-                           "filter_9": filter_9, "filter_10": filter_10, "filter_11": filter_11,
-                           "filter_12": filter_12, "filter_13": filter_13, "filter_14": filter_14,
-                           "filter_15": filter_15, "filter_16": filter_16, "filter_17": filter_17,
-                           "filter_18": filter_18, "filter_19": filter_19, "num_0": num_0, "num_1": num_1,
-                           "num_2": num_2, "num_3": num_3, "num_4": num_4,
-                           "num_5": num_5, "num_6": num_6, "qs_0": qs_0, "num_7": num_7,
-                           "qs_1": qs_1,
-                           "qs_2": qs_2,
-                           "qs_3": qs_3,
-                           "qs_4": qs_4,
-                           "qs_5": qs_5,
-                           "qs_6": qs_6, "qs_7": qs_7,
-                           "detail_0": detail_0,
-                           "detail_1": detail_1,
-                           "detail_2": detail_2,
-                           "detail_3": detail_3,
-                           "detail_4": detail_4,
-                           "detail_5": detail_5,
-                           "detail_6": detail_6,
-                           "detail_7": detail_7,
-                           "detail_8": detail_8,
-                           "detail_9": detail_9,
-                           "detail_10": detail_10,
-                           "detail_11": detail_11,
-                           "detail_12": detail_12,
-                           "detail_13": detail_13,
-                           "detail_14": detail_14,
-                           "detail_15": detail_15,
-                           "detail_16": detail_16,
-                           "detail_17": detail_17,
-                           "detail_18": detail_18,
-                           "detail_19": detail_19,
-                           }
-                          )
-        else:  # 필터를 선택한 경우
-            q_objects = Q()
-            sp = SupportBusiness.objects.all().filter(open_status=1).filter(apply_start__lt=today_min).filter(
-                is_blind=False).filter(apply_end__gt=today_min)
-            filter_string = request.GET.get("filter", "").split(",")
-            em = request.GET.get("em")
-            if em == "":
-                em = 0
-            if len(filter_string) != 0:
-                sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-                    apply_start__lt=today_min).filter(apply_end__gt=today_min)
-                filter_arr = []
-                for t in filter_string:
-                    try:
-                        filter_arr.append(Filter.objects.get(id=t))
-                    except:
-                        print("pass")
-
-                if em != 0:
-                    sp.filter(Q(employee_num__gte=int(em)) | Q(employee_num=int(0)))
-            else:
-                if em != 0:
-                    sp.filter(Q(employee_num__gte=int(em)) | Q(employee_num=int(0)))
-            if request.GET.get("q") != "":
-                q = request.GET.get("q", "")
-                sp = sp.filter(Q(title__contains=q) | Q(short_desc__contains=q) | Q(object__contains=q) | Q(
-                    condition__contains=q) | Q(prefer__contains=q) | Q(condition__contains=q))
-
-            all = len(qs_su(sp.distinct(), filter_arr))
-            num_0 = len(qs_su(sp.filter(filter__cat_1="자금지원").distinct()                        , filter_arr)          )
-            num_1 = len(qs_su(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct()                  , filter_arr)         )
-            num_2 = len(qs_su(sp.filter(filter__cat_1="교육").distinct()     , filter_arr)         )
-            num_3 = len(qs_su(sp.filter(filter__cat_1="판로").distinct()     , filter_arr)         )
-            num_4 = len(qs_su(sp.filter(filter__cat_1="네트워킹").distinct()   , filter_arr)         )
-            num_5 = len(qs_su(sp.filter(filter__cat_1="기타지원").distinct()   , filter_arr)         )
-            num_6 = len(qs_su(sp.filter(filter__cat_1="공간지원").distinct()   , filter_arr)         )
-            detail_0 = len(qs_su(sp.filter(filter__id=48).distinct()      , filter_arr)    )
-            detail_1 = len(qs_su(sp.filter(filter__id=49).distinct()      , filter_arr)    )
-            detail_2 = len(qs_su(sp.filter(filter__id=50).distinct()      , filter_arr)    )
-            detail_3 = len(qs_su(sp.filter(filter__id=51).distinct()      , filter_arr)    )
-            detail_4 = len(qs_su(sp.filter(filter__id=52).distinct()      , filter_arr)    )
-            detail_5 = len(qs_su(sp.filter(filter__id=53).distinct()      , filter_arr)    )
-            detail_6 = len(qs_su(sp.filter(filter__id=54).distinct()      , filter_arr)    )
-            detail_7 = len(qs_su(sp.filter(filter__id=55).distinct()      , filter_arr)    )
-            detail_8 = len(qs_su(sp.filter(filter__id=56).distinct()      , filter_arr)    )
-            detail_9 = len(qs_su(sp.filter(filter__id=57).distinct()      , filter_arr)    )
-            detail_10 = len(qs_su(sp.filter(filter__id=58).distinct()     , filter_arr)    )
-            detail_11 = len(qs_su(sp.filter(filter__id=64).distinct()     , filter_arr)    )
-            detail_12 = len(qs_su(sp.filter(filter__id=65).distinct()     , filter_arr)    )
-            detail_13 = len(qs_su(sp.filter(filter__id=59).distinct()     , filter_arr)    )
-            detail_14 = len(qs_su(sp.filter(filter__id=60).distinct()     , filter_arr)    )
-            detail_15 = len(qs_su(sp.filter(filter__id=61).distinct()     , filter_arr)    )
-            detail_16 = len(qs_su(sp.filter(filter__id=62).distinct()     , filter_arr)    )
-            detail_17 = len(qs_su(sp.filter(filter__id=63).distinct()     , filter_arr)    )
-            detail_18 = len(qs_su(sp.filter(filter__id=68).distinct()     , filter_arr)    )
-            detail_19 = len(qs_su(sp.filter(filter__id=70).distinct()     , filter_arr)    )
-
-            try:
-                qs_0 =qs_su(sp.filter(filter__cat_1="자금지원").distinct()                   ,filter_arr)
-                qs_1 =qs_su(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct()            ,filter_arr)
-                qs_2 =qs_su(sp.filter(filter__cat_1="교육").distinct()                     ,filter_arr)
-                qs_3 =qs_su(sp.filter(filter__cat_1="판로").distinct()                     ,filter_arr)
-                qs_4 =qs_su(sp.filter(filter__cat_1="네트워킹").distinct()                   ,filter_arr)
-                qs_5 =qs_su(sp.filter(filter__cat_1="공간지원").distinct()                   ,filter_arr)
-                qs_6 =qs_su(sp.filter(filter__cat_1="기타지원").distinct()                   ,filter_arr)
-
-            except:
-                qs = SupportBusiness.objects.all().order_by("-id").filter(is_blind=False).filter(open_status=True)
-
-            return render(request, 'pc/search_filter.html',
-                          {"all": all,
-                           "interest": interest,
-                           "filter_0": filter_0, "filter_1": filter_1,
-                           "filter_2": filter_2, "filter_3": filter_3, "filter_4": filter_4,
-                           "filter_5": filter_5, "filter_6": filter_6, "filter_7": filter_7,
-                           "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10,
-                           "filter_11": filter_11, "filter_12": filter_12, "filter_13": filter_13,
-                           "filter_14": filter_14, "filter_15": filter_15, "filter_16": filter_16,
-                           "filter_17": filter_17, "filter_18": filter_18, "num_0": num_0,
-                           "num_1": num_1, "num_2": num_2, "num_3": num_3,
-                           "num_4": num_4, "num_5": num_5, "num_6": num_6,
-                           "qs_0": qs_0,
-                           "qs_1": qs_1,
-                           "qs_2": qs_2,
-                           "qs_3": qs_3,
-                           "qs_4": qs_4,
-                           "qs_5": qs_5,
-                           "qs_6": qs_6,
-                           "detail_0": detail_0,
-                           "detail_1": detail_1,
-                           "detail_2": detail_2,
-                           "detail_3": detail_3,
-                           "detail_4": detail_4,
-                           "detail_5": detail_5,
-                           "detail_6": detail_6,
-                           "detail_7": detail_7,
-                           "detail_8": detail_8,
-                           "detail_9": detail_9,
-                           "detail_10": detail_10,
-                           "detail_11": detail_11,
-                           "detail_12": detail_12,
-                           "detail_13": detail_13,
-                           "detail_14": detail_14,
-                           "detail_15": detail_15,
-                           "detail_16": detail_16,
-                           "detail_17": detail_17,  "detail_18": detail_18,  "detail_19": detail_19,
-                           }
-                          )
-
-    elif request.GET.get("cat", "-1") != "-1":
-        filter_string = request.GET.get("filter", "").split(",")
-        em = request.GET.get("em")
-        if em == "":
-            em = 0
-        sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        if len(filter_string) != 0 and filter_string != [""]:
-            sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-            filter_arr = []
-            for t in filter_string:
-                try:
-                    filter_arr.append(Filter.objects.get(id=t))
-                except:
-                    print("pass")
-            #if em != 0:
-            #    sp.filter(Q(employee_num__gte=em) | Q(employee_num=0))
-        else:
-            sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-                apply_start__lt=today_min).filter(apply_end__gt=today_min)
-
-            filter_arr=[]
-            for f in Filter.objects.all():
-                filter_arr.append(f)
-        if request.GET.get("q") != "":
-            q = request.GET.get("q", "")
-            sp = sp.filter(
-                Q(title__contains=q) | Q(short_desc__contains=q) | Q(object__contains=q) | Q(condition__contains=q) | Q(
-                    prefer__contains=q) | Q(condition__contains=q))
-        print(len(sp))
-        all = len(qs_su(sp.distinct(),filter_arr))
-        num_0 = len(qs_su(sp.filter(filter__cat_1="자금지원").distinct()                    , filter_arr)           )
-        num_1 = len(qs_su(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct()             , filter_arr)           )
-        num_2 = len(qs_su(sp.filter(filter__cat_1="교육").distinct()                    , filter_arr)             )
-        num_3 = len(qs_su(sp.filter(filter__cat_1="판로").distinct()                      , filter_arr)           )
-        num_4 = len(qs_su(sp.filter(filter__cat_1="네트워킹").distinct()                     , filter_arr)           )
-        num_5 = len(qs_su(sp.filter(filter__cat_1="기타지원").distinct()                    , filter_arr)           )
-        num_6 = len(qs_su(sp.filter(filter__cat_1="공간지원").distinct()                    , filter_arr)           )
-        num_7 = len(qs_su(sp.filter(filter__cat_1="피칭").distinct()                      , filter_arr)           )
-        detail_0 = len(qs_su(sp.filter(filter__id=48).distinct()  , filter_arr)         )
-        detail_1 = len(qs_su(sp.filter(filter__id=49).distinct()  , filter_arr)         )
-        detail_2 = len(qs_su(sp.filter(filter__id=50).distinct()  , filter_arr)         )
-        detail_3 = len(qs_su(sp.filter(filter__id=51).distinct()  , filter_arr)         )
-        detail_4 = len(qs_su(sp.filter(filter__id=52).distinct()  , filter_arr)         )
-        detail_5 = len(qs_su(sp.filter(filter__id=53).distinct()  , filter_arr)         )
-        detail_6 = len(qs_su(sp.filter(filter__id=54).distinct()  , filter_arr)         )
-        detail_7 = len(qs_su(sp.filter(filter__id=55).distinct()  , filter_arr)         )
-        detail_8 = len(qs_su(sp.filter(filter__id=56).distinct()  , filter_arr)         )
-        detail_9 = len(qs_su(sp.filter(filter__id=57).distinct()  , filter_arr)         )
-        detail_10 = len(qs_su(sp.filter(filter__id=58).distinct()    , filter_arr)      )
-        detail_11 = len(qs_su(sp.filter(filter__id=64).distinct()    , filter_arr)      )
-        detail_12 = len(qs_su(sp.filter(filter__id=65).distinct()    , filter_arr)      )
-        detail_13 = len(qs_su(sp.filter(filter__id=59).distinct()    , filter_arr)      )
-        detail_14 = len(qs_su(sp.filter(filter__id=60).distinct()    , filter_arr)      )
-        detail_15 = len(qs_su(sp.filter(filter__id=61).distinct()    , filter_arr)      )
-        detail_16 = len(qs_su(sp.filter(filter__id=62).distinct()    , filter_arr)      )
-        detail_17 = len(qs_su(sp.filter(filter__id=63).distinct()    , filter_arr)      )
-        detail_18 = len(qs_su(sp.filter(filter__id=68).distinct()    , filter_arr)      )
-        detail_19 = len(qs_su(sp.filter(filter__id=70).distinct()    , filter_arr)      )
-        print("들어가기전")
-        print(len(sp))
-        if request.GET.get("cat") == "0":
-            cat = "자금지원"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "1":
-            cat = "엑셀러레이팅 투자연계"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "2":
-            cat = "교육"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "3":
-            cat = "판로"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "4":
-            cat = "네트워킹"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "5":
-            cat = "공간지원"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-
-        elif request.GET.get("cat") == "7":
-            cat = "피칭"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "6":
-            cat = "기타지원"
-            fs = Filter.objects.all().filter(cat_1=cat)
-            qs = qs_su(sp.filter(filter__cat_1=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "1_1":
-            cat = "자금지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "1_2":
-            cat = "R&D지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "2_1":
-            cat = "엑셀러레이팅 프로그램"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "2_2":
-            cat = "데모데이 프로그램(투자연계)"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "3_1":
-            cat = "교육 프로그램"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "3_2":
-            cat = "전문가 양성 프로그램"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "4_1":
-            cat = "해외 진출 지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "4_2":
-            cat = "전시회 참가지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "4_3":
-            cat = "유통지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "5_1":
-            cat = "네트워킹 프로그램"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "5_2":
-            cat = "전문가 컨설팅&멘토링"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "5_3":
-            cat = "데모데이 프로그램(네트워킹)"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "6_1":
-            cat = "스타트업 오피스 지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "6_2":
-            cat = "가상오피스 지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "7_1":
-            cat = "기업피칭"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "8_1":
-            cat = "마케팅지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "8_2":
-            cat = "퍼블리싱 지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-
-        elif request.GET.get("cat") == "8_3":
-            cat = "B2B 상담 지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-
-        elif request.GET.get("cat") == "8_4":
-            cat = "번역지원"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-        elif request.GET.get("cat") == "8_5":
-            cat = "공간/장비"
-            fs = Filter.objects.all().filter(name=cat)
-            qs = qs_su(sp.filter(filter__name=cat).distinct(), filter_arr)
-
-
-        return render(request, 'pc/search_support.html',
-                      {"all": all,
-                       "interest": interest,
-                       "fs": fs, "filter_0": filter_0, "filter_1": filter_1,
-                       "filter_2": filter_2, "filter_3": filter_3, "filter_4": filter_4,
-                       "filter_5": filter_5, "filter_6": filter_6, "filter_7": filter_7,
-                       "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10,
-                       "filter_11": filter_11, "filter_12": filter_12, "filter_13": filter_13,
-                       "filter_14": filter_14, "filter_15": filter_15, "filter_16": filter_16,
-                       "filter_17": filter_17, "filter_18": filter_18, "num_0": num_0,
-                       "num_1": num_1, "num_2": num_2, "num_3": num_3,
-                       "num_4": num_4, "num_5": num_5, "num_6": num_6, "num_7": num_7,
-                       "qs": qs,
-                       "detail_0": detail_0,
-                       "detail_1": detail_1,
-                       "detail_2": detail_2,
-                       "detail_3": detail_3,
-                       "detail_4": detail_4,
-                       "detail_5": detail_5,
-                       "detail_6": detail_6,
-                       "detail_7": detail_7,
-                       "detail_8": detail_8,
-                       "detail_9": detail_9,
-                       "detail_10": detail_10,
-                       "detail_11": detail_11,
-                       "detail_12": detail_12,
-                       "detail_13": detail_13,
-                       "detail_14": detail_14,
-                       "detail_15": detail_15,
-                       "detail_16": detail_16,
-                       "detail_17": detail_17,
-                       "detail_18": detail_18, "detail_19": detail_19,
-                       }
-                      )
-
-
-def company_profile(request):
-    if len(Startup.objects.all().filter(user=request.user)) != 0:
-        return render(request, "pc/company_profile.html")
-    else:
-        return redirect("company_profile_new")
-
-
-@receiver(user_signed_up)
-def social_user_added_test_2(request, user, sociallogin, **kwargs):
-    if sociallogin.account.provider == "naver":
-        email = sociallogin.account.extra_data["email"]
-        name = sociallogin.account.extra_data["name"]
-    if sociallogin.account.provider == "kakao":
-        name = sociallogin.account.extra_data["properties"]["nickname"]
-        email = sociallogin.account.extra_data["kaccount_email"]
-    if sociallogin.account.provider == "facebook":
-        print(sociallogin.account.extra_data)
-        email = sociallogin.account.extra_data["email"]
-        name = sociallogin.account.extra_data["name"]
-    user.username = email
-    user.save()
-
-    AdditionalUserInfo(user=user, name=name).save()
-    print(user)
-
-
-@receiver(social_account_added)
-def social_user_added_test(request, sociallogin, **kwargs):
-    print(inspect.getmembers(sociallogin.account.provider))
-    if sociallogin.account.provider == "naver":
-        print("네이버로 로그인 하였습니다.")
-    if sociallogin.account.provider == "Kakao":
-        print("카카오로 로그인 하였습니다.")
-
-    print("hello!")
-
-
-@receiver(pre_social_login)
-def pre_social_user_added(request, sociallogin, **kwargs):
-    print(request)
-    try:
-        print(inspect.getmembers(sociallogin))
-        print(inspect.getmembers(sociallogin.account))
-        print(sociallogin.account.extra_data)
-    except:
-        pass
-
-
-def pdfver_support(request, id):
-    support = get_object_or_404(SupportBusiness, id=id)
-    return render(request, "pc/pdf_support_detail.html", {"support": support})
-
-
-import subprocess
-import os.path
-
-
-def pdf(request, id):
-    # config = pdfkit.configuration(wkhtmltopdf="/usr/bin/wkhtmltopdf")
-    # pdf = pdfkit.from_url('http://gconnect.kr/pdfver_support/' + str(id), False, configuration=config, options= {'javascript-delay':'1000',"load-error-handling":"ignore"})
-    url = "http://gconnect.kr/pdfver_support/" + str(id)
-    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
-    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    with open(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", 'rb') as pdf:
-        response = HttpResponse(pdf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="result.pdf"'
-        k = k + 1
-        return response
-
-
-def profile_thumbnail(request):
-    addinfo = AdditionalUserInfo.objects.all().get(user=request.user)
-    addinfo.avatar = request.FILES["FILE_TAG"]
-    addinfo.save()
-    string = (addinfo.avatar.url)
-    return HttpResponse(string)
-
-
-def company_thumbnail(request):
-    print("here2")
-    print(request.POST)
-    print(request.FILES)
-    startup = Startup.objects.get(user=request.user)
-    startup.thumbnail = request.FILES["fileObj"]
-    startup.save()
-    string = (startup.thumbnail.url)
-    return HttpResponse(string)
-
-
-def matching(request):
-    num_0 = len(
-        SupportBusiness.objects.filter(filter__cat_1="자금지원").filter(open_status=1))
-    num_1 = len(
-        SupportBusiness.objects.filter(filter__cat_1="엑셀러레이팅 투자연계").filter(open_status=1))
-    num_2 = len(
-        SupportBusiness.objects.filter(filter__cat_1="교육").filter(open_status=1))
-    num_3 = len(
-        SupportBusiness.objects.filter(filter__cat_1="판로").filter(open_status=1))
-    num_4 = len(
-        SupportBusiness.objects.filter(filter__cat_1="네트워킹").filter(open_status=1))
-    num_5 = len(
-        SupportBusiness.objects.filter(filter__cat_1="기타지원").filter(open_status=1))
-    num_6 = len(
-        SupportBusiness.objects.filter(filter__cat_1="공간지원").filter(open_status=1))
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-    filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-    filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-    filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-    filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-    filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-    filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-
-    return render(request, "pc/matching.html",
-                  {
-                      "filter_0": filter_0,
-                      "filter_1": filter_1,
-                      "filter_2": filter_2,
-                      "filter_3": filter_3,
-                      "filter_4": filter_4,
-                      "filter_5": filter_5,
-                      "filter_6": filter_6,
-                      "filter_7": filter_7,
-                      "filter_8": filter_8,
-                      "filter_9": filter_9,
-                      "filter_10": filter_10,
-                      "filter_11": filter_11,
-                      "filter_12": filter_12,
-                      "filter_13": filter_13,
-                      "filter_14": filter_14,
-                      "filter_15": filter_15,
-                      "filter_16": filter_16,
-                      "filter_17": filter_17,
-                      "filter_18": filter_18,
-                      "num_0": num_0,
-                      "num_1": num_1,
-                      "num_2": num_2,
-                      "num_3": num_3,
-                      "num_4": num_4,
-                      "num_5": num_5,
-                      "num_6": num_6,
-                      "qs": qs
-                  })
-
-
-import string
-import random
-
-@csrf_exempt
-def signup(request):
-    print(request.is_ajax())
-    if request.is_ajax():
-        print("here")
-        if request.POST.get("type") == "confirm":
-            target = request.POST.get("val")
-            random_code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-            try:
-                send_mail(
-                '[G-connect] 인증메일입니다.',
-                '인증코드는 [' + random_code + "] 입니다.",
-                'neogelon@gmail.com',
-                [target],
-                fail_silently=False,
-                )
-                EmailConfirmation(
-                    email=target,
-                    confirmation_code=random_code
-                ).save()
-                return HttpResponse("ok")
-            except Exception as e:
-                print(e)
-                return HttpResponse("none")
-
-        elif request.POST.get("type") == "confirm2":
-            if EmailConfirmation.objects.all().filter(email=request.POST.get("target")).order_by("-id")[
-                0].confirmation_code == request.POST.get("confirmation_code"):
-                EmailConfirmation.objects.all().filter(email=request.POST.get("target")).update(confirm = True)
-
-                return HttpResponse("ok")
-            else:
-                return HttpResponse("no")
-
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-
-
-        if form.is_valid() and \
-                        EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[
-                            0].confirmation_code == request.POST.get("confirmation_code"):
-            user = User.objects.create_user(username=form.cleaned_data["username"],
-                                            password=form.cleaned_data["password"])
-            EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[0].confirm = True
-            if user is not None:
-
-                AdditionalUserInfo(user=user).save()
-                user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
-
-                if user is not None:
-                    login(request, user)
-
-                    messages.success(request, '회원님 환영합니다!')
-                return redirect("/")
-            else:
-                return False
-    else:
-        form = LoginForm
-    return render(request, "pc/accounts/signup.html", {"form": form})
-
-
-def category(request, category):
-    today_min = datetime.datetime.now()
-    try:
-        interest = request.user.additionaluserinfo.interest.all()
-    except:
-        interest = ""
-    startup = Startup.objects.get(user=request.user);
-    filter_string = request.user.startup.filter.all()
-    k = []
-    for f in filter_string:
-        k.append(str(f.id))
-    startup = Startup.objects.get(user=request.user);
-    startup_filter = startup.filter.all()
-    q_obj = Q()
-    em = startup.employee_number
-    if em == None or em == "":
-        em = 0
-    sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(apply_start__lt=today_min).filter(apply_end__gt=today_min)
-    if len(startup_filter) != 0:
-        print("here")
-        filter_string = request.user.startup.filter.all()
-        em = request.user.startup.employee_number
-        if em == None or em == "":
-            em = 0;
-        sp = SupportBusiness.objects.all().filter(open_status=1).filter(is_blind=False).filter(
-            apply_start__lt=today_min).filter(apply_end__gt=today_min)
-        startup = Startup.objects.get(user=request.user)
-
-    else:
-        sp=sp.filter(id__lt=0)
-    result = {}
-    if category == "finance":
-        result["fs"] = Filter.objects.all().filter(cat_1="자금지원")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="자금지원").distinct(), startup, request.user)
-    if category == "accel":
-        result["fs"] = Filter.objects.all().filter(cat_1="엑셀러레이팅 투자연계")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct(), startup, request.user)
-    if category == "edu":
-        result["fs"] = Filter.objects.all().filter(cat_1="교육")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="교육").distinct(), startup, request.user)
-    if category == "channel":
-        result["fs"] = Filter.objects.all().filter(cat_1="판로")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="판로").distinct(), startup, request.user)
-    if category == "network":
-        result["fs"] = Filter.objects.all().filter(cat_1="네트워킹")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="네트워킹").distinct(), startup, request.user)
-    if category == "space":
-        result["fs"] = Filter.objects.all().filter(cat_1="공간지원")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="공간지원").distinct(), startup, request.user)
-    if category == "piching":
-        result["fs"] = Filter.objects.all().filter(cat_1="피칭")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="피칭").distinct(), startup, request.user)
-    if category == "etc":
-        result["fs"] = Filter.objects.all().filter(cat_1="기타지원")
-        result["qs"] = qs_al(sp.filter(filter__cat_1="기타지원").distinct(), startup, request.user)
-    final = "final"
-    sb_total = len(result["qs"])
-    sb_0 = qs_al(sp.filter(filter__cat_1="자금지원").distinct()        , startup, request.user)
-    sb_1 = qs_al(sp.filter(filter__cat_1="엑셀러레이팅 투자연계").distinct() , startup, request.user)
-    sb_2 = qs_al(sp.filter(filter__cat_1="교육").distinct()          , startup, request.user)
-    sb_3 = qs_al(sp.filter(filter__cat_1="판로").distinct()          , startup, request.user)
-    sb_4 = qs_al(sp.filter(filter__cat_1="네트워킹").distinct()        , startup, request.user)
-    sb_5 = qs_al(sp.filter(filter__cat_1="공간지원").distinct()        , startup, request.user)
-    sb_6 = qs_al(sp.filter(filter__cat_1="기타지원").distinct()        , startup, request.user)
-    sb_7 = qs_al(sp.filter(filter__cat_1="피칭").distinct()          , startup, request.user)
-    many_view = SupportBusiness.objects.filter(open_status=1).filter(is_blind=False).filter(
-        apply_start__lt=today_min).filter(apply_end__gt=today_min).order_by("-hit").distinct()[:3]
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-    filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-    filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-    filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-    filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-    filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-    filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-    filter_19 = Filter.objects.all().filter(cat_0="지원형태", cat_1="피칭")
-    final = "final"
-    random = SupportBusiness.objects.all().filter(is_blind=False).filter(open_status=True).filter(
-        apply_start__lt=today_min).filter(apply_end__gt=today_min).order_by("?").distinct()[:3]
-    return render(request, "pc/category.html",
-                  {"result": result, "final": final, "sb_total": sb_total,
-                   "filter_string": ",".join(k),
-                   "sb_0": sb_0, "sb_1": sb_1, "sb_2": sb_2, "sb_3": sb_3, "interest": interest,
-                   "sb_4": sb_4, "sb_5": sb_5, "sb_6": sb_6, "sb_7": sb_7, "many_view": many_view,
-                   "filter_0": filter_0,
-                   "filter_1": filter_1,
-                   "filter_2": filter_2,
-                   "filter_3": filter_3,
-                   "filter_4": filter_4,
-                   "filter_5": filter_5,
-                   "filter_6": filter_6,
-                   "filter_7": filter_7,
-                   "filter_8": filter_8,
-                   "filter_9": filter_9,
-                   "filter_10": filter_10,
-                   "filter_11": filter_11,
-                   "filter_12": filter_12,
-                   "filter_13": filter_13,
-                   "filter_14": filter_14,
-                   "filter_15": filter_15,
-                   "filter_16": filter_16,
-                   "filter_17": filter_17,
-                   "filter_18": filter_18, "filter_19": filter_19,
-                   "random": random,
-                   })
-
-
-def category_last_depth(request, category, id):
-    today_min = datetime.datetime.now()
-    startup = Startup.objects.get(user=request.user);
-    startup_filter = startup.filter.all()
-    q_obj = Q()
-    if len(startup_filter) != 0:
-        for filter in startup_filter:
-            if filter.id < 48:
-                q_obj |= Q(filter__id=filter.id)
-    else:
-        q_obj |= Q(filter__id__gte=0)
-    sb_total = SupportBusiness.objects.filter(open_status=1).filter(apply_start__lt=today_min).filter(
-        is_blind=False).filter(q_obj).distinct()
-    sb_0 = SupportBusiness.objects.filter(filter__cat_1="자금지원").filter(open_status=1).filter(
-        apply_start__lt=today_min).filter(is_blind=False).filter(q_obj).distinct()
-    sb_1 = SupportBusiness.objects.filter(filter__cat_1="엑셀러레이팅 투자연계").filter(open_status=1).filter(
-        apply_start__lt=today_min).filter(is_blind=False).filter(q_obj).distinct()
-    sb_2 = SupportBusiness.objects.filter(filter__cat_1="교육").filter(open_status=1).filter(
-        apply_start__lt=today_min).filter(is_blind=False).filter(q_obj).distinct()
-    sb_3 = SupportBusiness.objects.filter(filter__cat_1="판로").filter(open_status=1).filter(
-        apply_start__lt=today_min).filter(is_blind=False).filter(q_obj).distinct()
-    sb_4 = SupportBusiness.objects.filter(filter__cat_1="네트워킹").filter(apply_start__lt=today_min).filter(
-        is_blind=False).filter(q_obj).distinct()
-    sb_5 = SupportBusiness.objects.filter(filter__cat_1="공간지원").filter(apply_start__lt=today_min).filter(
-        is_blind=False).filter(q_obj).distinct()
-    sb_6 = SupportBusiness.objects.filter(filter__cat_1="기타지원").filter(apply_start__lt=today_min).filter(
-        is_blind=False).filter(q_obj).distinct()
-    result = {}
-    result["fs"] = Filter.objects.all().filter(id=id)
-    result["qs"] = SupportBusiness.objects.all().filter(apply_start__lt=today_min).filter(is_blind=False).filter(
-        filter__id=id)
-    final = "final"
-    print(sb_0)
-    return render(request, "pc/category.html", {"result": result, "final": final, "sb_total": sb_total,
-                                                "sb_0": sb_0, "sb_1": sb_1, "sb_2": sb_2, "sb_3": sb_3,
-                                                "sb_4": sb_4, "sb_5": sb_5, "sb_6": sb_6,
-                                                })
-
-
-def apply(request, id):
-    today_min = datetime.datetime.now()
-    if request.method == "POST":
-        print("this")
-        form = ApplianceForm(request.POST, request.FILES)
-        print(request.POST)
-        print(request.FILES)
-        if form.is_valid() and SupportBusiness.objects.get(id=id).apply_end > today_min:
-            ap = form.save(commit=True)
-            print(ap)
-            print( form.cleaned_data["total_employ"] )
-
-            ap.sb = SupportBusiness.objects.get(id=id)
-            ap.startup = request.user.startup
-            ap.save()
-            s = Startup.objects.get(user=request.user)
-            s.name = form.cleaned_data["name"] if form.cleaned_data["name"] is not None and form.cleaned_data["name"]!="" else  s.name
-            s.established_date = form.cleaned_data["found_date"] if form.cleaned_data["found_date"] is not None and form.cleaned_data["found_date"]!="" else s.established_date
-            s.address_0 = form.cleaned_data["address"] if form.cleaned_data["address"] is not None and form.cleaned_data["address"] !="" else s.address_0
-            s.category = form.cleaned_data["service_category"]  if  form.cleaned_data["service_category"] is not None and  form.cleaned_data["service_category"] !="" else s.category
-            s.user.additionaluserinfo.name = form.cleaned_data["repre_name"] if  form.cleaned_data["repre_name"] is not None and form.cleaned_data["repre_name"] != "" else  s.user.additionaluserinfo.name
-            s.user.additionaluserinfo.tel = form.cleaned_data["repre_tel"] if form.cleaned_data["repre_tel"] is not None  and form.cleaned_data["repre_tel"]!="" else s.user.additionaluserinfo.tel
-            s.user.additionaluserinfo.username = form.cleaned_data["repre_email"] if form.cleaned_data["repre_email"] is not None and form.cleaned_data["repre_email"] !="" else s.user.additionaluserinfo.username
-            s.user.startup.website = form.cleaned_data["website"] if  form.cleaned_data["website"] is not None  and form.cleaned_data["website"]!="" else s.user.startup.website
-            s.service_products = form.cleaned_data["service_intro"] if form.cleaned_data["service_intro"] is not None and form.cleaned_data["service_intro"]!="" else s.service_products
-            s.desc = form.cleaned_data["intro"] if form.cleaned_data["intro"] is not None and  form.cleaned_data["intro"]!="" else  s.desc
-
-            s.employee_number = form.cleaned_data["total_employ"] if  form.cleaned_data["total_employ"] is not None and form.cleaned_data["total_employ"]!="" else s.employee_number
-            s.export_before_year_0 = form.cleaned_data["export_before_year_0"] if  form.cleaned_data["export_before_year_0"] is not None and form.cleaned_data["export_before_year_0"]!="" else s.export_before_year_0
-            s.export_before_year_1 = form.cleaned_data["export_before_year_1"] if  form.cleaned_data["export_before_year_1"] is not None and form.cleaned_data["export_before_year_1"]!="" else s.export_before_year_1
-            s.export_before_year_2 = form.cleaned_data["export_before_year_2"] if  form.cleaned_data["export_before_year_2"] is not None and form.cleaned_data["export_before_year_2"]!="" else s.export_before_year_2
-            s.export_before_0 = form.cleaned_data["export_before_0"]  if   form.cleaned_data["export_before_0"]  is not None and     form.cleaned_data["export_before_0"] !="" else  s.export_before_0
-            s.export_before_1 = form.cleaned_data["export_before_1"]  if   form.cleaned_data["export_before_1"]  is not None and     form.cleaned_data["export_before_1"] !="" else s.export_before_1
-            s.export_before_2 = form.cleaned_data["export_before_2"]  if   form.cleaned_data["export_before_2"]  is not None and     form.cleaned_data["export_before_2"] !="" else s.export_before_2
-            s.revenue_before_0 = form.cleaned_data["revenue_before_0"] if  form.cleaned_data["revenue_before_0"] is not None and     form.cleaned_data["revenue_before_0"]!="" else s.revenue_before_0
-            s.revenue_before_1 = form.cleaned_data["revenue_before_1"] if  form.cleaned_data["revenue_before_1"] is not None and     form.cleaned_data["revenue_before_1"]!="" else s.revenue_before_1
-            s.revenue_before_2 = form.cleaned_data["revenue_before_2"] if  form.cleaned_data["revenue_before_2"] is not None and     form.cleaned_data["revenue_before_2"]!="" else s.revenue_before_2
-            s.revenue_before_year_0 = form.cleaned_data["revenue_before_year_0"]  if  form.cleaned_data["revenue_before_year_0"]  is not None and form.cleaned_data["revenue_before_year_0"] !="" else   s.revenue_before_year_0
-            s.revenue_before_year_1 = form.cleaned_data["revenue_before_year_1"]  if  form.cleaned_data["revenue_before_year_1"]  is not None and form.cleaned_data["revenue_before_year_1"] !="" else   s.revenue_before_year_1
-            s.revenue_before_year_2 = form.cleaned_data["revenue_before_year_2"]  if  form.cleaned_data["revenue_before_year_2"]  is not None and form.cleaned_data["revenue_before_year_2"] !="" else   s.revenue_before_year_2
-            s.fund_before_0 = form.cleaned_data["fund_before_0"]    if form.cleaned_data["fund_before_0"] is not None and form.cleaned_data["fund_before_0"] != "" else   s.fund_before_0
-            s.fund_before_1 = form.cleaned_data["fund_before_1"]    if form.cleaned_data["fund_before_1"] is not None and form.cleaned_data["fund_before_1"] != "" else   s.fund_before_1
-            s.fund_before_2 = form.cleaned_data["fund_before_2"]    if form.cleaned_data["fund_before_2"] is not None and form.cleaned_data["fund_before_2"] != "" else   s.fund_before_2
-            s.fund_before_3 = form.cleaned_data["fund_before_3"]    if form.cleaned_data["fund_before_3"] is not None and form.cleaned_data["fund_before_3"] != "" else   s.fund_before_3
-            s.fund_before_4 = form.cleaned_data["fund_before_4"]    if form.cleaned_data["fund_before_4"] is not None and form.cleaned_data["fund_before_4"] != "" else   s.fund_before_4
-            s.fund_before_5 = form.cleaned_data["fund_before_5"]    if form.cleaned_data["fund_before_5"] is not None and form.cleaned_data["fund_before_5"] != "" else   s.fund_before_5
-            s.fund_before_6 = form.cleaned_data["fund_before_6"]    if form.cleaned_data["fund_before_6"] is not None and form.cleaned_data["fund_before_6"] != "" else   s.fund_before_6
-            s.fund_before_7 = form.cleaned_data["fund_before_7"]    if form.cleaned_data["fund_before_7"] is not None and form.cleaned_data["fund_before_7"] != "" else   s.fund_before_7
-            s.fund_before_8 = form.cleaned_data["fund_before_8"]    if form.cleaned_data["fund_before_8"] is not None and form.cleaned_data["fund_before_8"] != "" else   s.fund_before_8
-            s.fund_before_9 = form.cleaned_data["fund_before_9"]    if form.cleaned_data["fund_before_9"] is not None and form.cleaned_data["fund_before_9"] != "" else   s.fund_before_9
-            s.fund_before_year_0 = form.cleaned_data["fund_before_year_0"]    if  form.cleaned_data["fund_before_year_0"]  is not None and form.cleaned_data["fund_before_year_0"] !="" else  s.fund_before_year_0
-            s.fund_before_year_1 = form.cleaned_data["fund_before_year_1"]    if  form.cleaned_data["fund_before_year_1"]  is not None and form.cleaned_data["fund_before_year_1"] !="" else  s.fund_before_year_1
-            s.fund_before_year_2 = form.cleaned_data["fund_before_year_2"]    if  form.cleaned_data["fund_before_year_2"]  is not None and form.cleaned_data["fund_before_year_2"] !="" else  s.fund_before_year_2
-            s.fund_before_year_3 = form.cleaned_data["fund_before_year_3"]    if  form.cleaned_data["fund_before_year_3"]  is not None and form.cleaned_data["fund_before_year_3"] !="" else  s.fund_before_year_3
-            s.fund_before_year_4 = form.cleaned_data["fund_before_year_4"]    if  form.cleaned_data["fund_before_year_4"]  is not None and form.cleaned_data["fund_before_year_4"] !="" else  s.fund_before_year_4
-            s.fund_before_year_5 = form.cleaned_data["fund_before_year_5"]    if  form.cleaned_data["fund_before_year_5"]  is not None and form.cleaned_data["fund_before_year_5"] !="" else  s.fund_before_year_5
-            s.fund_before_year_6 = form.cleaned_data["fund_before_year_6"]    if  form.cleaned_data["fund_before_year_6"]  is not None and form.cleaned_data["fund_before_year_6"] !="" else  s.fund_before_year_6
-            s.fund_before_year_7 = form.cleaned_data["fund_before_year_7"]    if  form.cleaned_data["fund_before_year_7"]  is not None and form.cleaned_data["fund_before_year_7"] !="" else  s.fund_before_year_7
-            s.fund_before_year_8 = form.cleaned_data["fund_before_year_8"]    if  form.cleaned_data["fund_before_year_8"]  is not None and form.cleaned_data["fund_before_year_8"] !="" else  s.fund_before_year_8
-            s.fund_before_year_9 = form.cleaned_data["fund_before_year_9"]    if  form.cleaned_data["fund_before_year_9"]  is not None and form.cleaned_data["fund_before_year_9"] !="" else  s.fund_before_year_9
-            s.fund_before_agent_0 = form.cleaned_data["fund_before_agent_0"]  if  form.cleaned_data["fund_before_agent_0"] is not None and form.cleaned_data["fund_before_agent_0"]!="" else   s.fund_before_agent_0
-            s.fund_before_agent_1 = form.cleaned_data["fund_before_agent_1"]  if  form.cleaned_data["fund_before_agent_1"] is not None and form.cleaned_data["fund_before_agent_1"]!="" else   s.fund_before_agent_1
-            s.fund_before_agent_2 = form.cleaned_data["fund_before_agent_2"]  if  form.cleaned_data["fund_before_agent_2"] is not None and form.cleaned_data["fund_before_agent_2"]!="" else   s.fund_before_agent_2
-            s.fund_before_agent_3 = form.cleaned_data["fund_before_agent_3"]  if  form.cleaned_data["fund_before_agent_3"] is not None and form.cleaned_data["fund_before_agent_3"]!="" else   s.fund_before_agent_3
-            s.fund_before_agent_4 = form.cleaned_data["fund_before_agent_4"]  if  form.cleaned_data["fund_before_agent_4"] is not None and form.cleaned_data["fund_before_agent_4"]!="" else   s.fund_before_agent_4
-            s.fund_before_agent_5 = form.cleaned_data["fund_before_agent_5"]  if  form.cleaned_data["fund_before_agent_5"] is not None and form.cleaned_data["fund_before_agent_5"]!="" else   s.fund_before_agent_5
-            s.fund_before_agent_6 = form.cleaned_data["fund_before_agent_6"]  if  form.cleaned_data["fund_before_agent_6"] is not None and form.cleaned_data["fund_before_agent_6"]!="" else   s.fund_before_agent_6
-            s.fund_before_agent_7 = form.cleaned_data["fund_before_agent_7"]  if  form.cleaned_data["fund_before_agent_7"] is not None and form.cleaned_data["fund_before_agent_7"]!="" else   s.fund_before_agent_7
-            s.fund_before_agent_8 = form.cleaned_data["fund_before_agent_8"]  if  form.cleaned_data["fund_before_agent_8"] is not None and form.cleaned_data["fund_before_agent_8"]!="" else   s.fund_before_agent_8
-            s.fund_before_agent_9 = form.cleaned_data["fund_before_agent_9"]  if  form.cleaned_data["fund_before_agent_9"] is not None and form.cleaned_data["fund_before_agent_9"]!="" else   s.fund_before_agent_9
-            s.save()
-            for filter in s.filter.all():
-                print(filter.name)
-                if (filter.cat_0 != "지원형태"):
-                    s.filter.remove(filter)
-            print(request.POST.get("filter"))
-            for filter in request.POST.get("filter").split(","):
-                try:
-                    print(filter)
-                    s.filter.add(Filter.objects.get(id=filter))
-                    print(s.filter.all())
-                except:
-                    print("error")
-            if request.is_ajax():
-                return HttpResponse(reverse("apply_edit", kwargs={"id": ap.id, "sbid": ap.sb_id}) + "?status=s")
-            else:
-                return redirect(reverse("apply_edit", kwargs={"id": ap.id, "sbid": ap.sb_id}) + "?status=s")
-
-    if request.user.is_authenticated:
-        # SupportBusiness.objects.get(id=id).applicant.add(request.user.startup)
-        sp = SupportBusiness.objects.get(id=id)
-        form = ApplianceForm(initial={
-            "name": request.user.startup.name,
-            "found_date": request.user.startup.established_date,
-            "address": request.user.startup.address_0,
-            "repre_name": request.user.additionaluserinfo.name,
-            "repre_tel": request.user.additionaluserinfo.tel,
-            "repre_email": request.user.username,
-            "website": request.user.startup.website,
-            "service_intro": request.user.startup.service_products,
-            "intro": request.user.startup.desc,
-            "total_employ": request.user.startup.employee_number,
-            "service_category": request.user.startup.category,
-            "export_before_year_0": request.user.startup.export_before_year_0,
-            "export_before_year_1": request.user.startup.export_before_year_1,
-            "export_before_year_2": request.user.startup.export_before_year_2,
-            "export_before_0": request.user.startup.export_before_0,
-            "export_before_1": request.user.startup.export_before_1,
-            "export_before_2": request.user.startup.export_before_2,
-            "revenue_before_0": request.user.startup.revenue_before_0,
-            "revenue_before_1": request.user.startup.revenue_before_1,
-            "revenue_before_2": request.user.startup.revenue_before_2,
-            "revenue_before_year_0": request.user.startup.revenue_before_year_0,
-            "revenue_before_year_1": request.user.startup.revenue_before_year_1,
-            "revenue_before_year_2": request.user.startup.revenue_before_year_2,
-            "fund_before_0": request.user.startup.fund_before_0,
-            "fund_before_1": request.user.startup.fund_before_1,
-            "fund_before_2": request.user.startup.fund_before_2,
-            "fund_before_3": request.user.startup.fund_before_3,
-            "fund_before_4": request.user.startup.fund_before_4,
-            "fund_before_5": request.user.startup.fund_before_5,
-            "fund_before_6": request.user.startup.fund_before_6,
-            "fund_before_7": request.user.startup.fund_before_7,
-            "fund_before_8": request.user.startup.fund_before_8,
-            "fund_before_9": request.user.startup.fund_before_9,
-            "fund_before_year_0": request.user.startup.fund_before_year_0,
-            "fund_before_year_1": request.user.startup.fund_before_year_1,
-            "fund_before_year_2": request.user.startup.fund_before_year_2,
-            "fund_before_year_3": request.user.startup.fund_before_year_3,
-            "fund_before_year_4": request.user.startup.fund_before_year_4,
-            "fund_before_year_5": request.user.startup.fund_before_year_5,
-            "fund_before_year_6": request.user.startup.fund_before_year_6,
-            "fund_before_year_7": request.user.startup.fund_before_year_7,
-            "fund_before_year_8": request.user.startup.fund_before_year_8,
-            "fund_before_year_9": request.user.startup.fund_before_year_9,
-            "fund_before_agent_0": request.user.startup.fund_before_agent_0,
-            "fund_before_agent_1": request.user.startup.fund_before_agent_1,
-            "fund_before_agent_2": request.user.startup.fund_before_agent_2,
-            "fund_before_agent_3": request.user.startup.fund_before_agent_3,
-            "fund_before_agent_4": request.user.startup.fund_before_agent_4,
-            "fund_before_agent_5": request.user.startup.fund_before_agent_5,
-            "fund_before_agent_6": request.user.startup.fund_before_agent_6,
-            "fund_before_agent_7": request.user.startup.fund_before_agent_7,
-            "fund_before_agent_8": request.user.startup.fund_before_agent_8,
-            "fund_before_agent_9": request.user.startup.fund_before_agent_9,
-        })
-        submit = "false"
-        recent_ap = Appliance.objects.all().filter(startup=request.user.startup)
-        filter_string = request.user.startup.filter.all()
-        k = []
-        for f in filter_string:
-            k.append(str(f.id))
-        filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-        filter_1 = Filter.objects.all().filter(cat_0="영역")
-        filter_2 = Filter.objects.all().filter(cat_1="기업형태")
-    return render(request, "pc/apply.html",
-                  {"support": sp, "filter_string": ",".join(k), "submit": submit, "form": form, "filter_0": filter_0,
-                   "filter_1": filter_1, "filter_2": filter_2,
-                   "save_status": "false",
-                   "recent_ap": recent_ap})
-
-
-def apply_edit(request, id, sbid):
-    today_min = datetime.datetime.now()
-    if request.GET.get("status") == "s":
-        save_status = "true"
-        submit = "false"
-    else:
-        submit = "false"
-        save_status = "false"
-    if request.method == "POST":
-        ap = ApplianceForm(request.POST, request.FILES, instance=Appliance.objects.get(id=id))
-        form = ApplianceForm(request.POST, request.FILES, instance=Appliance.objects.get(id=id))
-        print(form.is_valid())
-        if ap.is_valid() and SupportBusiness.objects.get(id=sbid).apply_end > today_min:
-            model = ap.save(commit=False)
-            model.sb_id = sbid
-            model.save()
-            model.startup = request.user.startup
-            model.save()
-            print(form.cleaned_data["total_employ"])
-
-            s = Startup.objects.get(user=request.user)
-            s.name = form.cleaned_data["name"] if form.cleaned_data["name"] is not None and form.cleaned_data["name"]!="" else  s.name
-            s.established_date = form.cleaned_data["found_date"] if form.cleaned_data[
-                                                                        "found_date"] is not None and form.cleaned_data["found_date"]!="" else s.established_date
-            s.address_0 = form.cleaned_data["address"] if form.cleaned_data["address"] is not None and form.cleaned_data["address"] !="" else s.address_0
-            s.category = form.cleaned_data["service_category"] if form.cleaned_data["service_category"] is not None and form.cleaned_data["service_category"]!="" else s.category
-            s.user.additionaluserinfo.name = form.cleaned_data["repre_name"] if form.cleaned_data["repre_name"] is not None and form.cleaned_data["repre_name"]!="" else  s.user.additionaluserinfo.name
-            s.user.additionaluserinfo.tel = form.cleaned_data["repre_tel"] if form.cleaned_data["repre_tel"] is not None and form.cleaned_data["repre_tel"]!="" else s.user.additionaluserinfo.tel
-            s.user.additionaluserinfo.username = form.cleaned_data["repre_email"] if form.cleaned_data["repre_email"] is not None and  form.cleaned_data["repre_email"] !="" else s.user.additionaluserinfo.username
-            s.user.startup.website = form.cleaned_data["website"] if form.cleaned_data["website"] is not None and form.cleaned_data["website"]!="" else  s.user.startup.website
-            s.service_products = form.cleaned_data["service_intro"] if form.cleaned_data["service_intro"] is not None and  form.cleaned_data["service_intro"]!="" else s.service_products
-            s.desc = form.cleaned_data["intro"] if form.cleaned_data["intro"] is not None and  form.cleaned_data["intro"]!="" else  s.desc
-            s.employee_number = form.cleaned_data["total_employ"] if form.cleaned_data["total_employ"] is not None and form.cleaned_data["total_employ"]!= "" else s.employee_number
-            s.export_before_year_0 = form.cleaned_data["export_before_year_0"] if form.cleaned_data["export_before_year_0"] is not None  and form.cleaned_data["export_before_year_0"] !="" else s.export_before_year_0
-            s.export_before_year_1 = form.cleaned_data["export_before_year_1"] if form.cleaned_data["export_before_year_1"] is not None and form.cleaned_data["export_before_year_1"]!="" else s.export_before_year_1
-            s.export_before_year_2 = form.cleaned_data["export_before_year_2"] if form.cleaned_data["export_before_year_2"] is not None and form.cleaned_data["export_before_year_2"] !="" else  s.export_before_year_2
-            s.export_before_0 = form.cleaned_data["export_before_0"] if form.cleaned_data["export_before_0"] is not None else  s.export_before_0
-            s.export_before_1 = form.cleaned_data["export_before_1"] if form.cleaned_data["export_before_1"] is not None else  s.export_before_1
-            s.export_before_2 = form.cleaned_data["export_before_2"] if form.cleaned_data["export_before_2"] is not None else  s.export_before_2
-            s.revenue_before_0 = form.cleaned_data["revenue_before_0"] if form.cleaned_data["revenue_before_0"] is not None else  s.revenue_before_0
-            s.revenue_before_1 = form.cleaned_data["revenue_before_1"] if form.cleaned_data["revenue_before_1"] is not None else  s.revenue_before_1
-            s.revenue_before_2 = form.cleaned_data["revenue_before_2"] if form.cleaned_data["revenue_before_2"] is not None else  s.revenue_before_2
-            s.revenue_before_year_0 = form.cleaned_data["revenue_before_year_0"] if form.cleaned_data[ "revenue_before_year_0"] is not None else   s.revenue_before_year_0
-            s.revenue_before_year_1 = form.cleaned_data["revenue_before_year_1"] if form.cleaned_data["revenue_before_year_1"] is not None else   s.revenue_before_year_1
-            s.revenue_before_year_2 = form.cleaned_data["revenue_before_year_2"] if form.cleaned_data["revenue_before_year_2"] is not None else   s.revenue_before_year_2
-            s.fund_before_0 = form.cleaned_data["fund_before_0"] if form.cleaned_data["fund_before_0"] is not None else   s.fund_before_0
-            s.fund_before_1 = form.cleaned_data["fund_before_1"] if form.cleaned_data["fund_before_1"] is not None else   s.fund_before_1
-            s.fund_before_2 = form.cleaned_data["fund_before_2"] if form.cleaned_data["fund_before_2"] is not None else   s.fund_before_2
-            s.fund_before_3 = form.cleaned_data["fund_before_3"] if form.cleaned_data["fund_before_3"] is not None else   s.fund_before_3
-            s.fund_before_4 = form.cleaned_data["fund_before_4"] if form.cleaned_data["fund_before_4"] is not None else   s.fund_before_4
-            s.fund_before_5 = form.cleaned_data["fund_before_5"] if form.cleaned_data["fund_before_5"] is not None else   s.fund_before_5
-            s.fund_before_6 = form.cleaned_data["fund_before_6"] if form.cleaned_data["fund_before_6"] is not None else   s.fund_before_6
-            s.fund_before_7 = form.cleaned_data["fund_before_7"] if form.cleaned_data["fund_before_7"] is not None else   s.fund_before_7
-            s.fund_before_8 = form.cleaned_data["fund_before_8"] if form.cleaned_data["fund_before_8"] is not None else   s.fund_before_8
-            s.fund_before_9 = form.cleaned_data["fund_before_9"] if form.cleaned_data["fund_before_9"] is not None else   s.fund_before_9
-            s.fund_before_year_0 = form.cleaned_data["fund_before_year_0"] if form.cleaned_data["fund_before_year_0"] is not None else  s.fund_before_year_0
-            s.fund_before_year_1 = form.cleaned_data["fund_before_year_1"] if form.cleaned_data["fund_before_year_1"] is not None else  s.fund_before_year_1
-            s.fund_before_year_2 = form.cleaned_data["fund_before_year_2"] if form.cleaned_data["fund_before_year_2"] is not None else  s.fund_before_year_2
-            s.fund_before_year_3 = form.cleaned_data["fund_before_year_3"] if form.cleaned_data["fund_before_year_3"] is not None else  s.fund_before_year_3
-            s.fund_before_year_4 = form.cleaned_data["fund_before_year_4"] if form.cleaned_data["fund_before_year_4"] is not None else  s.fund_before_year_4
-            s.fund_before_year_5 = form.cleaned_data["fund_before_year_5"] if form.cleaned_data["fund_before_year_5"] is not None else  s.fund_before_year_5
-            s.fund_before_year_6 = form.cleaned_data["fund_before_year_6"] if form.cleaned_data["fund_before_year_6"] is not None else  s.fund_before_year_6
-            s.fund_before_year_7 = form.cleaned_data["fund_before_year_7"] if form.cleaned_data["fund_before_year_7"] is not None else  s.fund_before_year_7
-            s.fund_before_year_8 = form.cleaned_data["fund_before_year_8"] if form.cleaned_data["fund_before_year_8"] is not None else  s.fund_before_year_8
-            s.fund_before_year_9 = form.cleaned_data["fund_before_year_9"] if form.cleaned_data["fund_before_year_9"] is not None else  s.fund_before_year_9
-            s.fund_before_agent_0 = form.cleaned_data["fund_before_agent_0"] if form.cleaned_data["fund_before_agent_0"] is not None else   s.fund_before_agent_0
-            s.fund_before_agent_1 = form.cleaned_data["fund_before_agent_1"] if form.cleaned_data["fund_before_agent_1"] is not None else   s.fund_before_agent_1
-            s.fund_before_agent_2 = form.cleaned_data["fund_before_agent_2"] if form.cleaned_data["fund_before_agent_2"] is not None else   s.fund_before_agent_2
-            s.fund_before_agent_3 = form.cleaned_data["fund_before_agent_3"] if form.cleaned_data["fund_before_agent_3"] is not None else   s.fund_before_agent_3
-            s.fund_before_agent_4 = form.cleaned_data["fund_before_agent_4"] if form.cleaned_data["fund_before_agent_4"] is not None else   s.fund_before_agent_4
-            s.fund_before_agent_5 = form.cleaned_data["fund_before_agent_5"] if form.cleaned_data["fund_before_agent_5"] is not None else   s.fund_before_agent_5
-            s.fund_before_agent_6 = form.cleaned_data["fund_before_agent_6"] if form.cleaned_data["fund_before_agent_6"] is not None else   s.fund_before_agent_6
-            s.fund_before_agent_7 = form.cleaned_data["fund_before_agent_7"] if form.cleaned_data["fund_before_agent_7"] is not None else   s.fund_before_agent_7
-            s.fund_before_agent_8 = form.cleaned_data["fund_before_agent_8"] if form.cleaned_data["fund_before_agent_8"] is not None else   s.fund_before_agent_8
-            s.fund_before_agent_9 = form.cleaned_data["fund_before_agent_9"] if form.cleaned_data["fund_before_agent_9"] is not None else   s.fund_before_agent_9
-            s.save()
-            if request.POST.get("is_submit") == "true":
-                model.is_submit = 1
-                model.save()
-                save_status = "true"
-                submit = "true"
-            for filter in s.filter.all():
-                if (filter.cat_0 != "지원형태"):
-                    s.filter.remove(filter)
-            for filter in request.POST.get("filter").split(","):
-                try:
-                    s.filter.add(Filter.objects.get(id=filter))
-                except:
-                    print("error")
-
-    filter_string = request.user.startup.filter.all()
-    k = []
-    for f in filter_string:
-        k.append(str(f.id))
-
-    recent_ap = Appliance.objects.all().filter(startup=request.user.startup).exclude(id=id)
-    form = ApplianceForm(instance=Appliance.objects.get(id=id))
-    sp = SupportBusiness.objects.get(id=Appliance.objects.get(id=id).sb_id)
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    filter_2 = Filter.objects.all().filter(cat_1="기업형태")
-    return render(request, "pc/apply.html",
-                  {"support": sp, "save_status": save_status, "id": id, "submit": submit, "filter_string": ",".join(k),
-                   "form": form, "filter_2": filter_2, "filter_0": filter_0, "filter_1": filter_1,
-                   "recent_ap": recent_ap})
-
-
-def add_interest(request):
-    if request.user.is_authenticated:
-        if SupportBusiness.objects.get(
-                id=request.POST.get("val")) not in request.user.additionaluserinfo.interest.all():
-            request.user.additionaluserinfo.interest.add(SupportBusiness.objects.get(id=request.POST.get("val")))
-            return HttpResponse("ok-add")
-        else:
-            request.user.additionaluserinfo.interest.remove(SupportBusiness.objects.get(id=request.POST.get("val")))
-            return HttpResponse("ok-remove")
-
-
-def manager(request):
-    if request.user.is_authenticated() and (
-                    request.user.additionaluserinfo.auth == "4" or request.user.additionaluserinfo.auth == "5"):
-        return render(request, "pc/manager/manager_account.html")
-    else:
-        return redirect("index")
-
-
-def manager_edit(request):
-    if request.user.is_authenticated:
-        if request.user.additionaluserinfo.auth != "4" and request.user.additionaluserinfo.auth != "5":
-            return redirect("index")
-    else:
-        return redirect("login")
-    if request.method == "POST":
-        form_data = ManagerAccountForm(request.POST)
-        if form_data.is_valid():
-            target = AdditionalUserInfo.objects.get(user=request.user)
-            target.name = form_data.cleaned_data["name"]
-            target.tel = form_data.cleaned_data["tel"]
-            target.department = form_data.cleaned_data["department"]
-            target.belong_to = form_data.cleaned_data["belong_to"]
-            target.position = form_data.cleaned_data["position"]
-            target.web = form_data.cleaned_data["web"]
-            target.save()
-            return redirect("manager")
-    form_ac = ManagerAccountForm(initial={
-        "name": request.user.additionaluserinfo.name,
-        "tel": request.user.additionaluserinfo.tel,
-        "department": request.user.additionaluserinfo.department,
-        "belong_to": request.user.additionaluserinfo.belong_to,
-        "position": request.user.additionaluserinfo.position,
-        "web": request.user.additionaluserinfo.web
-    })
-    return render(request, "pc/manager/manager_account_edit.html", {"form": form_ac})
-
-
-def total(request):
-    qs = SupportBusiness.objects.order_by("-id").distinct()
-    return render(request, "pc/manager/total.html", {"qs": qs})
-
-
-def sb_list(request):
-    today_min = datetime.datetime.now()
-    qs_0 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(open_status=0).filter(
-        confirm=False).filter(complete=False)
-    qs_0_1 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(open_status=0).filter(
-        confirm=True)
-    qs_0_3 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(open_status=1).filter(
-        confirm=False).filter(apply_start__gt=today_min)
-    qs_1 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(open_status=1).filter(
-        apply_end__gt=today_min).filter(apply_start__lt=today_min)
-    qs_2 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(open_status=1).filter(
-        complete=0).filter(apply_end__lt=today_min)
-    qs_3 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(complete=1)
-    qs_4 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo)
-    qs_5 = SupportBusiness.objects.all().filter(user=request.user.additionaluserinfo).filter(is_blind=True)
-
-    return render(request, "pc/manager/sb_manage_list.html",
-                  {"qs_0_1": qs_0_1, "qs_0": qs_0, "qs_1": qs_1, "qs_2": qs_2, "qs_3": qs_3, "qs_4": qs_4,
-                   "qs_0_3": qs_0_3,"qs_5":qs_5,
-                   "cat": request.GET.get("cat")})
-
-
-def sb_list_all(request):
-    print("here!!!")
-    today_min = datetime.datetime.now()
-    cat = request.GET.get("cat","0")
-    if request.user.additionaluserinfo.auth=="5":
-        son_list = request.user.additionaluserinfo.additionaluserinfo_set.all()
-        print(son_list)
-        son_pk_list = []
-        q_obj = Q()
-        for son in son_list:
-            q_obj |= Q(confirm_list__id=son.id)
-        qs_b = SupportBusiness.objects.all().exclude(confirm_list__id = request.user.additionaluserinfo.id).filter(
-            q_obj).distinct()|SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__gt=today_min).filter(apply_start__lt=today_min).filter(is_blind=True).filter(q_obj).distinct()|SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()|\
-        SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__lt=today_min).filter(
-            is_blind=True).distinct() | SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()|SupportBusiness.objects.all().filter(complete=True).filter(apply_end__lt=today_min).filter(is_blind=True).distinct()|SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()
-
-        if cat == "0":
-            qs = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__gt=today_min).filter(apply_start__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__gt=today_min).filter(apply_start__lt=today_min).filter(is_blind=True).filter(q_obj).distinct()|SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()
-
-        if cat=="1":
-            qs = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__lt=today_min).filter(is_blind=True).distinct()|SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()
-
-        if cat == "2":
-            qs = SupportBusiness.objects.all().filter(complete=True).filter(apply_end__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(complete=True).filter(apply_end__lt=today_min).filter(is_blind=True).distinct()|SupportBusiness.objects.all().filter(confirm=True).filter(q_obj).distinct()
-
-        if cat == "3":
-            qs = SupportBusiness.objects.all().filter(q_obj).distinct()
-            qs_b = qs_b
-    elif request.user.additionaluserinfo.auth=="4":
-        son_list=request.user.additionaluserinfo.additionaluserinfo_set.all()|AdditionalUserInfo.objects.all().filter(name=request.user.additionaluserinfo.name)
-
-        son_pk_list=[]
-        q_obj = Q()
-        q_obj |= Q(confirm_list__id=request.user.additionaluserinfo.id)
-        for son in son_list:
-            son_pk_list.append(son.id)
-            q_obj |= Q(confirm_list__id=son.id)
-        qs_b = SupportBusiness.objects.all().exclude(confirm_list__id=request.user.additionaluserinfo.id).filter(q_obj)
-
-        if cat == "0":
-            qs = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__gt=today_min).filter(
-                apply_start__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__gt=today_min).filter(
-                apply_start__lt=today_min).filter(is_blind=True).filter(q_obj).distinct()
-        if cat == "1":
-            qs = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(open_status=True).filter(apply_end__lt=today_min).filter(
-                is_blind=True).filter(q_obj).distinct()
-
-        if cat == "2":
-            qs = SupportBusiness.objects.all().filter(complete=True).filter(apply_end__lt=today_min).filter(q_obj).distinct()
-            qs_b = SupportBusiness.objects.all().filter(complete=True).filter(apply_end__lt=today_min).filter(
-                is_blind=True).filter(q_obj).distinct()
-        if cat == "3":
-            qs = SupportBusiness.objects.all().filter(confirm_list__in = son_list).filter(q_obj).distinct()
-
-            #qs = SupportBusiness.objects.all().exclude(Q(complete=False) & Q(open_status=False) & Q(confirm=False))
-            qs_b = qs_b.filter(confirm=True).filter(q_obj).distinct()
-    return render(request, "pc/manager/sb_manage_list_"+cat+".html",
-                  {"qs":qs,"qs_b":qs_b})
-
-
-def sb_detail(request, id):
-    applicant = Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id))
-    sp = SupportBusiness.objects.get(id=id)
-    sp = SupportBusiness.objects.get(id=id)
-    sp_inter = AdditionalUserInfo.objects.all().filter(interest=sp)
-    hitlog = []
-    date_arr = []
-    applog = []
-    for k in range(1, 30):
-        from_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k + 1)
-        to_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k)
-        date_arr.append(from_da.isoformat().split("T")[0])
-        hitlog.append(len(HitLog.objects.all().filter(date__gt=to_da).filter(sb=sp).filter(date__lte=from_da)))
-        applog.append(
-            len(Appliance.objects.all().filter(sb=sp).filter(update_at__gt=to_da).filter(update_at__lt=from_da)))
-    ap_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 != "소재지" and f.cat_1 != "기업형태":
-                ap_filter.append(f.name)
-    ap_dict = {i: ap_filter.count(i) for i in ap_filter}
-    local_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 == "소재지":
-                local_filter.append(f.name)
-    local_dict = {i: local_filter.count(i) for i in local_filter}
-    case_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 == "기업형태":
-                case_filter.append(f.name)
-    case_dict = {i: case_filter.count(i) for i in case_filter}
-
-    return render(request, "pc/manager/sn_manage_detail.html",
-                  {"ap": applicant, "sp": sp, "inter": sp_inter, "filter_pi": ap_dict, "local_filter_pi": local_dict,
-                   "case_filter_pi": case_dict,
-                   "hitlog": hitlog, "date_arr": date_arr, "applog": applog})
-
-
-def sb_detail_pdf(request, id):
-    applicant = Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id))
-    sp = SupportBusiness.objects.get(id=id)
-    sp_inter = AdditionalUserInfo.objects.all().filter(interest=sp)
-
-
-
-
-    return render(request, "pc/manager/sn_manage_detail_pdf.html", {"ap": applicant, "support": sp, "inter": sp_inter})
-
-
-from django.db.models import Sum
-from django.db.models.functions import Coalesce
-
-from oauth2client.service_account import ServiceAccountCredentials
-import os
-def dashboard(request):
-    SCOPE = 'https://www.googleapis.com/auth/analytics.readonly'
-
-    #KEY_FILEPATH = 'c:/gcaprj.json'
-    KEY_FILEPATH = '/home/ubuntu/workspace/supporting_business/gcaprj.json'
-
-    key = ServiceAccountCredentials.from_json_keyfile_name(KEY_FILEPATH, SCOPE).get_access_token().access_token
-    print(key)
-    today_min = datetime.datetime.now()
-    total = len(SupportBusiness.objects.all().filter(Q(open_status=1) | Q(complete=1)))
-
-    ing = len(SupportBusiness.objects.all().filter(open_status=1).filter(apply_end__gte=today_min).filter(
-        apply_start__lt=today_min).filter(is_blind=False))
-    #진행중인사업
-
-    # 사업당 참가 기업수 평균 : 지원서 / 사업수
-    # 사업당 선정 기업수 평균 : award 갯수 / 사업수
-    avg_apply_ent = len(Appliance.objects.all()) / total
-    avg_award_ent = len(Award.objects.all()) / total
-
-
-    total_startup = len(Startup.objects.all())  # 총 기업회원수
-    total_person = len(AdditionalUserInfo.objects.all().exclude(Q(auth="4") | Q(auth=5)))
-    avg_apply = len(Appliance.objects.all()) / total_startup
-    # 기업회원 1개당 평균 사업 참가수
-    avg_award = len(Award.objects.all()) / total_startup
-
-    qs_0 = SupportBusiness.objects.all().filter(open_status=False).filter(confirm=True).order_by("-id").filter(
-        is_blind=False)
-    qs_1 = SupportBusiness.objects.all().filter(Q(is_blind=True)).order_by("-id")
-
-    avg_em = Startup.objects.all().aggregate(Sum("employee_number"))["employee_number__sum"] / total_startup
-    total_rev = (Startup.objects.all().aggregate(Sum("revenue_before_0"))["revenue_before_0__sum"] + \
-                Startup.objects.all().aggregate(Sum("revenue_before_1"))["revenue_before_1__sum"] + \
-                Startup.objects.all().aggregate(Sum("revenue_before_2"))["revenue_before_2__sum"])/total_startup
-    total_fund = (Startup.objects.all().aggregate(Sum("fund_before_0"))["fund_before_0__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_1"))["fund_before_1__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_2"))["fund_before_2__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_3"))["fund_before_3__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_4"))["fund_before_4__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_5"))["fund_before_5__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_6"))["fund_before_6__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_7"))["fund_before_7__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_8"))["fund_before_8__sum"] + \
-                 Startup.objects.all().aggregate(Sum("fund_before_9"))["fund_before_9__sum"])/total_startup
-    total_exp = (Startup.objects.all().aggregate(Sum("export_before_0"))["export_before_0__sum"] + \
-                Startup.objects.all().aggregate(Sum("export_before_1"))["export_before_1__sum"] + \
-                Startup.objects.all().aggregate(Sum("export_before_2"))["export_before_2__sum"])/total_startup
-
-    total_select_com = len((Startup.objects.all().filter(award__sb_id__gte=0).distinct()))
-    ventur_num = startup_found.objects.all().order_by("year")
-    ventur_num_gg = startup_found_gg.objects.all().order_by("year")
-
-    em_num = avg_employee.objects.all().order_by("year")
-    em_num_gg = avg_employee_gg.objects.all().order_by("year")
-
-    if total_select_com == 0:
-        total_select_com_avg=0
-        total_apply_com_avg=0
-        sel_avg_em=0
-        sel_total_rev=0
-        sel_total_fund=0
-        sel_total_exp=0
-    else:
-        total_select_com_avg = len(Award.objects.all()) / total_select_com
-        total_apply_com_avg = len(Appliance.objects.all()) / len((Startup.objects.all().filter(award__sb_id__gte=0)))
-        sel_avg_em = \
-            (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                precio=Coalesce(Sum("employee_number"), 0))[
-                "precio"] / total_select_com
-
-
-        sel_total_rev = (int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_0"), 0))[
-            "precio"]) + \
-                    int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                        precio=Coalesce(Sum("revenue_before_1"), 0))[
-                            "precio"]) + \
-                    int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                        precio=Coalesce(Sum("revenue_before_2"), 0))[
-                            "precio"]))/total_select_com
-        sel_total_fund = (int(
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_0"), 0))[
-            "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_1"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_2"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_3"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_4"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_5"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_6"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_7"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_8"), 0))[
-                             "precio"]) + \
-                     int((Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-                         precio=Coalesce(Sum("fund_before_9"), 0))[
-                             "precio"]))/total_select_com
-        sel_total_exp = (int( (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_0"), 0))[
-            "precio"]))/total_select_com
-    # int((Startup.objects.all().filter(award__sb_id__gte=0)).aggregate(Sum("export_before_1"))["export_before_1__sum"])
-    # (Startup.objects.all().filter(award__sb_id__gte=0)).aggregate(Sum("export_before_2"))["export_before_2__sum"]
-
-    local_num = len((Startup.objects.all().filter(filter__name="경기도기업").distinct()))
-    lcoal_select_com_avg = len(Award.objects.all()) / local_num
-    local_apply_com_avg = len(Appliance.objects.all()) / local_num
-    local_avg_em = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("employee_number"), 0))[
-            "precio"] / local_num
-
-    print(Startup.objects.all().filter(filter__name="경기도기업").distinct().aggregate(
-        precio=Coalesce(Sum("employee_number"), 0))[
-              "precio"])
-    print(Startup.objects.all().filter(filter__name="경기도기업").distinct())
-    print(local_avg_em)
-    print(local_num)
-    local_total_rev = \
-        ((Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_0"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_1"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_2"), 0))[
-            "precio"])/local_num
-    local_total_fund = \
-        ((Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_0"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_1"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_2"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_3"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_4"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_5"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_6"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_7"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_8"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("fund_before_9"), 0))[
-            "precio"])/local_num
-    local_total_exp = \
-        ((Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_0"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_1"), 0))[
-            "precio"] + \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_2"), 0))[
-            "precio"])/local_num
-    sel_rev_0 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_0"), 0))[
-            "precio"]
-
-    sel_rev_1 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_1"), 0))[
-            "precio"]
-
-    sel_rev_2 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_2"), 0))[
-            "precio"]
-
-    sel_exp_0 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_0"), 0))[
-            "precio"]
-
-    sel_exp_1 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_1"), 0))[
-            "precio"]
-
-    sel_exp_2 = \
-        (Startup.objects.all().filter(award__sb_id__gte=0)).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_2"), 0))[
-            "precio"]
-
-    local_rev_0 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_0"), 0))[
-            "precio"]
-    local_rev_1 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_1"), 0))[
-            "precio"]
-    local_rev_2 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("revenue_before_2"), 0))[
-            "precio"]
-    local_exp_0 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_0"), 0))[
-            "precio"]
-    local_exp_1 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_1"), 0))[
-            "precio"]
-    local_exp_2 = \
-        (Startup.objects.all().filter(filter__name="경기도기업")).distinct().aggregate(
-            precio=Coalesce(Sum("export_before_2"), 0))[
-            "precio"]
-    fund = {}
-    fund["2017"] = 0
-    fund["2016"] = 0
-    fund["2015"] = 0
-    for s in Startup.objects.all():
-        if s.fund_before_year_0 != "" and s.fund_before_year_0 != None:
-            if str(s.fund_before_year_0)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_0)[0:4]] = fund[str(s.fund_before_year_0)[0:4]] + int(s.fund_before_0)
-        if s.fund_before_year_1 != "" and s.fund_before_year_1 != None:
-            if str(s.fund_before_year_1)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_1)[0:4]] = fund[str(s.fund_before_year_1)[0:4]] + int(s.fund_before_1)
-        if s.fund_before_year_2 != "" and s.fund_before_year_2 != None:
-            if str(s.fund_before_year_2)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_2)[0:4]] = fund[str(s.fund_before_year_2)[0:4]] + int(s.fund_before_2)
-        if s.fund_before_year_3 != "" and s.fund_before_year_3 != None:
-            if str(s.fund_before_year_3)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_3)[0:4]] = fund[str(s.fund_before_year_3)[0:4]] + int(s.fund_before_3)
-        if s.fund_before_year_4 != "" and s.fund_before_year_4 != None:
-            if str(s.fund_before_year_4)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_4)[0:4]] = fund[str(s.fund_before_year_4)[0:4]] + int(s.fund_before_4)
-        if s.fund_before_year_5 != "" and s.fund_before_year_5 != None:
-            if str(s.fund_before_year_5)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_5)[0:4]] = fund[str(s.fund_before_year_5)[0:4]] + int(s.fund_before_5)
-        if s.fund_before_year_6 != "" and s.fund_before_year_6 != None:
-            if str(s.fund_before_year_6)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_6)[0:4]] = fund[str(s.fund_before_year_6)[0:4]] + int(s.fund_before_6)
-        if s.fund_before_year_7 != "" and s.fund_before_year_7 != None:
-            if str(s.fund_before_year_7)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_7)[0:4]] = fund[str(s.fund_before_year_7)[0:4]] + int(s.fund_before_7)
-        if s.fund_before_year_8 != "" and s.fund_before_year_8 != None:
-            if str(s.fund_before_year_8)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_8)[0:4]] = fund[str(s.fund_before_year_8)[0:4]] + int(s.fund_before_8)
-        if s.fund_before_year_9 != "" and s.fund_before_year_9 != None:
-            if str(s.fund_before_year_9)[0:4] in ["2017", "2016", "2015"]:
-                fund[str(s.fund_before_year_9)[0:4]] = fund[str(s.fund_before_year_9)[0:4]] + int(s.fund_before_9)
-
-    sel_fund = {}
-    sel_fund["2017"] = 0
-    sel_fund["2016"] = 0
-    sel_fund["2015"] = 0
-    for s in Startup.objects.all().filter(award__sb_id__gte=0).distinct():
-        if s.fund_before_year_0 != "" and s.fund_before_year_0 != None:
-            if str(s.fund_before_year_0)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_0)[0:4]] = sel_fund[str(s.fund_before_year_0)[0:4]] + int(
-                    s.fund_before_0)
-        if s.fund_before_year_1 != "" and s.fund_before_year_1 != None:
-            if str(s.fund_before_year_1)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_1)[0:4]] = sel_fund[str(s.fund_before_year_1)[0:4]] + int(
-                    s.fund_before_1)
-        if s.fund_before_year_2 != "" and s.fund_before_year_2 != None:
-            if str(s.fund_before_year_2)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_2)[0:4]] = sel_fund[str(s.fund_before_year_2)[0:4]] + int(
-                    s.fund_before_2)
-        if s.fund_before_year_3 != "" and s.fund_before_year_3 != None:
-            if str(s.fund_before_year_3)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_3)[0:4]] = sel_fund[str(s.fund_before_year_3)[0:4]] + int(
-                    s.fund_before_3)
-        if s.fund_before_year_4 != "" and s.fund_before_year_4 != None:
-            if str(s.fund_before_year_4)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_4)[0:4]] = sel_fund[str(s.fund_before_year_4)[0:4]] + int(
-                    s.fund_before_4)
-        if s.fund_before_year_5 != "" and s.fund_before_year_5 != None:
-            if str(s.fund_before_year_5)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_5)[0:4]] = sel_fund[str(s.fund_before_year_5)[0:4]] + int(
-                    s.fund_before_5)
-        if s.fund_before_year_6 != "" and s.fund_before_year_6 != None:
-            if str(s.fund_before_year_6)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_6)[0:4]] = sel_fund[str(s.fund_before_year_6)[0:4]] + int(
-                    s.fund_before_6)
-        if s.fund_before_year_7 != "" and s.fund_before_year_7 != None:
-            if str(s.fund_before_year_7)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_7)[0:4]] = sel_fund[str(s.fund_before_year_7)[0:4]] + int(
-                    s.fund_before_7)
-        if s.fund_before_year_8 != "" and s.fund_before_year_8 != None:
-            if str(s.fund_before_year_8)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_8)[0:4]] = sel_fund[str(s.fund_before_year_8)[0:4]] + int(
-                    s.fund_before_8)
-        if s.fund_before_year_9 != "" and s.fund_before_year_9 != None:
-            if str(s.fund_before_year_9)[0:4] in ["2017", "2016", "2015"]:
-                sel_fund[str(s.fund_before_year_9)[0:4]] = sel_fund[str(s.fund_before_year_9)[0:4]] + int(
-                    s.fund_before_9)
-    local_fund = {}
-    local_fund["2017"] = 0
-    local_fund["2016"] = 0
-    local_fund["2015"] = 0
-    for s in Startup.objects.all().filter(address_0__istartswith="경기"):
-        if s.fund_before_year_0 != "" and s.fund_before_year_0 != None:
-            if str(s.fund_before_year_0)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_0)[0:4]] = local_fund[str(s.fund_before_year_0)[0:4]] + int(
-                    s.fund_before_0)
-        if s.fund_before_year_1 != "" and s.fund_before_year_1 != None:
-            if str(s.fund_before_year_1)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_1)[0:4]] = local_fund[str(s.fund_before_year_1)[0:4]] + int(
-                    s.fund_before_1)
-        if s.fund_before_year_2 != "" and s.fund_before_year_2 != None:
-            if str(s.fund_before_year_2)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_2)[0:4]] = local_fund[str(s.fund_before_year_2)[0:4]] + int(
-                    s.fund_before_2)
-        if s.fund_before_year_3 != "" and s.fund_before_year_3 != None:
-            if str(s.fund_before_year_3)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_3)[0:4]] = local_fund[str(s.fund_before_year_3)[0:4]] + int(
-                    s.fund_before_3)
-        if s.fund_before_year_4 != "" and s.fund_before_year_4 != None:
-            if str(s.fund_before_year_4)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_4)[0:4]] = local_fund[str(s.fund_before_year_4)[0:4]] + int(
-                    s.fund_before_4)
-        if s.fund_before_year_5 != "" and s.fund_before_year_5 != None:
-            if str(s.fund_before_year_5)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_5)[0:4]] = local_fund[str(s.fund_before_year_5)[0:4]] + int(
-                    s.fund_before_5)
-        if s.fund_before_year_6 != "" and s.fund_before_year_6 != None:
-            if str(s.fund_before_year_6)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_6)[0:4]] = local_fund[str(s.fund_before_year_6)[0:4]] + int(
-                    s.fund_before_6)
-        if s.fund_before_year_7 != "" and s.fund_before_year_7 != None:
-            if str(s.fund_before_year_7)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_7)[0:4]] = local_fund[str(s.fund_before_year_7)[0:4]] + int(
-                    s.fund_before_7)
-        if s.fund_before_year_8 != "" and s.fund_before_year_8 != None:
-            if str(s.fund_before_year_8)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_8)[0:4]] = local_fund[str(s.fund_before_year_8)[0:4]] + int(
-                    s.fund_before_8)
-        if s.fund_before_year_9 != "" and s.fund_before_year_9 != None:
-            if str(s.fund_before_year_9)[0:4] in ["2017", "2016", "2015"]:
-                local_fund[str(s.fund_before_year_9)[0:4]] = local_fund[str(s.fund_before_year_9)[0:4]] + int(
-                    s.fund_before_9)
-
-    all_rev_0 = Startup.objects.all().aggregate(precio=Coalesce(Sum("revenue_before_0"), 0))[
-        "precio"]
-    all_rev_1 = Startup.objects.all().aggregate(Sum("revenue_before_1"))[
-        "revenue_before_1__sum"]
-    all_rev_2 = Startup.objects.all().aggregate(Sum("revenue_before_2"))[
-        "revenue_before_2__sum"]
-    print(all_rev_0)
-    print(all_rev_1)
-    print(all_rev_2)
-    all_exp_0 = Startup.objects.all().aggregate(Sum("export_before_0"))[
-        "export_before_0__sum"]
-    all_exp_1 = Startup.objects.all().aggregate(Sum("export_before_1"))[
-        "export_before_1__sum"]
-    all_exp_2 = Startup.objects.all().aggregate(Sum("export_before_2"))[
-        "export_before_2__sum"]
-
-    date_arr = []
-    day_user = DayUser.objects.all().order_by("-id")[:7]
-    q_new = NewUser.objects.all().order_by("-id")[:7]
-    q_session_user = SessionPerUser.objects.all().order_by("-id")[:7]
-    session = Session.objects.all().order_by("-id")[:7]
-    q_pv = PageView.objects.all().order_by("-id")[:7]
-    page_per_session = PagePerSession.objects.all().order_by("-id")[:7]
-    for k in range(1, 8):
-        date = datetime.datetime.now() + datetime.timedelta(days=k * -1)
-        date_arr.append(date)
-        print(date)
-
-    return render(request, "pc/manager/dashboard2.html",
-                  { "key":key, "venture_num":ventur_num,"em_num":em_num,"em_num_gg":em_num_gg,"venture_num_gg":ventur_num_gg,
-                      "date_arr": date_arr, "q_day": day_user, "q_new": q_new, "q_session_user": q_session_user,
-                      "q_session": session, "q_pv": q_pv, "page_per_session": page_per_session,
-                      "fund_gr": fund, "sel_fund_gr": sel_fund, "local_fund_gr": local_fund,
-                      "total": total, "ing": ing, "avg_apply_ent": avg_apply_ent, "avg_award_ent": avg_award_ent,
-                      "total_startup": total_startup, "avg_em": avg_em, "total_rev": total_rev,
-                      "total_fund": total_fund,
-                      "total_person": total_person, "avg_apply": avg_apply, "avg_award": avg_award,
-                      "total_exp": total_exp,
-                      "total_select_com": total_select_com, "total_select_com_avg": total_select_com_avg,
-                      "total_apply_com_avg": total_apply_com_avg, "sel_avg_em": sel_avg_em,
-                      "sel_total_rev": sel_total_rev, "sel_total_fund": sel_total_fund, "sel_total_exp": sel_total_exp,
-                      "local_num": local_num,
-                      "local_avg_em": local_avg_em, "lcoal_select_com_avg": lcoal_select_com_avg,
-                      "local_apply_com_avg": local_apply_com_avg, "local_total_rev": local_total_rev,
-                      "local_total_fund": local_total_fund, "local_total_exp": local_total_exp,
-                      "sel_rev_0": sel_rev_0, "sel_rev_1": sel_rev_1, "sel_rev_2": sel_rev_2,
-                      "sel_exp_0": sel_exp_0, "sel_exp_1": sel_exp_1, "sel_exp_2": sel_exp_2,
-                      "local_rev_0": local_rev_0, "local_rev_1": local_rev_1, "local_rev_2": local_rev_2,
-                      "local_exp_0": local_exp_0, "local_exp_1": local_exp_1, "local_exp_2": local_exp_2,
-                      "all_rev_0": all_rev_0, "all_rev_1": all_rev_1, "all_rev_2": all_rev_2,
-                      "all_exp_0": all_exp_0, "all_exp_1": all_exp_1,
-                      "all_exp_2": all_exp_2,
-                      "qs_0": qs_0, "qs_1": qs_1,
-                  })
-
-
-def write(request):
-    form = SupportBusinessForm()
-    if request.method == "POST":
-        form = SupportBusinessForm(request.POST)
-
-        if form.is_valid():
-            print("get_form")
-            sb = form.save(commit=False)
-            sb.user = request.user.additionaluserinfo
-            sb.confirm_count= 0
-            if request.POST.get("relate_sp") != "":
-                sb.relate_sb = SupportBusiness.objects.get(id=request.POST.get("relate_sp"))
-            else:
-                sb.relate_sb = None
-            if sb.employee_num != 0:
-                sb.employee_lt_gt = "lte"
-            sb.save()
-            print("sb_save")
-            for f in request.POST.get("filter").split(","):
-                sb.filter.add(Filter.objects.get(id=f))
-            if(request.POST.get("obj")=="save"):
-                return redirect("sb_edit", id=sb.id)
-            else:
-                return HttpResponseRedirect("/manager/support/edit/"+str(sb.id)+"?result=preview")
-
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    filter_2 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_3 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_4 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_5 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_6 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_7 = Filter.objects.all().filter(cat_0="지원형태", )
-    today_min = datetime.datetime.now()
-    ap = SupportBusiness.objects.all().filter(complete=True)
-    print("here")
-    return render(request, "pc/manager/write_sb.html", {"form": form,
-                                                        "filter_0": filter_0,
-                                                        "filter_1": filter_1,
-                                                        "filter_2": filter_2,
-                                                        "filter_3": filter_3,
-                                                        "filter_4": filter_4,
-                                                        "filter_5": filter_5,
-                                                        "filter_6": filter_6,
-                                                        "filter_7": filter_7,
-                                                        "ap":ap
-                                                        })
-
-
-def sb_edit(request, id):
-    print(datetime.datetime.now())
-    ap = SupportBusiness.objects.all().filter(complete=True)
-    sb_origin=SupportBusiness.objects.get(id=id)
-    form = SupportBusinessForm(instance=SupportBusiness.objects.get(id=id))
-
-    if request.method == "POST":
-        form = SupportBusinessForm(request.POST, instance=SupportBusiness.objects.get(id=id))
-        print(form.is_valid())
-
-        if form.is_valid():
-            print("here2")
-            sb = form.save(commit=False)
-            sb.user = SupportBusiness.objects.get(id=id).user
-            sb.meta_file_info = SupportBusiness.objects.get(id=id).meta_file_info
-            if sb_origin.complete==True:
-                sb.complete=True
-            if request.POST.get("relate_sp") !="":
-                sb.relate_sb = SupportBusiness.objects.get(id=request.POST.get("relate_sp"))
-            else:
-                sb.relate_sb= None
-            if sb.employee_num != 0:
-                sb.employee_lt_gt = "lte"
-            sb.save()
-            sb.filter.clear()
-            for f in request.POST.get("filter").split(","):
-                sb.filter.add(Filter.objects.get(id=f))
-            if (request.POST.get("obj") == "save"):
-                print("herer")
-                return redirect("sb_edit", id=sb.id)
-            else:
-                if request.POST.get("obj") == "manager":
-                    return redirect("/manager/")
-                else:
-                    return redirect("/manager/support/edit/"+str(sb.id)+"/?result=preview")
-    status = request.POST.get("obj","")
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    filter_2 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_3 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_4 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_5 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_6 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_7 = Filter.objects.all().filter(cat_0="지원형태", )
-    sb = SupportBusiness.objects.get(id=id)
-    return render(request, "pc/manager/write_sb.html", {"form": form,"status":status,"support":sb,
-                                                        "filter_0": filter_0,
-                                                        "filter_1": filter_1,
-                                                        "filter_2": filter_2,
-                                                        "filter_3": filter_3,
-                                                        "filter_4": filter_4,
-                                                        "filter_5": filter_5,
-                                                        "filter_6": filter_6,
-                                                        "filter_7": filter_7,
-                                                        "sb": sb,
-                                                        "ap":ap
-                                                        })
-
-
-def example(request, id):
-    save_status = False
-    if request.method == "POST":
-        sb = SupportBusiness.objects.get(id=id)
-        sb.meta_file_info = request.POST.get("meta")
-        sb.save()
-        save_status = True
-        if request.POST.get("is_open") == "true":
-            sb.confirm_list.clear()
-            sb.confirm_list.add(request.user.additionaluserinfo)
-            sb.open_status = False
-            sb.confirm = True
-            sb.save()
-            make_alarm.delay(sb.id,"3", request.user.additionaluserinfo.boss.id)
-            return redirect('/manager/sb_list/?cat=confirm')
-        status = request.POST.get("obj")
-        if(status == "preview"):
-            return redirect("/manager/sb_example/"+str(sb.id)+"/?result=preview")
-    next_url = request.POST.get("next_url", "")
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    filter_2 = Filter.objects.all().filter(cat_0="조건")
-    support = SupportBusiness.objects.get(id=id)
-    form = ApplianceForm
-
-
-    return render(request, "pc/manager/example.html",
-                  {"form": form, "filter_1": filter_1, "filter_0": filter_0, "save_status": save_status,
-                   "next_url": next_url,"filter_2": filter_2, "support": support})
-
-
-def pick_winner(request, id):
-    if request.method == "POST":
-        winner_list = request.POST.get("winner_list").split(",")
-        sp = SupportBusiness.objects.get(id=request.POST.get("sp"))
-        Award.objects.all().filter(sb=sp).delete()
-        sp.open_status = 0
-        sp.complete = 1
-        sp.is_blind = False
-        sp.save()
-        try:
-            for winner in winner_list:
-                print(winner)
-                print(Appliance.objects.get(id=winner).startup)
-                Award(
-                    sb=sp, startup=Startup.objects.get(id=Appliance.objects.get(id=winner).startup.id),
-                ).save()
-                make_alarm.delay(sp.id, "1")
-
-
-        except Exception as e:
-            print(e)
-    sp = SupportBusiness.objects.get(id=id)
-    applicant = Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id)).filter(is_submit=True)
-    winner_list = Award.objects.all().filter(sb=sp)
-    sp_inter = AdditionalUserInfo.objects.all().filter(interest=sp)
-    q_obj = Q()
-
-    if len(winner_list) != 0:
-
-        for winner in winner_list:
-            q_obj |= Q(startup_id=winner.startup) & Q(sb_id=sp.id)
-
-        win_filter = []
-        for a in winner_list:
-            for f in a.startup.filter.all():
-                if f.cat_1 != "소재지" and f.cat_1 != "기업형태":
-                    win_filter.append(f.name)
-        win_dict = {i: win_filter.count(i) for i in win_filter}
-        local_filter = []
-        for a in winner_list:
-            for f in a.startup.filter.all():
-                if f.cat_1 == "소재지":
-                    local_filter.append(f.name)
-        win_local_dict = {i: local_filter.count(i) for i in local_filter}
-
-        case_filter = []
-        for a in winner_list:
-            for f in a.startup.filter.all():
-                if f.cat_1 == "기업형태":
-                    case_filter.append(f.name)
-        win_case_dict = {i: case_filter.count(i) for i in case_filter}
-
-        ap_winner = Appliance.objects.all().filter(q_obj)
-
-    else:
-        ap_winner = ""
-        win_case_dict = ""
-        win_dict = ""
-        win_local_dict = ""
-    hitlog = []
-    date_arr = []
-    applog = []
-    applicant = Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id)).filter(is_submit=True)
-    for k in range(1, 30):
-        from_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k + 1)
-        to_da = datetime.datetime.now() + datetime.timedelta(days=-1 * k)
-        date_arr.append(from_da.isoformat().split("T")[0])
-        hitlog.append(len(HitLog.objects.all().filter(date__gt=to_da).filter(sb=sp).filter(date__lte=from_da)))
-        applog.append(
-            len(Appliance.objects.all().filter(sb=sp).filter(update_at__gt=to_da).filter(update_at__lt=from_da)))
-
-    ap_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 != "소재지" and f.cat_1 != "기업형태":
-                ap_filter.append(f.name)
-    ap_dict = {i: ap_filter.count(i) for i in ap_filter}
-    local_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 == "소재지":
-                local_filter.append(f.name)
-    local_dict = {i: local_filter.count(i) for i in local_filter}
-
-    case_filter = []
-    for a in applicant:
-        for f in a.startup.filter.all():
-            if f.cat_1 == "기업형태":
-                case_filter.append(f.name)
-    case_dict = {i: case_filter.count(i) for i in case_filter}
-
-    return render(request, "pc/manager/pick_winner.html",
-                  {"sp": sp, "ap": applicant, "ap_winner": ap_winner, "hitlog": hitlog, "inter": sp_inter,
-                   "filter_pi": ap_dict, "local_filter_pi": local_dict,
-                   "case_filter_pi": case_dict, "win_case_dict": win_case_dict, "win_dict": win_dict,
-                   "win_local_dict": win_local_dict,
-                   "applog": applog, "date_arr": date_arr})
-
-
-def save_filter(request):
-    data = request.POST.get("val")
-    request.user.startup.filter.clear()
-    for filter in request.user.startup.filter.all():
-        if filter.cat_0 != "지원형태":
-            request.user.startup.filter.delete(filter)
-    for f in data.split(","):
-        try:
-            request.user.startup.filter.add(Filter.objects.get(id=f))
-        except:
-            pass
-    request.user.startup.employee_number = (
-        (request.POST.get("em").replace("명 이하", "").replace("명 이상", "").replace("제한없음", "0")))
-    request.user.startup.save()
-
-    return HttpResponse("ok")
-
-
-def sb_preview(request, id):
-    support = get_object_or_404(SupportBusiness, id=id)
-    return render(request, 'pc/support_back.html', {"support": support})
-
-
-def load_recent_appliance(request):
-    if request.method == "POST":
-        print("hrer")
-        qs = Appliance.objects.filter(id=request.POST.get("ap"))
-        qs_json = serializers.serialize('json', qs)
-        return HttpResponse(qs_json, content_type='application/json')
-
-
-def rate_page(request):
-    PageRate(page=request.POST.get("page"), user=request.POST.get("user"), rate=request.POST.get("rate")).save()
-
-
-def apply_preview(request, sbid, id):
-    try:
-        recent_ap = Appliance.objects.all().filter(startup=request.user.startup)
-    except:
-        recent_ap = ""
-    form = Appliance.objects.get(id=id)
-    current_ap = Appliance.objects.get(id=id)
-    sp = SupportBusiness.objects.get(id=Appliance.objects.get(id=id).sb_id)
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    try:
-        filter_string = request.user.startup.filter.all()
-    except:
-        filter_string = ""
-    k = []
-    for f in filter_string:
-        k.append(str(f.id))
-    return render(request, "pc/appliance_preview.html",
-                  {"support": sp, "filter_string": ",".join(k), "form": form, "filter_0": filter_0,
-                   "filter_1": filter_1, "recent_ap": recent_ap, "current_ap": current_ap})
-
-
-def apply_preview_pdf(request, sbid, id):
-    try:
-        recent_ap = Appliance.objects.all().filter(startup=request.user.startup)
-    except:
-        recent_ap = ""
-    print("print here")
-    form = Appliance.objects.get(id=id)
-    current_ap = Appliance.objects.get(id=id)
-    sp = SupportBusiness.objects.get(id=Appliance.objects.get(id=id).sb_id)
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-    try:
-        filter_string = request.user.startup.filter.all()
-    except:
-        filter_string = ""
-    k = []
-    for f in filter_string:
-        k.append(str(f.id))
-    return render(request, "pc/appliance_preview_pdf.html",
-                  {"support": sp, "filter_string": ",".join(k), "form": form, "filter_0": filter_0,
-                   "filter_1": filter_1, "recent_ap": recent_ap, "current_ap": current_ap})
-
-
-def apply_preview_doc(request, sbid):
-    form = ApplianceForm()
-
-    sp = SupportBusiness.objects.get(id=sbid)
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역")
-
-    return render(request, "pc/apply.html",
-                  {"support": sp, "form": form, "filter_0": filter_0,
-                   "filter_1": filter_1})
-
-
-def get_alarm_status(request):
-
-    if request.user.additionaluserinfo.auth == "5" or  request.user.additionaluserinfo.auth == "4":
-        if request.user.additionaluserinfo.auth == "5":
-            noti = (Alarm.objects.all().filter(user=request.user.additionaluserinfo).filter(category=3).filter(read=False))
-            noti_data = {}
-            noti_data["title"] = []
-            noti_data["sbid"] = []
-            for no in noti:
-                if no.origin_sb.title not in noti_data["title"]:
-                    noti_data["title"].append(no.origin_sb.title)
-                    noti_data["sbid"].append(no.origin_sb.id)
-            return JsonResponse({"noti": noti_data})
-        else:
-            noti = (
-            Alarm.objects.all().filter(user=request.user.additionaluserinfo).filter(category=2).filter(read=False))
-            noti_data = {}
-            noti_data["title"] = []
-            noti_data["sbid"] = []
-            for no in noti:
-                if no.origin_sb.title not in noti_data["title"]:
-                    noti_data["title"].append(no.origin_sb.title)
-                    noti_data["sbid"].append(no.origin_sb.id)
-            return JsonResponse({"noti": noti_data})
-
-    else:
-        noti = (Alarm.objects.all().filter(user=request.user.additionaluserinfo).filter(category=0).filter(read=False))
-        noti_data = {}
-        noti_data["title"] = []
-        noti_data["sbid"] = []
-        for no in noti:
-            if no.origin_sb.title not in noti_data["title"] :
-                noti_data["title"].append(no.origin_sb.title)
-                noti_data["sbid"].append(no.origin_sb.id)
-        step = ((Alarm.objects.all().filter(user=request.user.additionaluserinfo).filter(category=1).filter(read=False)))
-        step_data = {}
-        step_data["title"] = []
-        step_data["sbid"] = []
-
-        for no in step:
-            if no.origin_sb.title not in step_data["title"]:
-                step_data["title"].append(no.origin_sb.title)
-                step_data["sbid"].append(no.origin_sb.id)
-
-        return JsonResponse({"noti": noti_data, "step": step_data})
-
-
-def get_all_award(request, sbid):
-    award_list = Award.objects.all().filter(sb_id=sbid)
-    ap_list = Award.objects.all().filter(sb_id=sbid)
-    zip_filename = "%s.zip" % (
-        str(ap_list[0].sb.apply_end).split("-")[
-            0] + "_" + ap_list[0].sb.title)
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for ap in ap_list:
-        zip_subdir = "applicance"
-        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(
-            Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].id)
-        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-
-        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
-            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-            time.sleep(1)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].business_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].business_file.path)
-            zip_path = os.path.join(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].startup.name + "/사업자등록증." +
-                fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].business_file.path,
-                     zip_path)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].fund_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].fund_file.path)
-            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].fund_file.path, zip_path)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].etc_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].etc_file.path)
-            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].etc_file.path, zip_path)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ir_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ir_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ir_file.path, zip_path)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ppt_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ppt_file.path)
-            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].ppt_file.path, zip_path)
-        if Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].tax_file != "":
-            fdir, fname = os.path.split(
-                Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].tax_file.path)
-            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-            zf.write(Appliance.objects.all().filter(startup=ap.startup).filter(sb_id=sbid)[0].tax_file.path, zip_path)
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("선정자 리스트")
-    sheet.write(0, 0, "순서")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "업종")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "사업자 등록번호")
-    sheet.write(0, 5, "이메일")
-    sheet.write(0, 6, "대표 전화번호")
-    sheet.write(0, 7, "필터")
-    k = 1
-    for a in ap_list:
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, a.startup.name)
-        sheet.write(k, 2, a.startup.category)
-        sheet.write(k, 3, a.startup.user.additionaluserinfo.name)
-        sheet.write(k, 4, Appliance.objects.all().filter(sb_id=sbid).filter(startup_id=a.startup.id)[0].business_number)
-        sheet.write(k, 5, a.startup.user.username)
-        sheet.write(k, 6, a.startup.user.additionaluserinfo.tel)
-        filter_list = a.startup.filter.all()
-        f_arr = []
-        for fil in filter_list:
-            f_arr.append(fil.name)
-        sheet.write(k, 7, ",".join(f_arr))
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    zf.writestr("전체 리스트.xls", f.getvalue())
-
-    zf.close()
-
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
-
-
-def get_all_inter(request, sbid):
-    award_list = Startup.objects.all().filter(user__additionaluserinfo__interest=SupportBusiness.objects.get(id=sbid))
-    print(award_list)
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("선정자 리스트")
-    sheet.write(0, 0, "순서")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "업종")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "이메일")
-    sheet.write(0, 5, "대표 전화번호")
-    sheet.write(0, 6, "필터")
-    k = 1
-    for a in award_list:
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, a.name)
-        sheet.write(k, 2, a.category)
-        sheet.write(k, 3, a.user.additionaluserinfo.name)
-        sheet.write(k, 4, a.user.username)
-        sheet.write(k, 5, a.user.additionaluserinfo.tel)
-        filter_list = a.filter.all()
-        f_arr = []
-        for fil in filter_list:
-            f_arr.append(fil.name)
-        sheet.write(k, 6, ",".join(f_arr))
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "관심 지정 스타트업 리스트_" + SupportBusiness.objects.get(id=sbid).title + ".xls", safe='')
-    book.save(response)
-
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-
-
-
-def startup_sb_manage(request):
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-    filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-    filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-    filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-    filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-    filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-    filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-    if request.GET.get("filter", "") == "" and request.GET.get("em", 0) == 0:
-        qs = Startup.objects.all()
-        return render(request, "pc/manager/startup_account_list.html",
-                      {"qs": qs, "filter_0": filter_0, "filter_1": filter_1, "filter_2": filter_2, "filter_3": filter_3,
-                       "filter_4": filter_4, "filter_5": filter_5, "filter_6": filter_6, "filter_7": filter_7,
-                       "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10, "filter_11": filter_11,
-                       "filter_12": filter_12, "filter_13": filter_13, "filter_14": filter_14, "filter_15": filter_15,
-                       "filter_16": filter_16, "filter_17": filter_17, "filter_18": filter_18})
-    else:
-        qs = Startup.objects.all()
-        print("here")
-        em = request.GET.get("em", "0")
-
-        if request.GET.get("filter", ",") != ",":
-            filter_string = request.GET.get("filter").split(",")
-            if filter_string == [""]:
-                filter_string = []
-
-            q_obj = Q()
-            filter_list = []
-            for f in filter_string:
-                filter_list.append(Filter.objects.get(id=f))
-            print(filter_list)
-            for filter in filter_list:
-                if filter.cat_0 != "조건" and filter.cat_1 != "업력":
-                    # q_obj.add(Q(filter__id=filter.id), Q.AND)
-                    qs = qs.filter(filter=filter)
-            if Filter.objects.filter(cat_0="조건").filter(cat_1="업력").filter(name="제한없음")[0] not in filter_list:
-                for filter in filter_list:
-                    if filter.cat_0 == "조건" and filter.cat_1 == "업력":
-                        qs = qs.filter(filter=filter)
-
-        if (em != str(0)):
-            print(em)
-            qs = qs.filter(employee_number__lte=int(em))
-        if (request.GET.get("search", "") != ""):
-            word = request.GET.get("search")
-            qs = qs.filter(Q(name__contains=word) | Q(desc__contains=word) | Q(short_desc__contains=word) | Q(
-                tag__name__contains=word)).distinct()
-        elif (request.GET.get("search", "") == "" and request.GET.get("filter", ",") == ","):
-            qs = Startup.objects.all()
-
-        return render(request, "pc/manager/startup_account_list.html",
-                      {"qs": qs, "filter_0": filter_0, "filter_1": filter_1, "filter_2": filter_2,
-                       "filter_3": filter_3, "filter_4": filter_4, "filter_5": filter_5, "filter_6": filter_6,
-                       "filter_7": filter_7,
-                       "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10, "filter_11": filter_11,
-                       "filter_12": filter_12, "filter_13": filter_13, "filter_14": filter_14, "filter_15": filter_15,
-                       "filter_16": filter_16,
-                       "filter_17": filter_17, "filter_18": filter_18})
-
-
-
-def startup_sb_manage_all(request):
-    filter_0 = Filter.objects.all().filter(cat_0="기본장르")
-    filter_1 = Filter.objects.all().filter(cat_0="영역", cat_1="창작")
-    filter_2 = Filter.objects.all().filter(cat_0="영역", cat_1="IT 관련")
-    filter_3 = Filter.objects.all().filter(cat_0="영역", cat_1="창업")
-    filter_4 = Filter.objects.all().filter(cat_0="영역", cat_1="제조/융합 관련")
-    filter_5 = Filter.objects.all().filter(cat_0="영역", cat_1="신규사업")
-    filter_6 = Filter.objects.all().filter(cat_0="영역", cat_1="기타")
-    filter_7 = Filter.objects.all().filter(cat_0="조건", cat_1="업력")
-    filter_8 = Filter.objects.all().filter(cat_0="조건", cat_1="구성원")
-    filter_9 = Filter.objects.all().filter(cat_0="조건", cat_1="소재지")
-    filter_10 = Filter.objects.all().filter(cat_0="조건", cat_1="기업형태")
-    filter_11 = Filter.objects.all().filter(cat_0="조건", cat_1="기업단계")
-    filter_12 = Filter.objects.all().filter(cat_0="지원형태", cat_1="자금지원")
-    filter_13 = Filter.objects.all().filter(cat_0="지원형태", cat_1="엑셀러레이팅 투자연계")
-    filter_14 = Filter.objects.all().filter(cat_0="지원형태", cat_1="교육")
-    filter_15 = Filter.objects.all().filter(cat_0="지원형태", cat_1="판로")
-    filter_16 = Filter.objects.all().filter(cat_0="지원형태", cat_1="네트워킹")
-    filter_17 = Filter.objects.all().filter(cat_0="지원형태", cat_1="기타지원")
-    filter_18 = Filter.objects.all().filter(cat_0="지원형태", cat_1="공간지원")
-    if request.GET.get("filter", "") == "":
-        qs = Startup.objects.all()
-        return render(request, "pc/manager/startup_list.html",
-                      {"qs": qs, "filter_0": filter_0, "filter_1": filter_1, "filter_2": filter_2, "filter_3": filter_3,
-                       "filter_4": filter_4, "filter_5": filter_5, "filter_6": filter_6, "filter_7": filter_7,
-                       "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10, "filter_11": filter_11,
-                       "filter_12": filter_12, "filter_13": filter_13, "filter_14": filter_14, "filter_15": filter_15,
-                       "filter_16": filter_16, "filter_17": filter_17, "filter_18": filter_18})
-    else:
-        qs = Startup.objects.all()
-        if request.GET.get("filter", ",") != ",":
-            filter_string = request.GET.get("filter").split(",")
-            if filter_string == [""]:
-                filter_string = []
-            em = request.GET.get("em", 0)
-            q_obj = Q()
-            filter_list = []
-            for f in filter_string:
-                filter_list.append(Filter.objects.get(id=f))
-            print(filter_list)
-            for filter in filter_list:
-                if filter.cat_1 != "업력":
-                    # q_obj.add(Q(filter__id=filter.id), Q.AND)
-                    qs = qs.filter(filter=filter)
-
-            if Filter.objects.filter(cat_0="조건").filter(cat_1="업력").filter(name="제한없음")[0] not in filter_list:
-                for filter in filter_list:
-                    if filter.cat_0 == "조건" and filter.cat_1 == "업력":
-                        qs = qs.filter(filter=filter)
-        em = request.GET.get("em", 0)
-        if (em != 0):
-            print(em)
-            qs = qs.filter(Q(employee_number__lte=int(em)))
-            print(qs)
-        if (request.GET.get("search", "") != ""):
-            word = request.GET.get("search")
-            qs = qs.filter(Q(name__contains=word) | Q(desc__contains=word) | Q(short_desc__contains=word) | Q(
-                tag__name__contains=word)).distinct()
-        elif (request.GET.get("search", "") == "" and request.GET.get("filter", ",") == ","):
-            qs = Startup.objects.all()
-
-        return render(request, "pc/manager/startup_list.html",
-                      {"qs": qs, "filter_0": filter_0, "filter_1": filter_1, "filter_2": filter_2,
-                       "filter_3": filter_3, "filter_4": filter_4, "filter_5": filter_5, "filter_6": filter_6,
-                       "filter_7": filter_7,
-                       "filter_8": filter_8, "filter_9": filter_9, "filter_10": filter_10, "filter_11": filter_11,
-                       "filter_12": filter_12, "filter_13": filter_13, "filter_14": filter_14, "filter_15": filter_15,
-                       "filter_16": filter_16, "filter_17": filter_17, "filter_18": filter_18})
-
-
-def startup_p_manage_all(request):
-    qs = AdditionalUserInfo.objects.all().exclude(Q(auth="4") | Q(auth=5))
-    return render(request, "pc/manager/startup_person_list.html",
-                  {"qs": qs})
-
-
-def pick_winner_pdf(request, id):
-    sp = SupportBusiness.objects.get(id=id)
-    applicant = Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id)).filter(is_submit=True)
-    winner_list = Award.objects.all().filter(sb=sp)
-    q_obj = Q()
-    print("here")
-    if len(winner_list) != 0:
-        for winner in winner_list:
-            q_obj |= Q(startup_id=winner.startup) & Q(sb_id=sp.id)
-        ap_winner = Appliance.objects.all().filter(q_obj)
-    else:
-        ap_winner = ""
-    return render(request, "pc/manager/pick_winner_pdf.html", {"sp": sp, "ap": applicant, "ap_winner": ap_winner})
-
-
-def pdf_down_pick_winner(request, id):
-    url = "http://gconnect.kr/manage/pick_winner_pdf/" + str(id)
-    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
-    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    with open(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", 'rb') as pdf:
-        response = HttpResponse(pdf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="%s.pdf"' % urllib.parse.quote(
-            "지원자리스트_" + SupportBusiness.objects.get(id=id).title, safe='')
-        return response
-
-
-def sb_detail_pdf_down(request, id):
-    url = "http://gconnect.kr/sb_detail_pdf/" + str(id)
-    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
-    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    with open(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", 'rb') as pdf:
-        response = HttpResponse(pdf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="%s.pdf"' % urllib.parse.quote(
-            "공고문_" + SupportBusiness.objects.get(id=id).title, safe='')
-        return response
-
-
-def all_sp_download(request, id):
-    id_arr = id.split(",")
-    zip_filename = "%s.zip" % (str("체크한 사업 지원서"))
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for sb in id_arr:
-        ap_list = Appliance.objects.filter(sb_id=sb)
-        for ap in ap_list:
-            zip_subdir = "applicance"
-            url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
-            print(url)
-            subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-            if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-                zip_path = os.path.join(SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/지원서.pdf")
-                zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-                print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-                time.sleep(1)
-            if ap.business_file != "":
-                fdir, fname = os.path.split(ap.business_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/사업자등록증." + fname.split(".")[
-                        -1])
-                zf.write(ap.business_file.path, zip_path)
-            if ap.fund_file != "":
-                fdir, fname = os.path.split(ap.fund_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-                zf.write(ap.fund_file.path, zip_path)
-            if ap.etc_file != "":
-                fdir, fname = os.path.split(ap.etc_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/기타첨부파일." + fname.split(".")[
-                        -1])
-                zf.write(ap.etc_file.path, zip_path)
-            if ap.ir_file != "":
-                fdir, fname = os.path.split(ap.ir_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-                zf.write(ap.ir_file.path, zip_path)
-            if ap.ppt_file != "":
-                fdir, fname = os.path.split(ap.ppt_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-                zf.write(ap.ppt_file.path, zip_path)
-            if ap.tax_file != "":
-                fdir, fname = os.path.split(ap.tax_file.path)
-                zip_path = os.path.join(
-                    SupportBusiness.objects.get(id=sb).title + "/" + ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-                zf.write(ap.tax_file.path, zip_path)
-    zf.close()
-
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
-
-
-def all_user_sp_download_index(request):
-    ap = Appliance.objects.get(id=request.POST.get("id"))
-    ir, business, tax, fund, ppt, etc = 0, 0, 0, 0, 0, 0
-    if ap.ir_file:
-        ir = 1
-    if ap.business_file:
-        business = 1
-    if ap.tax_file:
-        tax = 1
-    if ap.fund_file:
-        fund = 1
-    if ap.ppt_file:
-        ppt = 1
-    if ap.etc_file:
-        etc = ap.sb.etc_file_title
-    return JsonResponse({"ir": ir, "business": business, "tax": tax, "fund": fund, "ppt": ppt, "etc": etc})
-
-
-def all_user_sp_download(request):
-    ap_list = []
-    ap_list.append(Appliance.objects.get(id=request.GET.get("id")))
-    if ap_list[0].startup != request.user.startup:
-        return HttpResponse("잘못된 접근입니다.")
-
-    ir = request.GET.get("ir")
-    business = request.GET.get("business")
-    tax = request.GET.get("tax")
-    fund = request.GET.get("fund")
-    etc = request.GET.get("etc")
-    ppt = request.GET.get("ppt")
-    app = request.GET.get("ap")
-
-    zip_filename = "%s.zip" % (
-        str(ap_list[0].sb.apply_end).split("-")[
-            0] + "_" + ap_list[0].sb.title)
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for ap in ap_list:
-        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf" and app == "1":
-            url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
-            print(url)
-            subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
-            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-            time.sleep(1)
-        if ap.business_file != "" and business == "1":
-            fdir, fname = os.path.split(ap.business_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
-            zf.write(ap.business_file.path, zip_path)
-        if ap.fund_file != "" and fund == "1":
-            fdir, fname = os.path.split(ap.fund_file.path)
-            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-            zf.write(ap.fund_file.path, zip_path)
-        if ap.etc_file != "" and etc == "1":
-            fdir, fname = os.path.split(ap.etc_file.path)
-            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
-            zf.write(ap.etc_file.path, zip_path)
-        if ap.ir_file != "" and ir == "1":
-            fdir, fname = os.path.split(ap.ir_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-            zf.write(ap.ir_file.path, zip_path)
-        if ap.ppt_file != "" and ppt == "1":
-            fdir, fname = os.path.split(ap.ppt_file.path)
-            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-            zf.write(ap.ppt_file.path, zip_path)
-        if ap.tax_file != "" and tax == "1":
-            fdir, fname = os.path.split(ap.tax_file.path)
-            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-            zf.write(ap.tax_file.path, zip_path)
-    zf.close()
-
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
-
-
-def set_stop(request):
-    print(request.POST)
-    if request.user.additionaluserinfo.auth == "5":
-        data = request.POST.get("data")
-        for id in data.split(","):
-            print(id)
-                #공고문 작성중인 경우에는 블라이인드 처리가 되지 않도록 한다.
-            if SupportBusiness.objects.all().filter(id=id)[0].open_status == True:
-                SupportBusiness.objects.all().filter(id=id).update(is_blind=True, )
-                make_alarm.delay(SupportBusiness.objects.all().filter(id=id)[0].id,"2",SupportBusiness.objects.all().filter(id=id)[0].user.id)
-            if SupportBusiness.objects.all().filter(id=id)[0].complete == True:
-                SupportBusiness.objects.all().filter(id=id).update(is_blind=True, )
-                make_alarm.delay(SupportBusiness.objects.all().filter(id=id)[0].id, "2",
-                           SupportBusiness.objects.all().filter(id=id)[0].user.id)
-    return HttpResponse("")
-
-
-def set_start(request):
-    # if request.user.additionaluserinfo.auth == "5":
-    #     data = request.POST.get("data")
-    #     for id in data.split(","):
-    #         if SupportBusiness.objects.all().filter(id=id)[0].is_blind==True and SupportBusiness.objects.all().filter(id=id)[0].confirm==True and SupportBusiness.objects.all().filter(id=id)[0].complete==True:
-    #             SupportBusiness.objects.all().filter(id=id)[0].update(is_blind=False,  confirm=False,)
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count= SupportBusiness.objects.all().filter(id=id)[0].confirm_count+1
-    #             make_alarm.delay(id, "1")
-    #             # 공고 완료 > 블라인드 > 수정 > 승인 요청
-    #
-    #         if SupportBusiness.objects.all().filter(id=id)[0].is_blind == False and  SupportBusiness.objects.all().filter(id=id)[0].confirm == True and SupportBusiness.objects.all().filter(id=id)[0].complete == True:
-    #             SupportBusiness.objects.all().filter(id=id).update( confirm=False, )
-    #
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count = SupportBusiness.objects.all().filter(id=id)[0].confirm_count + 1
-    #             make_alarm.delay(id, "1")
-    #             # 공고 완료 > 블라인드 > 수정 > 승인 요청
-    #
-    #         elif SupportBusiness.objects.all().filter(id=id)[0].is_blind==True and SupportBusiness.objects.all().filter(id=id)[0].open_status==False and SupportBusiness.objects.all().filter(id=id)[0].confirm==True and SupportBusiness.objects.all().filter(id=id)[0].complete==False :
-    #             SupportBusiness.objects.all().filter(id=id).update(is_blind=False, confirm=False, open_status=True)
-    #
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count = \
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count + 1
-    #             make_alarm.delay(id, "1")
-    #             # 공고중 > 블라인드 > 수정 > 승인 요청
-    #
-    #         elif SupportBusiness.objects.all().filter(id=id)[0].is_blind==False and SupportBusiness.objects.all().filter(id=id)[0].open_status==False and SupportBusiness.objects.all().filter(id=id)[0].confirm==True and SupportBusiness.objects.all().filter(id=id)[0].complete==False:
-    #             SupportBusiness.objects.all().filter(id=id).update(open_status=True, confirm=False)
-    #             if SupportBusiness.objects.all().filter(id=id)[0].confirm_count == 0 :
-    #                 make_alarm.delay(id, "0")
-    #             else:
-    #                 make_alarm.delay(id, "1")
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count = \
-    #             SupportBusiness.objects.all().filter(id=id)[0].confirm_count + 1
-    #
-    #             # 최초 공고 작성 > 승인 요청
-    #
-    data = request.POST.get("data")
-    for id in data.split(","):
-        if request.user.additionaluserinfo.auth == "5":
-            target = SupportBusiness.objects.get(id=id)
-            target.confirm_list.add(request.user.additionaluserinfo)
-            target.is_blind = False
-            target.confirm_count = SupportBusiness.objects.get(id=id).confirm_count + 1
-            target.open_status = True
-            target.confirm=False
-            target.save()
-        else:
-            SupportBusiness.objects.get(id=id).confirm_list.add(request.user.additionaluserinfo)
-    return HttpResponse("")
-
-
-
-def delete_sb(request):
-    if request.user.additionaluserinfo.auth == "5":
-        data = request.POST.get("data")
-        for id in data.split(","):
-            Appliance.objects.all().filter(sb=SupportBusiness.objects.get(id=id)).delete()
-            SupportBusiness.objects.get(id=id).filter.clear()
-            SupportBusiness.objects.get(id=id).delete()
-    return HttpResponse("")
-
-
-def manager_account(request):
-    if request.user.additionaluserinfo.auth == "5" :
-        q = AdditionalUserInfo.objects.all().filter(auth=4)
-
-    elif request.user.additionaluserinfo.auth == "4":
-        q = request.user.additionaluserinfo.additionaluserinfo_set.all()
-    admin = User.objects.get(username="gca_manager@test.com")
-    return render(request, "pc/manager/account.html", {"q": q, "admin":admin})
-
-
-def add_manager_acc(request):
-
-    if request.method == "POST":
-        if len(User.objects.all().filter(username=request.POST.get("id"))) == 0:
-            add_user = User.objects.create_user(username=request.POST.get("id"), password=request.POST.get("pw"))
-            if add_user is not None:
-                print(request.POST)
-                AdditionalUserInfo(
-                    user=add_user,
-                    name=request.POST.get("name"),
-                    # department=request.POST.get("department"),
-                    belong_to=request.POST.get("department"),
-                    position=request.POST.get("position"),
-                    tel=request.POST.get("tel"),
-                    phone=request.POST.get("phone"),
-                    additional_email=request.POST.get("additional_email"),
-                    boss = request.user.additionaluserinfo,
-                    auth="4"
-                ).save()
-                return HttpResponse("")
-        else:
-            return HttpResponse("no")
-
-    return HttpResponse("")
-
-
-def del_manager_acc(request):
-    if (request.user.additionaluserinfo.auth == "5"):
-        if request.method == "POST":
-            for k in request.POST.get("id").split(","):
-                user_id = AdditionalUserInfo.objects.get(id=k).user_id
-                print(user_id)
-                User.objects.get(id=str(user_id)).delete()
-    return HttpResponse("")
-
-
-def stop_sb(request):
-    print(request.POST)
-    if request.user.additionaluserinfo.auth == "5":
-        data = request.POST.get("data")
-        for id in data.split(","):
-            print(id)
-                #공고문 작성중인 경우에는 블라이인드 처리가 되지 않도록 한다.
-            if SupportBusiness.objects.all().filter(id=id)[0].open_status == True:
-                SupportBusiness.objects.all().filter(id=id).update(is_blind=True, open_status=False)
-            if SupportBusiness.objects.all().filter(id=id)[0].complete == True:
-                SupportBusiness.objects.all().filter(id=id).update(is_blind=True, open_status=False )
-    return HttpResponse("")
-
-
-def accept_sb(request):
-
-    if request.user.additionaluserinfo.auth == "5":
-        sb = SupportBusiness.objects.get(id=request.POST.get("id"))
-        if sb.complete != True:
-            sb.complete = False
-        sb.is_blind = False
-        sb.confirm = False
-        sb.open_status = True
-        sb.complete = False
-        sb.confirm_count=sb.confirm_count+1
-        sb.save()
-        return HttpResponse("")
-
-
-from xlrd import open_workbook
-
-
-def upload_xls_startup(request):
-    if os.path.abspath(os.path.dirname(__name__)) + "/test.xlsx":
-        print("here")
-        wb = open_workbook(os.path.abspath(os.path.dirname(__name__)) + "/test.xlsx")
-        ws = wb.sheet_by_index(0)
-        num_row = ws.nrows
-        for k in range(1, num_row):
-            name = ws.cell_value(k, 0)
-            print(name)
-            # 유저 id 와 pw 생성의 경우
-            print(User.objects.get(username="startup_" + str(k - 1) + "@naver.com"))
-            Startup.objects.all().filter(user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).update(
-                name=ws.cell_value(k, 0),
-                established_date=ws.cell_value(k, 1).replace("년", "") + "-" + ws.cell_value(k, 2).replace("월",
-                                                                                                          "") + "-" + ws.cell_value(
-                    k, 3).replace("일", ""),
-                category=ws.cell_value(k, 4),
-                address_0=ws.cell_value(k, 5) + " " + ws.cell_value(k, 6),
-                address_detail_0=ws.cell_value(k, 7),
-                employee_number=ws.cell_value(k, 8),
-                service_products=ws.cell_value(k, 16)
-            )
-            Startup.objects.get(user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).filter.clear()
-            Startup.objects.get(user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).filter.add(
-                Filter.objects.get(name=ws.cell_value(k, 9)))
-            Startup.objects.get(user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).filter.add(
-                Filter.objects.get(name="법인사업자"))
-            Startup.objects.get(user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).filter.add(
-                Filter.objects.all().filter(name__icontains=ws.cell_value(k, 11))[0])
-            AdditionalUserInfo.objects.all().filter(
-                user=User.objects.get(username="startup_" + str(k - 1) + "@naver.com")).update(
-                tel=ws.cell_value(k, 14)
-            )
-
-
-def upload_xls_admin(request):
-    if os.path.abspath(os.path.dirname(__name__)) + "/gca_admin_acc.xlsx":
-        print("here")
-        wb = open_workbook(os.path.abspath(os.path.dirname(__name__)) + "/gca_admin_acc.xlsx")
-        ws = wb.sheet_by_index(0)
-        num_row = ws.nrows
-        for k in range(1, num_row):
-            name = ws.cell_value(k, 0)
-            print(name)
-            # 유저 id 와 pw 생성의 경우
-            user = User.objects.create_user(username=ws.cell_value(k, 3) + ws.cell_value(k, 4),
-                                            password=ws.cell_value(k, 6))
-            AdditionalUserInfo(
-                user=user,
-                auth="4",
-                name=ws.cell_value(k, 2),
-                position=ws.cell_value(k, 1),
-                department=ws.cell_value(k, 0),
-            ).save()
-
-
-def send_email(request):
-    send_mail(
-        'Subject here',
-        'Here is the message.',
-        'neogelon@gmail.com',
-        ['cto@tradelink.kr'],
-        fail_silently=False,
-    )
-
-
-from django.utils.dateparse import parse_datetime
-
-
-def get_sp_excel(request):
-    id_string = request.GET.get("id").replace("/", "")
-    sp_id_list = id_string.split(",")
-
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원사업 리스트")
-    sheet.write(0, 1, "공고 마감년도")
-    sheet.write(0, 2, "공고명")
-    sheet.write(0, 3, "게시일")
-    sheet.write(0, 4, "기관명")
-    sheet.write(0, 5, "사업 담당자")
-    sheet.write(0, 6, "참여기업수")
-    sheet.write(0, 7, "선정자수")
-    sheet.write(0, 8, "상태")
-
-    k = 1
-    for a in sp_id_list:
-        print("==")
-        print(a)
-        sp = SupportBusiness.objects.get(id=a)
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, sp.apply_end.year)
-        sheet.write(k, 2, sp.title)
-        sheet.write(k, 3, parse_datetime(sp.update_at))
-        print(parse_datetime(sp.update_at))
-        sheet.write(k, 4, sp.user.department)
-        sheet.write(k, 5, sp.user.name)
-        sheet.write(k, 6, sp.appliance_set.count())
-        sheet.write(k, 7, len(Award.objects.all().filter(sb=sp)))
-        sheet.write(k, 8, sp.manage_status())
-
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "전체 공고문.xls", safe='')
-    book.save(response)
-
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-
-def get_stl_excel(request):
-    id_string = request.GET.get("id").replace("/", "")
-    sp_id_list = id_string.split(",")
-
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("기업회원 리스트")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "회원아이디")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "핸드폰 번호")
-    sheet.write(0, 5, "추가 이메일")
-    sheet.write(0, 6, "소재지")
-    sheet.write(0, 7, "구성원수")
-    sheet.write(0, 8, "매출액")
-    sheet.write(0, 9, "수출액")
-    sheet.write(0, 10, "투자유치액")
-    sheet.write(0, 11, "지원사업 참가횟수")
-    sheet.write(0, 12, "지원사업 선정횟수")
-
-    k = 1
-    for a in sp_id_list:
-        print("==")
-        print(a)
-        sp = Startup.objects.get(id=a)
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, sp.name)
-        sheet.write(k, 2, sp.user.username)
-        sheet.write(k, 3, sp.user.additionaluserinfo.name)
-        sheet.write(k, 4, sp.user.additionaluserinfo.tel)
-        sheet.write(k, 5, sp.user.additionaluserinfo.additional_email)
-        sheet.write(k, 6, sp.address_0 + " " + sp.address_detail_0)
-        sheet.write(k, 7, sp.employee_number)
-        sheet.write(k, 8, sp.revenue_before_0)
-        sheet.write(k, 9, sp.export_before_0)
-        sheet.write(k, 10, sp.fund_before_0)
-        sheet.write(k, 11, len(Appliance.objects.all().filter(startup=sp)))
-        sheet.write(k, 12, len(Award.objects.all().filter(startup=sp)))
-
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "기업회원.xls", safe='')
-    book.save(response)
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-def get_stp_excel(request):
-    id_string = request.GET.get("id").replace("/", "")
-    sp_id_list = id_string.split(",")
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("회원 리스트")
-    sheet.write(0, 1, "회원아이디")
-    sheet.write(0, 2, "회원명")
-    sheet.write(0, 3, "핸드폰 번호")
-    sheet.write(0, 4, "추가 이메일")
-
-    k = 1
-    for a in sp_id_list:
-        print("==")
-        print(a)
-        sp = AdditionalUserInfo.objects.get(id=a)
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, sp.user.username)
-        sheet.write(k, 2, sp.name)
-        sheet.write(k, 3, sp.tel)
-        sheet.write(k, 4, sp.additional_email)
-
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "개인회원.xls", safe='')
-    book.save(response)
-
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-
-def get_sbtl_excel(request):
-    id_string = request.GET.get("id").replace("/", "")
-    sp_id_list = id_string.split(",")
-
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원사업 참가기업 리스트")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "공고 마감일")
-
-    sheet.write(0, 3, "지원사업명")
-    sheet.write(0, 4, "대표자명")
-    sheet.write(0, 5, "소재지")
-    sheet.write(0, 6, "선정여부")
-
-    k = 1
-    for a in sp_id_list:
-        print("==")
-        print(a)
-        sp = Startup.objects.get(id=a)
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, sp.name)
-        sheet.write(k, 2, Appliance.objects.all().filter(startup=sp).order_by("-id")[0].sb.apply_end.year)
-        sheet.write(k, 3, Appliance.objects.all().filter(startup=sp).order_by("-id")[0].sb.title)
-        sheet.write(k, 4, sp.user.additionaluserinfo.name)
-        sheet.write(k, 5, sp.address_0 + " " + sp.address_detail_0)
-        if len(Award.objects.all().filter(startup=sp).filter(
-                sb=Appliance.objects.all().filter(startup=sp).order_by("-id")[0].sb)) == 0:
-            award = "N"
-        else:
-            award = "Y"
-        sheet.write(k, 6, award)
-
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "기업회원.xls", safe='')
-    book.save(response)
-
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-
-def get_sbtl2_excel(request):
-    id_string = request.GET.get("id").replace("/", "")
-    sp_id_list = id_string.split(",")
-
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원사업 리스트")
-    sheet.write(0, 1, "공고 마감년도")
-    sheet.write(0, 2, "공고명")
-
-    sheet.write(0, 3, "게시일")
-    sheet.write(0, 4, "기관명")
-    sheet.write(0, 5, "사업담당자")
-    sheet.write(0, 6, "참여기업수")
-    sheet.write(0, 7, "선정자수")
-    sheet.write(0, 8, "상태")
-    k = 1
-    for a in sp_id_list:
-        print("==")
-        print(a)
-        sp = SupportBusiness.objects.get(id=a)
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, sp.apply_end.year)
-        sheet.write(k, 2, sp.title)
-        sheet.write(k, 3, (sp.update_at).isoformat())
-        sheet.write(k, 4, sp.user.department)
-        sheet.write(k, 5, sp.user.name)
-        sheet.write(k, 6, len(Appliance.objects.all().filter(sb=sp)))
-        sheet.write(k, 7, len(Award.objects.all().filter(sb=sp)))
-        sheet.write(k, 8, sp.manage_status())
-
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "지원사업.xls", safe='')
-    book.save(response)
-
-    # response = HttpResponse(out_content, content_type="application/vnd.ms-excel")
-
-    # response['Content-Disposition'] = 'attachment; filename=선정자리스트.xlsx'
-    return response
-
-
-from django.core import serializers
-
-
-def get_repre(request):
-    id = request.POST.get("id")
-    data = (AdditionalUserInfo.objects.get(id=id))
-    data = serializers.serialize('json', [data, ])
-    struct = json.loads(data)
-    name = (AdditionalUserInfo.objects.get(id=id)).user.username
-    struct[0]["id"] = name
-    data = json.dumps(struct[0])
-    return HttpResponse(data, content_type='application/json')
-
-def error_404(request):
-    if request.user.additionaluserinfo.auth == "4" or request.user.additionaluserinfo.auth =="5":
-        data = {"target":"m"}
-    else:
-        data = {"target": "u"}
-    return render(request, 'pc/p404.html', data)
-
-
-
-def error_500(request):
-    data = {}
-    return render(request, 'pc/p500.html', data)
-
-def static(request):
-    return render(request, 'pc/static.html')
-
-
-def change_stage(request):
-    id=request.POST.get("id")
-    to = request.POST.get("to")
-    boss = request.POST.get("boss")
-    print(to)
-    print(id)
-    print(boss)
-    if to == "2":
-        u = User.objects.get(username=id)
-        print(u.additionaluserinfo)
-        
-        u.additionaluserinfo.boss = User.objects.get(username=boss).additionaluserinfo
-        u.additionaluserinfo.save()
-
-    elif to=="0" :
-        u = User.objects.get(username=id)
-        print(u.additionaluserinfo)
-        u.additionaluserinfo.boss = None
-        u.additionaluserinfo.save()
-    elif to=="1":
-        u = User.objects.get(username=id)
-        print(u.additionaluserinfo)
-        u.additionaluserinfo.boss = User.objects.get(username="gca_manager@test.com").additionaluserinfo
-        u.additionaluserinfo.save()
-    return HttpResponse("")
-
-@csrf_exempt
-def vue_home_grant(request):
-    result={}
-    result["data"]=[]
-    print(request.GET.get('q'))
-    tag_list = request.GET.get('q').split(",")
-    for sp in SupportBusiness.objects.all():
-#        print(request)
-        obj = {}
-        obj["tag"] = []
-        obj["title"] = sp.title
-        obj["id"] = sp.id
-
-        obj["due"] = str(sp.apply_end).split(" ")[0]
-        obj["title_sub"] = sp.title_sub
-        obj["short_desc"] = sp.short_desc
-        obj["int"] =  len(sp.additionaluserinfo_set.all())
-        obj["comp"] = (len(Appliance.objects.filter(sb=sp)))
-
-        obj["rec"]=0
-        for f in sp.filter.all():
-            obj["tag"].append(f.name)
-            if f.name in tag_list:
-                obj["rec"]= obj["rec"]+1
-        obj["title"] = obj["title"]
-        # if random.randrange(0,10)%2==0:
-        #     obj["img"] = img_list[random.randrange(0,9)]
-
-
-        result["data"].append(copy.deepcopy(obj))
-
-    return JsonResponse(result)
-
-def get_grant_detail(request):
-    id = request.GET.get("id")
-    sp = SupportBusiness.objects.all().get(id=id)
-    result = {}
-    result["title"] = sp.title
-    result["author"] = sp.user.name
-    result["title_sub"] = sp.title_sub
-
-    result["email"] = sp.user.user.username
-    result["tel"] = sp.user.tel
-    result["short_desc"] = sp.short_desc
-    result["apply_start"] = sp.apply_start
-    result["apply_end"] = sp.apply_end
-    result["business_start"] = sp.business_period_start
-    result["business_end"] = sp.business_period_end
-    result["subject"] = sp.subject
-    result["business_detail"] = sp.business_detail
-    result["poster"] = sp.poster
-    result["object"] = sp.object
-    result["top_support_tag"]=[]
-    result["int"] = len(sp.additionaluserinfo_set.all())
-    result["comp"] = str(len(Appliance.objects.filter(sb=sp))) + ":1"
-    result["object_tag"]=[]
-    for t in sp.filter.all():
-        if t.cat_0 == "지원형태":
-            result["top_support_tag"].append(t.name)
-        else:
-            result["object_tag"].append(t.name)
-
-    result["local_tag"]=[]
-    for t in sp.filter.all():
-        if t.cat_1 == "소재지":
-            result["local_tag"].append(t.name)
-
-    result["kind_tag"] = []
-    for t in sp.filter.all():
-        if t.cat_1 == "기업형태":
-            result["kind_tag"].append(t.name)
-    result["year_tag"] = []
-    for t in sp.filter.all():
-        if t.cat_1 == "업력":
-            result["year_tag"].append(t.name)
-    result["step_tag"] = []
-    for t in sp.filter.all():
-        if t.cat_1 == "기업단계":
-            result["step_tag"].append(t.name)
-
-    return JsonResponse(result)
-
-def get_sample(request):
-    total_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")))
-    current_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1))
-    result={}
-    result["total_grant"] = total_grant
-    result["current_grant"] = current_grant
-    result["current_grant_list"] = []
-    for sp in SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1):
-        result["current_grant_list"].append({"name":sp.title,"id":sp.id})
-
-
-
-
-def get_static_info(request):
-    query1 = SupportBusiness.objects.values("id","title").filter(user_id=request.GET.get("id"))
-    # query1 = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).value("id","title")
-    total_grant = len(query1)
-    current_grant = (SupportBusiness.objects.values("id","title").filter(user_id=request.GET.get("id")).filter(complete=1))
-    current_grant = query1.filter(complete=1)
-    result={}
-    result["current_grant_list"]=[]
-    for sp in current_grant:
-        print(sp)
-        result["current_grant_list"].append({"name":sp["title"],"id":sp["id"]})
-    sb = current_grant
-    # 매니져가 올린 모든 지원사업 // 일일 좋아요 수 , 매니져 평균 좋아요 수
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    int_date = InterestLog.objects.filter(q_objects).order_by("date").values("date").distinct()
-    k = 0
-    inter_arr=[]
-    inter_avg_arr=[]
-    for inter in int_date:
-        inter_arr.append({"date":(inter["date"]),"number":(len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"])))})
-        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
-        if len(mother) != 0:
-            inter_avg_arr.append({"date": (inter["date"]),
-                          "number": (len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"])))/len(mother)})
-    result["total_int_data"] =inter_arr
-    result["total_int_avg_data"] = inter_avg_arr
-
-    # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 지원 수
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    date_arr = []
-
-    for ap in Appliance.objects.filter(q_objects).order_by("created_at").dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-
-    apply_arr=[]
-    apply_avg_arr=[]
-    for k in date_arr:
-        ap = Appliance.objects.values("id").filter(q_objects).filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        apply_arr.append({"date":k,"number":len(ap)})
-        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        if len(mother) !=0 :
-            apply_avg_arr.append({"date": k, "number": len(ap)/len(mother)})
-    result["total_app_data"] = apply_arr
-    result["total_app_avg_data"] = apply_avg_arr
-
-    # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 방문 수
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    hit = HitLog.objects.filter(q_objects).values("date").distinct()
-    hit_arr=[]
-    hit_avg_arr=[]
-    for h in hit:
-        hit_arr.append({"date":h["date"],"number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))})
-        mother = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
-        if(len(mother)!=0):
-            hit_avg_arr.append({"date":h["date"],"number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))/len(mother)})
-    result["total_hit_data"]=hit_arr
-    result["total_hit_avg_data"] = hit_avg_arr
-
-
-    #TODO: MIN DATE
-    result["min_date"] = sorted([hit_arr[0]["date"],
-                                 datetime.date(year=int(apply_arr[0]["date"].split("-")[0]), month=int(apply_arr[0]["date"].split("-")[1]),
-                                                   day=int(apply_arr[0]["date"].split("-")[2])),
-                                 inter_arr[0]["date"]
-                                 ])[0]
-
-
-
-    # 기관 평균 데이터 시작!!!
-    # 기관 평균 좋아요 수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.values("id","title").filter(q_u_objects).filter(complete=1)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    int_date = InterestLog.objects.values("id").filter(q_objects).values("date").order_by("date").distinct()
-    k = 0
-    result["agency_int_avg_data"]=[]
-    for inter in int_date:
-        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
-        result["agency_int_avg_data"].append({"date":inter["date"],"number":len(InterestLog.objects.values("id").filter(q_objects).filter(date=inter["date"]))/len(mother)})
-
-    # 기관 평균 일일 방문자수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.values("id").filter(q_u_objects)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    hit = HitLog.objects.values("id").filter(q_objects).values("date").distinct()
-    result["agency_hit_avg_data"] = []
-
-
-    for h in hit:
-        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day))
-        result["agency_hit_avg_data"].append(
-            {
-             "date":h["date"],
-             "number":len(HitLog.objects.values("id").filter(q_objects).filter(date=h["date"]))/(len(mother))
-            }
-        )
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    date_arr = []
-    result["agency_app_avg_data"]=[]
-    for ap in Appliance.objects.filter(q_objects).dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-    for k in date_arr:
-        ap = Appliance.objects.values("id").filter(q_objects).filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-
-        mother = SupportBusiness.objects.values("id").filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-
-        result["agency_app_avg_data"].append({
-            "date":k,
-            "number":len(ap)/len(mother)
-        })
-
-    # 태그 추출
-
-    sb = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(complete=1)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    ap = Appliance.objects.values("id").filter(q_objects).values("startup")
-    # 지원자의 지역 추출
-
-    ap_local_tag = []
-    ap_kind_tag = []
-    ap_em_tag = []
-    ap_tag_tag = []
-    result["ap_startup_list"]=[]
-    k=0
-    for a in ap:
-        filter = Startup.objects.get(id=a["startup"]).filter.all()
-        for f in filter:
-            if f.cat_1 == "소재지":
-                ap_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                ap_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                ap_tag_tag.append(f.name)
-        if Startup.objects.get(id=a["startup"]).employee_number == "" or Startup.objects.get(
-                id=a["startup"]).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=a["startup"]).employee_number
-        ap_em_tag.append(str(number))
-
-    temp_list = []
-    for a in ap:
-        temp_list.append(a["startup"])
-    for a in set(temp_list):
-        st = Startup.objects.get(id=a)
-        result["ap_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(ap_kind_tag[:2]),
-            "local": ",".join(ap_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-    result["ap_local_tag"]=(organize(ap_local_tag))
-    result["ap_kind_tag"]=(organize(ap_kind_tag))
-    result["ap_em_tag"]=(organize(ap_em_tag))
-    result["ap_tag_tag"]= (organize(ap_tag_tag))
-
-    hit_local_tag = []
-    hit_kind_tag = []
-    hit_em_tag = []
-    hit_tag_tag = []
-    hit = HitLog.objects.values("id").filter(q_objects).values("user").distinct()
-    k=0
-    result["hit_startup_list"]=[]
-    for h in hit:
-        if Startup.objects.values("id").filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
-            filter = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.filter.all()
-            for f in filter:
-                if f.cat_1 == "소재지":
-                    hit_local_tag.append(f.name)
-                if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                    hit_kind_tag.append(f.name)
-                if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                    hit_tag_tag.append(f.name)
-
-            if AdditionalUserInfo.objects.get(
-                    id=h["user"]).user.startup.employee_number == "" or AdditionalUserInfo.objects.get(
-                    id=h["user"]).user.startup.employee_number == None:
-                number = "무응답"
-            else:
-                number = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.employee_number
-            hit_em_tag.append(str(number))
-            st = AdditionalUserInfo.objects.get(id=h["user"]).user.startup
-            result["hit_startup_list"].append({
-                "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(hit_kind_tag[:2]),
-                "local": ",".join(hit_local_tag[:2]),
-                "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-            })
-            k = k + 1
-
-    result["hit_local_tag"]=(organize(hit_local_tag))
-    result["hit_kind_tag"]=(organize(hit_kind_tag))
-    result["hit_em_tag"]=(organize(hit_em_tag))
-    result["hit_tag_tag"] = (organize(hit_tag_tag))
-
-    aw_local_tag = []
-    aw_kind_tag = []
-    aw_em_tag = []
-    aw_tag_tag = []
-    aw_startup_list=[]
-    result["aw_startup_list"]=[]
-    k=0
-    award = Award.objects.values("id").filter(q_objects).values("startup").distinct()
-    for aw in award:
-        filter = Startup.objects.get(id=aw["startup"]).filter.all()
-        for f in filter:
-            if f.cat_1 == "소재지":
-                aw_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                aw_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                aw_tag_tag.append(f.name)
-
-        if Startup.objects.get(id=aw["startup"]).employee_number == "" or Startup.objects.get(
-                id=aw["startup"]).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=aw["startup"]).employee_number
-        aw_em_tag.append(number)
-        st=Startup.objects.get(id=aw["startup"])
-        result["aw_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(aw_kind_tag[:2]),
-            "local": ",".join(aw_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-    result["aw_local_tag"]=(organize(aw_local_tag))
-    result["aw_kind_tag"]=(organize(aw_kind_tag))
-    result["aw_em_tag"]=(organize(aw_em_tag))
-    result["aw_tag_tag"]=(organize(aw_tag_tag))
-
-
-    sb = SupportBusiness.objects.values("id").filter(user_id=request.GET.get("id")).filter(complete=1)
-    q_objects = Q()
-    startup_list=[]
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s["id"])
-    ap = Appliance.objects.values("id").filter(q_objects).values("startup").distinct()
-    for a in ap:
-        startup_list.append(a["startup"])
-    hit = HitLog.objects.values("id").filter(q_objects).values("user").distinct()
-    for h in hit:
-        if len(Startup.objects.values("id").filter(user = AdditionalUserInfo.objects.get(id=h["user"]).user))!=0:
-            startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
-    award = Award.objects.values("id").filter(q_objects).values("startup").distinct()
-
-    all_local_tag=[]
-    all_kind_tag=[]
-    all_tag_tag=[]
-    all_em_tag=[]
-    for aw in award:
-        startup_list.append(aw["startup"])
-    result["all_startup_list"]=[]
-    k=1
-    for id in set(startup_list):
-        filter = Startup.objects.get(id=id).filter.all()
-        st =  Startup.objects.get(id=id)
-
-        for f in filter:
-            if f.cat_1 == "소재지":
-                all_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                all_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                all_tag_tag.append(f.name)
-        if Startup.objects.get(id=id).employee_number == "" or Startup.objects.get(
-                id=id).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=id).employee_number
-        all_em_tag.append(number)
-        result["all_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(all_kind_tag[:2]), "local":",".join(all_local_tag[:2]),
-            "employee_num":st.employee_number , "tel":st.user.additionaluserinfo.tel
-        })
-        k=k+1
-    result["all_local_tag"]= organize(all_local_tag)
-    result["all_kind_tag"]=organize(all_kind_tag)
-    result["all_tag_tag"]=organize(all_tag_tag)
-    result["all_em_tag"]=organize(all_em_tag)
-    return JsonResponse(result, safe=False)
-
-
-def get_grant_static_detail(request):
-    result = {}
-    my_sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
-    result["title"] = SupportBusiness.objects.all().get(id=request.GET.get("sb_id")).title
-    print(result["title"])
-    # 매니져가 올린 모든 지원사업 // 매니져 평균 좋아요 수
-    q_objects = Q()
-    for s in my_sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb_sibling = SupportBusiness.objects.all().filter(q_u_objects)
-
-    my_appliance= Appliance.objects.all().filter(q_objects)
-    my_interestlog= InterestLog.objects.all().filter(q_objects)
-    my_hitlog=  HitLog.objects.all().filter(q_objects)
-
-    sb_appliance= Appliance.objects.all().filter(sb_id=request.GET.get("sb_id"))
-    sb_hitlog = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id"))
-    sb_award= Award.objects.all().filter(sb_id=request.GET.get("sb_id"))
-
-    int_date = my_interestlog.order_by("date").values("date").order_by("date").distinct()
-
-    k = 0
-    inter_arr = []
-    inter_avg_arr = []
-    for inter in int_date:
-        mother = my_sb.filter(apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month,
-                                               day=inter["date"].day, hour=23, minute=59, second=59))
-        inter_avg_arr.append({"date": (inter["date"]),
-                              "number": (len(my_interestlog.filter(date=inter["date"]))) / len(mother)})
-    result["total_int_avg_data"] = inter_avg_arr
-
-    # 매니져가 올린 모든 지원사업 //  매니져  일일 평균 지원 수
-    #for s in sb:
-    #    q_objects = q_objects | Q(sb_id=s.id)
-    date_arr = []
-
-    for ap in my_appliance.order_by("created_at").dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-
-    apply_arr = []
-    apply_avg_arr = []
-    for k in date_arr:
-        ap = my_appliance.filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2]), hour=23, minute=59, second=59))
-        mother = sb.filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2]), hour=23, minute=59, second=59))
-        apply_avg_arr.append({"date": k, "number": len(ap) / len(mother)})
-    result["total_app_avg_data"] = apply_avg_arr
-
-    # 매니져가 올린 모든 지원사업 //  매니져  일일 평균 방문 수
-    #q_objects = Q()
-    #for s in sb:
-    #    q_objects = q_objects | Q(sb_id=s.id)
-    hit = my_hitlog.values("date").distinct()
-    hit_arr = []
-    hit_avg_arr = []
-    for h in hit:
-        mother = sb.filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
-        hit_avg_arr.append({"date": h["date"],
-                            "number": len(HitLog.objects.all().filter(q_objects).filter(date=h["date"])) / len(mother)})
-    result["total_hit_avg_data"] = hit_avg_arr
-    # 기관 평균 데이터 시작!!!
-    # 기관 평균 좋아요 수
-
-
-
-    int_date = my_interestlog.values("date").order_by("date").distinct()
-    k = 0
-    agency_interest_date= int_date[0]["date"]
-    result["agency_int_avg_data"] = []
-    for inter in int_date:
-        mother = sb_sibling.filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month,
-                                               day=inter["date"].day, hour=23, minute=59, second=59))
-        result["agency_int_avg_data"].append({"date": inter["date"], "number":
-            len(my_interestlog.filter(date=inter["date"])) / len(mother)})
-
-    # 기관 평균 일일 방문자수
-
-    hit = my_hitlog.values("date").distinct()
-    result["agency_hit_avg_data"] = []
-    for h in hit:
-        mother = sb_sibling.filter(
-            apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day,
-                                               hour=23,minute=59,second=59))
-        result["agency_hit_avg_data"].append(
-            {
-                "date": h["date"],
-                "number": len(my_hitlog.filter(date=h["date"])) / (len(mother))
-            }
-        )
-
-
-    date_arr = []
-    result["agency_app_avg_data"] = []
-    for ap in my_appliance.dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-    for k in date_arr:
-        ap = my_appliance.filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
-        print(k)
-        print(len(ap))
-        mother = sb_sibling.filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2], hour=23, minute=59, second=59)))
-        print(len(mother))
-        result["agency_app_avg_data"].append({
-            "date": k,
-            "number": len(ap) / len(mother)
-        })
-
-    # 태그 추출
-    app_startups = sb_appliance.values("startup")
-    # 지원자의 지역 추출
-    ap_local_tag = []
-    ap_kind_tag = []
-    ap_em_tag = []
-    ap_tag_tag = []
-
-    result["ap_startup_list"] = []
-    k = 0
-    for a in app_startups:
-        this_startup= Startup.objects.get(id=a["startup"])
-        filter = this_startup.filter.all()
-        local_ap_kind = []
-        local_ap_local_tag = []
-        for f in filter:
-            if f.cat_1 == "소재지":
-                ap_local_tag.append(f.name)
-                local_ap_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                ap_kind_tag.append(f.name)
-                local_ap_kind.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                ap_tag_tag.append(f.name)
-        if this_startup.employee_number == "" or this_startup.employee_number == None:
-            number = "무응답"
-        else:
-            number = this_startup.employee_number
-        ap_em_tag.append(str(number))
-
-        st = this_startup
-        result["ap_startup_list"].append({
-            "index": k,
-            "email": st.user.username,
-            "name": st.name,
-            "kind": ",".join(local_ap_kind[:2]),
-            "local": ",".join(local_ap_local_tag[:2]),
-            "employee_num": st.employee_number,
-            "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-
-
-    result["ap_local_tag"] = (organize(ap_local_tag))
-    result["ap_kind_tag"] = (organize(ap_kind_tag))
-    result["ap_em_tag"] = (organize(ap_em_tag))
-    result["ap_tag_tag"] = (organize(ap_tag_tag))
-
-    hit_local_tag = []
-    hit_kind_tag = []
-    hit_em_tag = []
-    hit_tag_tag = []
-    hit_users = sb_hitlog.values("user").distinct()
-    k = 0
-    result["hit_startup_list"] = []
-    for h in hit_users:
-        hit_user= AdditionalUserInfo.objects.get(id=h["user"])
-        if Startup.objects.all().filter(user_id=hit_user.user.id):
-            filter = hit_user.user.startup.filter.all()
-            local_hit_local_tag=[]
-            local_hit_kind_tag=[]
-            for f in filter:
-                if f.cat_1 == "소재지":
-                    hit_local_tag.append(f.name)
-                    local_hit_local_tag.append((f.name))
-                if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                    hit_kind_tag.append(f.name)
-                    local_hit_kind_tag.append(f.name)
-                if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                    hit_tag_tag.append(f.name)
-
-            if hit_user.user.startup.employee_number == "" or hit_user.user.startup.employee_number == None:
-                number = "무응답"
-            else:
-                number = hit_user.user.startup.employee_number
-            hit_em_tag.append(str(number))
-            st = hit_user.user.startup
-            result["hit_startup_list"].append({
-                "index": k,
-                "email": st.user.username,
-                "name": st.name,
-                "kind": ",".join(local_hit_kind_tag[:2]),
-                "local": ",".join(local_hit_local_tag[:2]),
-                "employee_num": st.employee_number,
-                "tel": st.user.additionaluserinfo.tel
-            })
-            k = k + 1
-
-    result["hit_local_tag"] = (organize(hit_local_tag))
-    result["hit_kind_tag"] = (organize(hit_kind_tag))
-    result["hit_em_tag"] = (organize(hit_em_tag))
-    result["hit_tag_tag"] = (organize(hit_tag_tag))
-
-    aw_local_tag = []
-    aw_kind_tag = []
-    aw_em_tag = []
-    aw_tag_tag = []
-    aw_startup_list = []
-    result["aw_startup_list"] = []
-    k = 0
-    award_startups = sb_award.values("startup").distinct()
-    for aw in award_startups:
-        this_startup= Startup.objects.get(id=aw["startup"])
-        filter = this_startup.filter.all()
-        local_aw_local_tag = []
-        local_aw_kind_tag = []
-        for f in filter:
-            if f.cat_1 == "소재지":
-                aw_local_tag.append(f.name)
-                local_aw_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                aw_kind_tag.append(f.name)
-                local_aw_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                aw_tag_tag.append(f.name)
-
-        if this_startup.employee_number == "" or this_startup.employee_number == None:
-            number = "무응답"
-        else:
-            number = this_startup.employee_number
-        aw_em_tag.append(number)
-        st = this_startup
-        result["aw_startup_list"].append({
-            "index": k,
-            "email": st.user.username,
-            "name": st.name,
-            "kind": ",".join(local_aw_kind_tag[:2]),
-            "local": ",".join(local_aw_local_tag[:2]),
-            "employee_num": st.employee_number,
-            "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-    result["aw_local_tag"] = (organize(aw_local_tag))
-    result["aw_kind_tag"] = (organize(aw_kind_tag))
-    result["aw_em_tag"] = (organize(aw_em_tag))
-    result["aw_tag_tag"] = (organize(aw_tag_tag))
-
-
-    startup_list = []
-
-    for a in app_startups:
-        startup_list.append(a["startup"])
-
-    for h in hit_users:
-        if len(Startup.objects.all().filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
-            startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
-
-    for aw in award_startups:
-        startup_list.append(aw["startup"])
-
-
-    all_local_tag = []
-    all_kind_tag = []
-    all_tag_tag = []
-    all_em_tag = []
-
-
-    result["all_startup_list"] = []
-    k = 1
-    for id in set(startup_list):
-        filter = Startup.objects.get(id=id).filter.all()
-        st = Startup.objects.get(id=id)
-
-        for f in filter:
-            if f.cat_1 == "소재지":
-                all_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                all_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                all_tag_tag.append(f.name)
-        if Startup.objects.get(id=id).employee_number == "" or Startup.objects.get(
-                id=id).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=id).employee_number
-        all_em_tag.append(number)
-        result["all_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(all_kind_tag[:2]),
-            "local": ",".join(all_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-    result["all_local_tag"] = organize(all_local_tag)
-    result["all_kind_tag"] = organize(all_kind_tag)
-    result["all_tag_tag"] = organize(all_tag_tag)
-    result["all_em_tag"] = organize(all_em_tag)
-
-
-   ### 개별 사업 정보
-    #좋아요 데이터
-    int_date = InterestLog.objects.all().filter(sb_id=request.GET.get("sb_id")).order_by("date").values("date").distinct()
-    inter_arr = []
-    for inter in int_date:
-        inter_arr.append({"date": (inter["date"]),
-                          "number": (len(InterestLog.objects.all().filter(sb_id=request.GET.get("sb_id")).filter(date=inter["date"])))})
-    result["total_int_data"] = inter_arr
-    #지원자 데이터
-    date_arr=[]
-    for ap in Appliance.objects.all().filter(sb_id=request.GET.get("sb_id")).order_by("created_at").dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-    apply_arr=[]
-    for k in date_arr:
-        ap = Appliance.objects.all().filter(sb_id=request.GET.get("sb_id")).filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        apply_arr.append({"date":k,"number":len(ap)})
-    result["total_app_data"] = apply_arr
-    #방문자 데이터
-
-    hit = HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).values("date").order_by("date").distinct()
-    hit_arr = []
-    hit_avg_arr = []
-    for h in hit:
-        hit_arr.append(
-            {"date": h["date"], "number": len(HitLog.objects.all().filter(sb_id=request.GET.get("sb_id")).filter(date=h["date"]))})
-    print("방문 데이터")
-    print(hit_arr)
-    result["total_hit_data"]=hit_arr
-    try:
-        if hit_arr[0]["date"]:
-            hit_date = (hit_arr[0]["date"])
-            hit_date =datetime.datetime(year=hit_date.year, month=hit_date.month, day=hit_date.day)
-            print(datetime.datetime(year=hit_date.year, month=hit_date.month, day=hit_date.day))
-    except Exception as e:
-        print("여기")
-        print(e)
-        hit_date=datetime.datetime.now()
-    try:
-        if datetime.datetime(year=int(apply_arr[0]["date"].split("-")[0]),
-                                               month=int(apply_arr[0]["date"].split("-")[1]),
-                                               day=int(apply_arr[0]["date"].split("-")[2])):
-            apply_date = datetime.datetime(year=int(apply_arr[0]["date"].split("-")[0]),
-                                               month=int(apply_arr[0]["date"].split("-")[1]),
-                                               day=int(apply_arr[0]["date"].split("-")[2]))
-    except Exception as e:
-        print("저기")
-        print(e)
-        apply_date = datetime.datetime.now()
-    try:
-        if inter_arr[0]["date"]:
-            inter_date =  inter_arr[0]["date"]
-            print(datetime.datetime(year = inter_date.year, month= inter_arr.month, day=inter_arr.day))
-    except Exception as e:
-        print("아오")
-        print(e)
-        inter_date = datetime.datetime.now()
-
-    # TODO: 가장 작은 값을 가져오는 것을 추가 할것.
-    result["min_date"] = str(sorted([hit_date.date(),apply_date.date(),inter_date.date()  ])[0]).split(" ")[0]
-    #result["min_date"] = str(sorted([hit_date, apply_date, inter_date])[0]).split(" ")[0]
-    print(str(hit_date))
-    print(str(apply_date))
-    print(str(inter_date))
-    #result["min_date"] = "2018-01-25"
-
-
-
-    return JsonResponse(result)
-
-
-def organize(arr):
-    result_list=[]
-    for k, v in itertools.groupby(sorted(arr)):
-        obj={}
-        result = list(v)
-        obj[result[0]] = len(result)
-        result_list.append(copy.deepcopy(obj))
-    return result_list
-
-
-
-def get_all_static_info(request):
-    total_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")))
-    current_grant = len(SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(complete=1))
-    result={}
-    result["total_grant"] = total_grant
-    result["current_grant"] = current_grant
-    result["current_grant_list"] = []
-    for sp in SupportBusiness.objects.all().filter(user_id=request.GET.get("id")):
-        result["current_grant_list"].append({"name":sp.title,"id":sp.id})
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
-    # 매니져가 올린 모든 지원사업 // 일일 좋아요 수 , 매니져 평균 좋아요 수
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).order_by("date").values("date").order_by("date").distinct()
-    k = 0
-    inter_arr=[]
-    inter_avg_arr=[]
-    for inter in int_date:
-        inter_arr.append({"date":(inter["date"]),"number":(len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"])))})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
-        inter_avg_arr.append({"date": (inter["date"]),
-                          "number": (len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"])))/len(mother)})
-    result["total_int_data"] =inter_arr
-    result["total_int_avg_data"] = inter_avg_arr
-
-    # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 지원 수
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    date_arr = []
-
-    for ap in Appliance.objects.all().filter(q_objects).order_by("created_at").dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-
-    apply_arr=[]
-    apply_avg_arr=[]
-    for k in date_arr:
-        ap = Appliance.objects.all().filter(q_objects).filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        apply_arr.append({"date":k,"number":len(ap)})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        apply_avg_arr.append({"date": k, "number": len(ap)/len(mother)})
-    result["total_app_data"] = apply_arr
-    result["total_app_avg_data"] = apply_avg_arr
-
-    # 매니져가 올린 모든 지원사업 // 일일 지원 수 , 매니져  일일 평균 방문 수
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
-    hit_arr=[]
-    hit_avg_arr=[]
-    for h in hit:
-        hit_arr.append({"date":h["date"],"number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))})
-        mother = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]),
-                                               day=int(k.split("-")[2])))
-        hit_avg_arr.append({"date":h["date"],"number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))/len(mother)})
-    result["total_hit_data"]=hit_arr
-    result["total_hit_avg_data"] = hit_avg_arr
-    #TODO: 최소 날짜 추가
-    result["min_date"] = sorted([hit_arr[0]["date"],
-                                 datetime.date(year=int(apply_arr[0]["date"].split("-")[0]), month=int(apply_arr[0]["date"].split("-")[1]),
-                                                   day=int(apply_arr[0]["date"].split("-")[2])),
-                                 inter_arr[0]["date"]
-                                 ])[0]
-
-
-    # 기관 평균 데이터 시작!!!
-    # 기관 평균 좋아요 수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    int_date = InterestLog.objects.all().filter(q_objects).values("date").order_by("date").distinct()
-    k = 0
-    result["agency_int_avg_data"]=[]
-    for inter in int_date:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=inter["date"].year, month=inter["date"].month, day=inter["date"].day))
-        result["agency_int_avg_data"].append({"date":inter["date"],"number":len(InterestLog.objects.all().filter(q_objects).filter(date=inter["date"]))/len(mother)})
-
-    # 기관 평균 일일 방문자수
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    sb = SupportBusiness.objects.all().filter(q_u_objects)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    hit = HitLog.objects.all().filter(q_objects).values("date").distinct()
-    result["agency_hit_avg_data"] = []
-    for h in hit:
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=h["date"].year, month=h["date"].month, day=h["date"].day))
-        result["agency_hit_avg_data"].append(
-            {
-             "date":h["date"],
-             "number":len(HitLog.objects.all().filter(q_objects).filter(date=h["date"]))/(len(mother))
-            }
-        )
-    user = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    q_u_objects = Q()
-    for u in user.boss.child_list():
-        q_u_objects = q_u_objects | Q(user_id=u.id)
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    date_arr = []
-    result["agency_app_avg_data"]=[]
-    for ap in Appliance.objects.all().filter(q_objects).dates("created_at", "day").values("created_at").distinct():
-        if str(ap["created_at"]).split(" ")[0] not in date_arr:
-            date_arr.append(str(ap["created_at"]).split(" ")[0])
-    for k in date_arr:
-        ap = Appliance.objects.all().filter(q_objects).filter(
-            created_at__date=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        print(k)
-        print(len(ap))
-        mother = SupportBusiness.objects.all().filter(q_u_objects).filter(
-            apply_start__lte=datetime.datetime(year=int(k.split("-")[0]), month=int(k.split("-")[1]), day=int(k.split("-")[2])))
-        print(len(mother))
-        result["agency_app_avg_data"].append({
-            "date":k,
-            "number":len(ap)/len(mother)
-        })
-
-    # 태그 추출
-
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
-    q_objects = Q()
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    ap = Appliance.objects.all().filter(q_objects).values("startup")
-    # 지원자의 지역 추출
-
-    ap_local_tag = []
-    ap_kind_tag = []
-    ap_em_tag = []
-    ap_tag_tag = []
-    result["ap_startup_list"]=[]
-    k=0
-    for a in ap:
-        filter = Startup.objects.get(id=a["startup"]).filter.all()
-        for f in filter:
-            if f.cat_1 == "소재지":
-                ap_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                ap_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                ap_tag_tag.append(f.name)
-        if Startup.objects.get(id=a["startup"]).employee_number == "" or Startup.objects.get(
-                id=a["startup"]).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=a["startup"]).employee_number
-        ap_em_tag.append(str(number))
-    print(ap)
-    temp_list = []
-    for a in ap:
-        temp_list.append(a["startup"])
-    for a in set(temp_list):
-        st = Startup.objects.get(id=a)
-        result["ap_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(ap_kind_tag[:2]),
-            "local": ",".join(ap_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-    result["ap_local_tag"]=(organize(ap_local_tag))
-    result["ap_kind_tag"]=(organize(ap_kind_tag))
-    result["ap_em_tag"]=(organize(ap_em_tag))
-    result["ap_tag_tag"]= (organize(ap_tag_tag))
-
-    hit_local_tag = []
-    hit_kind_tag = []
-    hit_em_tag = []
-    hit_tag_tag = []
-    hit = HitLog.objects.all().filter(q_objects).values("user").distinct()
-    print(hit)
-    k=0
-    result["hit_startup_list"]=[]
-    for h in hit:
-
-        if Startup.objects.all().filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
-            filter = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.filter.all()
-            for f in filter:
-                if f.cat_1 == "소재지":
-                    hit_local_tag.append(f.name)
-                if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                    hit_kind_tag.append(f.name)
-                if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                    hit_tag_tag.append(f.name)
-
-            if AdditionalUserInfo.objects.get(
-                    id=h["user"]).user.startup.employee_number == "" or AdditionalUserInfo.objects.get(
-                    id=h["user"]).user.startup.employee_number == None:
-                number = "무응답"
-            else:
-                number = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.employee_number
-            hit_em_tag.append(str(number))
-            st = AdditionalUserInfo.objects.get(id=h["user"]).user.startup
-            result["hit_startup_list"].append({
-                "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(hit_kind_tag[:2]),
-                "local": ",".join(hit_local_tag[:2]),
-                "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-            })
-            k = k + 1
-
-    result["hit_local_tag"]=(organize(hit_local_tag))
-    result["hit_kind_tag"]=(organize(hit_kind_tag))
-    result["hit_em_tag"]=(organize(hit_em_tag))
-    result["hit_tag_tag"] = (organize(hit_tag_tag))
-
-    aw_local_tag = []
-    aw_kind_tag = []
-    aw_em_tag = []
-    aw_tag_tag = []
-    aw_startup_list=[]
-    result["aw_startup_list"]=[]
-    k=0
-    award = Award.objects.all().filter(q_objects).values("startup").distinct()
-    for aw in award:
-        filter = Startup.objects.get(id=aw["startup"]).filter.all()
-        for f in filter:
-            if f.cat_1 == "소재지":
-                aw_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                aw_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                aw_tag_tag.append(f.name)
-
-        if Startup.objects.get(id=aw["startup"]).employee_number == "" or Startup.objects.get(
-                id=aw["startup"]).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=aw["startup"]).employee_number
-        aw_em_tag.append(number)
-        st=Startup.objects.get(id=aw["startup"])
-        result["aw_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(aw_kind_tag[:2]),
-            "local": ",".join(aw_local_tag[:2]),
-            "employee_num": st.employee_number, "tel": st.user.additionaluserinfo.tel
-        })
-        k = k + 1
-
-    result["aw_local_tag"]=(organize(aw_local_tag))
-    result["aw_kind_tag"]=(organize(aw_kind_tag))
-    result["aw_em_tag"]=(organize(aw_em_tag))
-    result["aw_tag_tag"]=(organize(aw_tag_tag))
-
-
-    sb = SupportBusiness.objects.all().filter(user_id=request.GET.get("id"))
-    q_objects = Q()
-    startup_list=[]
-    for s in sb:
-        q_objects = q_objects | Q(sb_id=s.id)
-    ap = Appliance.objects.all().filter(q_objects).values("startup").distinct()
-    for a in ap:
-        startup_list.append(a["startup"])
-    hit = HitLog.objects.all().filter(q_objects).values("user").distinct()
-    for h in hit:
-        if len(Startup.objects.all().filter(user = AdditionalUserInfo.objects.get(id=h["user"]).user))!=0:
-            startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
-    award = Award.objects.all().filter(q_objects).values("startup").distinct()
-
-    all_local_tag=[]
-    all_kind_tag=[]
-    all_tag_tag=[]
-    all_em_tag=[]
-    for aw in award:
-        startup_list.append(aw["startup"])
-    result["all_startup_list"]=[]
-    k=1
-    for id in set(startup_list):
-        filter = Startup.objects.get(id=id).filter.all()
-        st =  Startup.objects.get(id=id)
-
-        for f in filter:
-            if f.cat_1 == "소재지":
-                all_local_tag.append(f.name)
-            if f.cat_0 == "영역" or f.cat_0 == "기본장르":
-                all_kind_tag.append(f.name)
-            if f.cat_0 == "조건" and f.cat_1 != "소재지":
-                all_tag_tag.append(f.name)
-        if Startup.objects.get(id=id).employee_number == "" or Startup.objects.get(
-                id=id).employee_number == None:
-            number = "무응답"
-        else:
-            number = Startup.objects.get(id=id).employee_number
-        all_em_tag.append(number)
-        result["all_startup_list"].append({
-            "index": k, "email": st.user.username, "name": st.name, "kind": ",".join(all_kind_tag[:2]), "local":",".join(all_local_tag[:2]),
-            "employee_num":st.employee_number , "tel":st.user.additionaluserinfo.tel
-        })
-        k=k+1
-    result["all_local_tag"]= organize(all_local_tag)
-    result["all_kind_tag"]=organize(all_kind_tag)
-    result["all_tag_tag"]=organize(all_tag_tag)
-    result["all_em_tag"]=organize(all_em_tag)
-    return JsonResponse(result)
-
-
-def similar_grant(request):
-    result={}
-    result["data"]=[]
-    print(request.GET.get('q'))
-
-    origin_sp = SupportBusiness.objects.all().get(id=request.GET.get('q'))
-
-    for sp in SupportBusiness.objects.all().exclude(id=request.GET.get('q')):
-        obj = {}
-        obj["tag"] = []
-        obj["title"] = sp.title
-        obj["due"] = str(sp.apply_end).split(" ")[0]
-        obj["title_sub"] = sp.title_sub
-        obj["short_desc"] = sp.short_desc
-        obj["int"] =  random.randrange(0, 100)
-        obj["comp"] = random.randrange(0, 100)
-        obj["id"] = sp.id
-        obj["sim"]=0
-        for f in sp.filter.all():
-            obj["tag"].append(f.name)
-            if f in origin_sp.filter.all():
-                obj["sim"]= obj["sim"]+1
-
-        # if random.randrange(0,10)%2==0:
-        #     obj["img"] = img_list[random.randrange(0,9)]
-        result["data"].append(copy.deepcopy(obj))
-        sorted(result["data"], key=lambda c:c["sim"])
-    return JsonResponse(result)
-
-def vue_get_startup_list(request):
-    st = Startup.objects.all()
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["name"] = s.name
-        temp_obj["short_desc"] = s.short_desc
-        temp_obj["tag"]=[]
-        temp_obj["filter"] = []
-
-        temp_obj["id"]=s.id
-        for t in s.tag.all():
-            if t.name != "" and t.name != None:
-                temp_obj["tag"].append(t.name)
-        for t in s.filter.all():
-            if t.name != "" and t.name != None:
-                temp_obj["filter"].append(t.name)
-
-        result.append(copy.deepcopy(temp_obj))
-
-    return  JsonResponse(list(result), safe=False)
-
-def vue_get_startup_detail(request):
-    print(request.GET.get("id"))
-    #st= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    st = Startup.objects.get(id=request.GET.get("id"))
-    result={}
-
-    result["back_img"] = st.back_img
-    result["logo"] = st.logo
-    result["category"] = st.category
-    result["startup_id"] = st.id
-    result["name"] = st.name
-    # result["logo"] = st.thumbnail
-    result["short_desc"] = st.short_desc
-    result["intro_text"] = st.intro_text
-    result["established_date"] = st.established_date
-    result["information"]={}
-    result["information"]["id"] = st.id
-    result["information"]["tag"]=[]
-    for t in st.tag.all():
-        if t.name != "" and t.name != None:
-            result["information"]["tag"].append(t.name)
-    result['information']["homepage"] = st.website
-    result['information']["email"] = st.user.username
-    result["location"] = st.address_0
-    result["business_file"]= st.business_file.split("/")[-1]
-    result["business_file_path"] = st.business_file
-    if result["business_file"] == "":
-        result["business_file"] = "파일을 업로드 하세요."
-        result["business_file_path"] =""
-    result["service"]=[]
-    result["tag"]=[]
-    result["select_tag"]=[]
-    for f in st.filter.all():
-        result["tag"].append(f.name)
-
-    for service in st.service_set.all():
-        obj={}
-        obj["intro"] = service.intro
-        obj["file"] = service.file
-        obj["file_name"] = service.file.split("/")[-1]
-        obj["name"] = service.name
-        obj["img"] = service.img
-        obj["img_name"] = service.img.split("/")[-1]
-        obj["id"] = service.id
-        obj["show"] = service.show
-
-        result["service"].append(copy.deepcopy(obj))
-    result["history"]=[]
-    for history in st.history_set.all():
-        obj={}
-        obj["year"] = history.year
-        obj["month"] = history.month
-        obj["content"] = history.content
-        obj["id"] = history.id
-        result["history"].append(copy.deepcopy(obj))
-    result["revenue"]=[]
-    for revenue in st.revenue_set.all():
-        obj={}
-        obj["year"] = revenue.year
-        obj["num"] = revenue.size
-        obj["id"]= revenue.id
-        result["revenue"].append(copy.deepcopy(obj))
-    result["trade"] = []
-    for trade in st.tradeinfo_set.all():
-        obj = {}
-        obj["year"] = trade.year
-        obj["size"] = trade.size
-        obj["id"] = trade.id
-        result["trade"].append(copy.deepcopy(obj))
-    result["invest"]=[]
-    for invest in st.fund_set.all():
-        obj={}
-        obj["year"] = invest.year
-        obj["size"] = invest.size
-        obj["agency"] = invest.agency
-        obj["step"] = invest.step
-        obj["currency"] = invest.currency
-        result["invest"].append(copy.deepcopy(obj))
-    result["news"]=[]
-    result["news"] = []
-
-    for news in st.activity_set.order_by("-created_at").all():
-        obj={}
-        obj["date"] =  news.created_at
-        obj["content"] = news.text
-        obj["img"] = news.img
-
-        obj["like_num"] = len(news.activitylike_set.all())
-        obj["rep_num"] = len(news.reply_set.all())
-        obj["id"] = news.id
-        obj["img"] = news.img
-        obj["youtube"] = news.youtube
-
-        obj["rep"]=[]
-        for rep in news.reply_set.all():
-            temp = {}
-            #temp["logo"] = rep.activity.startup.thumbnail
-            temp["content"] = rep.text
-            temp["date"] = rep.created_at
-            temp["id"] = rep.id
-            obj["rep"].append(copy.deepcopy(temp))
-        result["news"].append(copy.deepcopy(obj))
-    return JsonResponse(result)
-
-
-
-@csrf_exempt
-def vue_update_startup_detail_base(request):
-    print("here")
-    print(request.POST.get("json_data"))
-    rjd = json.loads(request.POST.get("json_data"))
-    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
-    st = Startup.objects.get(id=rjd["startup_id"])
-    st.name = rjd["name"]
-    st.short_desc = rjd["short_desc"]
-    st.intro_text =  rjd["intro_text"]
-    st.website = rjd["information"]["homepage"]
-    st.user.username = rjd["information"]["email"]
-    st.youtube = rjd["youtube"]
-    st.category = rjd["category"]
-    st.insta = rjd["insta"]
-    st.tag_string = rjd["tag_string"]
-
-
-    st.facebook = rjd["facebook"]
-    st.address_0= result["location"]
-    st.address_detail_0 = result["location2"]
-    st.user.additionaluserinfo.tel = rjd["tel"]
-    st.user.additionaluserinfo.save()
-    st.tag.clear()
-    for tag in rjd["information"]["tag"]:
-        tag_origin ,created= Tag.objects.get_or_create(name=tag)
-        st.tag.add(tag_origin)
-    st.address_0 = rjd["location"]
-    user = st.user
-    user.username = rjd["information"]["email"]
-    user.save()
-    st.save()
-    for history in rjd["history"]:
-        if history.get("id"):
-            his = History.objects.get(id=history.get("id"))
-        else:
-            his = History()
-        his.year = history["year"]
-        his.month = history["month"]
-        his.content = history["content"]
-        his.startup = st
-        his.save()
-
-    st.save()
-    return JsonResponse(
-        {"result":"ok"}
-    )
-
-
-
-@csrf_exempt
-def vue_update_startup_detail(request):
-    print(request.POST)
-    print(request.FILES)
-    print(request.FILES.keys())
-    for key in request.FILES.keys():
-        print(key)
-        print(request.FILES[key])
-    rjd = json.loads(request.POST.get("json_data"))
-    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
-    st = Startup.objects.get(id=rjd["startup_id"])
-    st.name = rjd["name"]
-    st.short_desc = rjd["short_desc"]
-    st.intro_text =  rjd["intro_text"]
-    st.website = rjd["information"]["homepage"]
-    st.user.username = rjd["information"]["email"]
-    st.tag.clear()
-    for tag in rjd["information"]["tag"]:
-        tag_origin ,created= Tag.objects.get_or_create(name=tag)
-        st.tag.add(tag_origin)
-    st.address_0 = rjd["location"]
-    user = st.user
-    user.username = rjd["information"]["email"]
-    user.save()
-    if request.FILES.get("file"):
-        if rjd["business_file"] == request.FILES.get("file").name:
-            path = handle_uploaded_file_business_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"])
-            st.business_file = path
-    st.save()
-
-    for act in rjd["news"]:
-        if act.get("id"):
-            activity = Activity.objects.get(id=act.get("id"))
-        else:
-            activity = Activity()
-        activity.text = act["content"]
-        activity.youtube=act["youtube"]
-        activity.startup = st
-        try:
-            print("======")
-            print(act["img"])
-            print(request.FILES.get("file_news").name)
-            if act["img"] == request.FILES.get("file_news").name:
-                path = handle_uploaded_file_business_file(request.FILES['file_news'], str(request.FILES['file_news']), st.id)
-                activity.img = path
-        except:
-            pass
-        activity.save()
-        activity_id = activity.id
-        try:
-            for rep in act["rep"]:
-
-                if rep.get("id"):
-                    reply = Reply.objects.get(id=rep.get("id"))
-                else:
-                    reply = Reply()
-                reply.text = rep["content"]
-                reply.author_id = "60"
-                reply.activity_id = activity_id
-                reply.save()
-        except Exception as e:
-            print(e)
-            pass
-
-    for service in rjd["service"]:
-        if service.get("id"):
-            ser = Service.objects.get(id = service["id"])
-            ser.intro = service["intro"]
-            ser.name =service["name"]
-            try:
-                for key in request.FILES.keys():
-                    print(service["img_name"])
-                    print(request.FILES[key])
-                    if service["img_name"].strip()  == request.FILES[key].name :
-                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
-                                                                    rjd["startup_id"])
-                        ser.img = path
-            except Exception as e:
-                print(e)
-            try:
-                for key in request.FILES.keys():
-
-                    print(service["file_name"])
-                    print(request.FILES[key])
-                    if service["file_name"].strip()  == request.FILES[key].name :
-
-                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
-                                                                    rjd["startup_id"])
-                        ser.file = path
-            except Exception as e:
-                print(e)
-            ser.save()
-
-        else :
-            ser = Service()
-            ser.intro = service["intro"]
-            ser.name = service["name"]
-            try:
-                for key in request.FILES.keys():
-                    if service["img_name"].strip() == request.FILES[key].name:
-                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
-                                                                rjd["startup_id"])
-                        ser.img = path
-            except Exception as e:
-                print(e)
-            try:
-                for key in request.FILES.keys():
-                    if service["file_name"].strip() == request.FILES[key].name:
-                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
-                                                                rjd["startup_id"])
-                        ser.file = path
-            except Exception as e:
-                print(e)
-
-            ser.startup = st
-            ser.save()
-            print("here2")
-    for history in rjd["history"]:
-        if history.get("id"):
-            his = History.objects.get(id=history.get("id"))
-        else:
-            his = History()
-        his.year = history["year"]
-        his.month = history["month"]
-        his.content = history["content"]
-        his.startup = st
-        his.save()
-    if request.FILES.get("img_back"):
-        st.back_img =handle_uploaded_file_business_back(request.FILES['img_back'], str(request.FILES['img_back']),
-                                                                rjd["startup_id"])
-    if request.FILES.get("img_logo"):
-        st.logo = handle_uploaded_file_service_logo(request.FILES['img_logo'], str(request.FILES['img_logo']),
-                                                     rjd["startup_id"])
-    st.save()
-    return JsonResponse(
-        {"result":"ok"}
-    )
-
-
-def handle_uploaded_file_service_product(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/service_product/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
-    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
-def handle_uploaded_file_business_file(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/business_file/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/business_file/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/business_file')
-    with open('media/uploads/user/'+ str(user_id) +'/company/business_file/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/business_file/'+filename
-
-def handle_uploaded_file_service_logo(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/logo/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
-    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
-def handle_uploaded_file_business_back(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/back/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/business_file/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/business_file')
-    with open('media/uploads/user/'+ str(user_id) +'/company/business_file/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/business_file/'+filename
-
-
-@csrf_exempt
-def vue_update_startup_with_application_1(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    app = Appliance.objects.get(id=rjd["id"])
-    st = Startup.objects.get(id=rjd["st_id"])
-    if len(History.objects.all().filter(year=rjd["found_date"].split("-")[0]).filter(month=rjd["found_date"].split("-")[1]).filter(content= "회사 설립").filter(startup_id= rjd["st_id"])) == 0 :
-        h = History()
-        h.year = rjd["found_date"].split("-")[0]
-        h.month = rjd["found_date"].split("-")[1]
-        h.content ="회사 설립"
-        h.startup = st
-        h.save()
-
-    st.established_date = rjd["found_date"]
-    st = Startup.objects.get(id=rjd["st_id"])
-    st.name = rjd["name"]
-    st.address_0 = rjd["location"]
-    st.save()
-    return JsonResponse({"result":"ok"})
-@csrf_exempt
-def vue_update_startup_with_application_2(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    app = Appliance.objects.get(id=rjd["id"])
-    st = Startup.objects.get(id = rjd["st_id"])
-    for f in st.filter.all():
-        if f.cat_0 !="조건" and f.cat_0 !="지원형태":
-            st.filter.remove(f)
-    for i in app["tag"]:
-        st.filter.add(Filter.objects.all().filter( cat_0= i))
-    st.save()
-    return "ok"
-
-
-def vue_update_startup_with_application_3(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    app = Appliance.objects.get(id=rjd["id"])
-    st = Startup.objects.get(id = rjd["st_id"])
-    st.employee_number = rjd["total_employee"]
-    for r in Revenue.objects.all().filter(st=st):
-        r.delete()
-    for r in rjd["revenue"]:
-        rev = Revenue()
-        rev.year = r["year"]
-        rev.size = r["size"]
-        rev.startup = st
-        rev.save()
-
-    for r in rjd["trade"]:
-        rev = TradeInfo()
-        rev.year = r["year"]
-        rev.size = r["size"]
-        rev.startup = st
-        rev.save()
-
-    st.website = rjd["homepage"]
-    st.save()
-
-
-
-
-
-def vue_get_application(request):
-    try:
-        st = Startup.objects.get(id=request.GET.get("id"))
-    except:
-        st = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
-    app, created = Appliance.objects.get_or_create(startup=st, sb=sb)
-    result={}
-    result["id"] = app.id
-    result["st_id"]= st.id
-    result["sb_id"] = sb.id
-    result["location_1"] = st.address_0
-    result["location_2"] = st.address_detail_0
-    result["name"] = st.name
-
-    result["business_number"] = app.business_number
-    result["found_date"] = app.found_date
-    result["repre_name"] = app.repre_name
-    result["repre_tel"] = app.repre_tel
-    result["repre_email"] = app.repre_email
-    result["mark_name"] = app.repre_name
-    result["mark_tel"] = app.repre_tel
-    result["homepage"] = app.homepage
-    result["mark_email"] = app.repre_email
-    result["keyword"] = app.keyword
-    result["sns"] = app.sns
-    result["total_employee"] = app.total_employee
-    result["hold_employee"] = app.hold_employee
-    result["assurance_employee"] = app.assurance_employee
-    result["tag"]=[]
-    for f in app.filter.all():
-        result["tag"].append(f.name)
-    result["patent_file_name"] = app.patent_file
-    result["trade_file_name"] = app.trade_file
-    result["sub_patent_file_name"] = app.sub_patent_file
-    result["design_file_name"] = app.design_file
-    result["exp"] = app.exp
-    result["company_intro"] = app.company_intro
-    result["business_intro"] = app.business_intro
-    result["service_category"] = app.service_category
-    result["service_intro"] = app.service_intro
-    result["service_name"] = app.service_name
-    result["kind"] = app.kind
-    result["revenue"]=[]
-    for rev in app.revenueinapplication_set.all():
-        result["revenue"].append({"year":rev.year,"num":rev.size,"id":rev.id})
-    result["trade"]=[]
-    for rev in app.tradeinapplication_set.all():
-        result["trade"].append({"year":rev.year,"num":rev.size,"id":rev.id})
-    result["oversea"]=[]
-    print(app.overseainapplication_set.all())
-    print(app.overseainapplication_set)
-    print("aslkdjfaslkdj")
-    print(app)
-    for rev in app.overseainapplication_set.all():
-        print(rev)
-        result["oversea"].append({"nation": rev.nation , "content": rev.content, "id": rev.id})
-    return JsonResponse(result)
-
-
-
-def handle_uploaded_file_right(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/service_product/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
-    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
-
-
-@csrf_exempt
-def vue_update_application(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(request.FILES)
-    print(rjd)
-    app = Appliance.objects.get(id=rjd["id"])
-    st = app.startup
-    st.name = rjd["name"]
-    st.address_0 = rjd["location"]
-    st.save()
-    app.name = rjd["name"]
-    app.address_0 = rjd["location"]
-    app.business_number = rjd["business_number"]
-    app.address = rjd["location"]
-    app.found_date = rjd["found_date"].split("T")[0]
-    app.repre_name = rjd["repre_name"]
-    app.repre_tel = rjd["repre_tel"]
-    app.repre_email = rjd["repre_email"]
-    app.mark_name = rjd["mark_name"]
-    app.mark_tel = rjd["mark_tel"]
-    app.mark_email = rjd["mark_email"]
-    app.keyword = rjd["keyword"]
-    app.sns = rjd["sns"]
-    app.exp=rjd["exp"]
-    app.business_intro = rjd["business_intro"]
-    app.company_intro = rjd["company_intro"]
-    app.total_employee = rjd["total_employee"]
-    app.hold_employee = rjd["hold_employee"]
-    app.assurance_employee = rjd["assurance_employee"]
-    app.save()
-    app.filter.clear()
-    print("middel")
-    for f in rjd["tag"]:
-        print(f)
-        app.filter.add( Filter.objects.get(name=f))
-    try:
-        if request.FILES["file_1"]:
-            app.patent_file =handle_uploaded_file_right(request.FILES["file_1"], str(request.FILES["file_1"]), st.id)
-    except Exception as e:
-        print(e)
-    try:
-        if request.FILES["file_2"]:
-            app.trade_file = handle_uploaded_file_right(request.FILES["file_2"], str(request.FILES["file_2"]), st.id)
-    except Exception as e:
-         print(e)
-    try:
-        if request.FILES["file_3"]:
-            app.sub_patent_file = handle_uploaded_file_right(request.FILES["file_3"], str(request.FILES["file_3"]), st.id)
-    except Exception as e:
-         print(e)
-    try:
-        if request.FILES["file_4"]:
-            app.design_file = handle_uploaded_file_right(request.FILES["file_4"], str(request.FILES["file_4"]), st.id)
-    except Exception as e:
-        print(e)
-    try:
-        if request.FILES["file_5"]:
-            app.patent_2_file =handle_uploaded_file_right(request.FILES["file_5"], str(request.FILES["file_5"]), st.id)
-    except Exception as e:
-        print(e)
-    try:
-        if request.FILES["file_6"]:
-            app.ppt_file = handle_uploaded_file_right(request.FILES["file_6"], str(request.FILES["file_6"]), st.id)
-    except Exception as e:
-         print(e)
-    try:
-        if request.FILES["file_7"]:
-            app.service_file = handle_uploaded_file_right(request.FILES["file_7"], str(request.FILES["file_7"]), st.id)
-    except Exception as e:
-         print(e)
-    try:
-        if request.FILES["file_8"]:
-            app.cert_file = handle_uploaded_file_right(request.FILES["file_8"], str(request.FILES["file_8"]), st.id)
-    except Exception as e:
-        print(e)
-
-    app.exp = rjd["exp"]
-    app.homepage=rjd["homepage"]
-    app.company_intro = rjd["company_intro"]
-    app.business_intro = rjd["business_intro"]
-    app.service_category = rjd["service_category"]
-    app.service_intro = rjd["service_intro"]
-    app.service_name = rjd["service_name"]
-    app.kind = rjd["kind"]
-    for o in rjd["oversea"]:
-        try:
-            if o["id"]:
-                oversea = OverseaInApplication.objects.get(id=o["id"])
-            else:
-                oversea = OverseaInApplication()
-        except:
-            oversea = OverseaInApplication()
-        oversea.nation = o["nation"]
-        oversea.content = o["content"]
-        oversea.application_id = app.id
-
-        oversea.save()
-    for rev in rjd["revenue"]:
-        try:
-            if rev["id"]:
-                revenue = RevenueInApplication.objects.get(id=rev["id"])
-            else:
-                revenue = RevenueInApplication()
-        except:
-            revenue = RevenueInApplication()
-        revenue.year = rev["year"]
-        revenue.size = rev["num"]
-        revenue.application_id = app.id
-        revenue.save()
-    for trade in rjd["trade"]:
-        try:
-            if trade["id"]:
-                tr = TradeInApplication.objects.get(id=trade["id"])
-            else:
-                tr = TradeInApplication()
-        except:
-            tr=TradeInApplication()
-        tr.year = trade["year"]
-        tr.size  = trade["num"]
-        tr.application_id = app.id
-        tr.save()
-    app.save()
-    return  JsonResponse({"result":"ok"})
-
-
-
-def vue_get_dashboard(request):
-    print(request)
-    result = {}
-    #모집 마감된 공고문
-    due_sp = SupportBusiness.objects.all().filter(apply_end__lt=datetime.datetime.now()).filter(complete = 0).filter(user_id=86)
-    due_set = []
-    for sp in due_sp:
-        result_due={}
-        result_due["id"] = sp.id
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        #result_due["apply_num"] =len(Appliance.objects.all().filter(sb_id=sp.id))
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id))/int(sp.recruit_size),2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        due_set.append(copy.deepcopy(result_due))
-        blind_sp = SupportBusiness.objects.all().filter(is_blind=1).filter(user_id=86)
-        blind_set = []
-        for sp in blind_sp:
-            result_due = {}
-            result_due["id"] = sp.id
-            result_due["pick_date"] = sp.pick_date
-            result_due['title'] = sp.title
-            result_due["start"] = sp.apply_start
-            result_due["end"] = sp.apply_end
-            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-            if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-                pass
-            else:
-                result_due["comp"] = "없음"
-            blind_set.append(copy.deepcopy(result_due))
-
-        writing_sp = SupportBusiness.objects.all().filter(confirm=0).filter(user_id=86)
-        writing_set = []
-        for sp in writing_sp:
-            result_due = {}
-            result_due["id"] = sp.id
-            result_due["updated"] = sp.update_at
-            result_due['title'] = sp.title
-            result_due["start"] = sp.apply_start
-            result_due["end"] = sp.apply_end
-            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-
-            if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-                pass
-            else:
-                result_due["comp"] = "없음"
-            writing_set.append(copy.deepcopy(result_due))
-
-        ing_sp = SupportBusiness.objects.all().filter(confirm=1).filter(apply_end__gte=datetime.datetime.now()).filter(user_id=86)
-        ing_set = []
-        for sp in ing_sp:
-            result_due = {}
-            result_due["id"] = sp.id
-
-            result_due["pick_date"] = sp.pick_date
-            result_due['title'] = sp.title
-            result_due["start"] = sp.apply_start
-            result_due["end"] = sp.apply_end
-            #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-
-            if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-                #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-                pass
-            else:
-                result_due["comp"] = "없음"
-                ing_set.append(copy.deepcopy(result_due))
-
-    result["due_set"] = due_set
-    result["blind_set"] = blind_set
-    result["writing_set"] = writing_set
-    result["ing_set"] = ing_set
-
-    return JsonResponse(result)
-
-@csrf_exempt
-def vue_set_application(request):
-    print(request.body)
-    rjd=json.loads(request.body.decode('utf-8'))
-    print(rjd)
-    print(",".join(rjd["meta"]))
-    id= rjd["id"]
-
-    sb = SupportBusiness.objects.get(id=id)
-    sb.meta = ",".join(rjd["meta"])
-    sb.confirm_count = sb.confirm_count+1;
-    sb.save()
-    return JsonResponse({"result":"ok"})
 
 def handle_uploaded_file_poster(file, filename):
     print('media/uploads/poster/')
@@ -6185,815 +179,29 @@ def handle_uploaded_file_poster(file, filename):
             return 'media/uploads/poster/'+filename
 
 
-@csrf_exempt
-def vue_get_grant_information(request):
-    sp = SupportBusiness.objects.get(id=request.GET.get("id"))
-    result={}
-    result["title"] = sp.title
-    result["poster"] = sp.poster
-    result["short_desc"] = sp.short_desc
-    result["title_tag"]  = sp.title_tag
-    result["title_sub"] = sp.title_sub
-    result["business_period_start"] = sp.business_period_start
-    result["business_period_end"] = sp.business_period_end
-    result["place"]=sp.place
-    result["subject"]=sp.subject
-    result["business_detail"] = sp.business_detail
-    result["tag"] = []
-    for t in sp.filter.all():
-        result["tag"].append(t.name)
-    result["supply_content"] = sp.supply_content
-    result["apply_start"] = sp.apply_start
-    result["apply_end"] = sp.apply_end
-    result["object"] = sp.object
-    result["condition"]= sp.condition
-    result["recruit_size"] = sp.recruit_size
-    result["prefer"] = sp.prefer
-    result["constraint"] = sp.constraint
-    result["pro_0_choose"] = sp.pro_0_choose
-    result["pro_0_start"] = sp.pro_0_start
-    result["pro_0_end"] = sp.pro_0_end
-
-    result["pro_0_open"] = sp.pro_0_open
-    result["pro_0_criterion"] = sp.pro_0_criterion
-    result["pro_1_choose"] = sp.pro_1_choose
-    result["pro_2_choose"] = sp.pro_2_choose
-    result["meta_file_info"] = sp.meta_file_info
-    result["ceremony"]= sp.ceremony
-    result["faq"] = sp.faq
-    result["additional_faq"] = sp.additional_faq
-    result["etc"] = sp.etc
-    result["open_method"]=sp.open_method
-    result["meta"] = sp.meta
-    return JsonResponse(result, safe=False)
-
-
-@csrf_exempt
-def vue_set_grant_information(request):
-    sp = SupportBusiness.objects.get(id=request.GET.get("id"))
-    rjd = json.loads(request.POST.get("json_data"))
-
-    sp.title = rjd["title"]
-    sp.poster= rjd["poster"]
-    sp.short_desc= rjd["short_desc"]
-    sp.title_tag= rjd["title_tag"]
-    sp.title_sub= rjd["title_sub"]
-    sp.business_period_start= rjd["business_period_start"]
-    sp.business_period_end= rjd["business_period_end"]
-    sp.place= rjd["place"]
-    sp.subject= rjd["subject"]
-    sp.business_detail= rjd["business_detail"]
-    sp.supply_content= rjd["supply_content"]
-    sp.apply_start= rjd["apply_start"]
-    sp.apply_end= rjd["apply_end"  ]
-    sp.object= rjd["object"]
-    sp.condition= rjd["condition"]
-    sp.recruit_size= rjd["recruit_size"]
-    sp.prefer= rjd["prefer"]
-    sp.constraint= rjd["constraint"]
-    sp.pro_0_choose= rjd["pro_0_choose"]
-    sp.pro_0_start= rjd["pro_0_start"]
-    sp.pro_0_end = rjd["pro_0_end"]
-
-    sp.pro_0_open= rjd["pro_0_open"]
-    sp.pro_0_criterion= rjd["pro_0_criterion"]
-    sp.pro_1_choose= rjd["pro_1_choose"]
-    sp.pro_2_choose= rjd["pro_2_choose"]
-    sp.meta_file_info= rjd["meta_file_info"]
-    sp.ceremony= rjd["ceremony"]
-    sp.faq= rjd["faq"]
-    sp.additional_faq= rjd["additional_faq"]
-    sp.etc= rjd["etc"]
-    sp.open_method = rjd["open_method"]
-    return JsonResponse({"result":"ok"})
-
-
-@csrf_exempt
-def vue_submit_application(request):
-    user_id = request.POST.get("user_id")
-    id = request.POST.get("id")
-    user_kind = request.POST.get("user_kind")
-    SupportBusiness.objects.get(id=id).confirm_count = SupportBusiness.objects.get(id=id).confirm_count+1
-
-    return JsonResponse({"result":"ok"})
-
-
-
-
-
-
-
-@csrf_exempt
-def vue_set_grant_1(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    if rjd["id"] != "new":
-        sb = SupportBusiness.objects.get(id=rjd["id"])
-    else:
-        sb = SupportBusiness()
-    print(rjd)
-    sb.title = rjd["title"]
-    sb.author = rjd["user_id"]
-    sb.title_tag = rjd["tag"]
-    sb.short_desc = rjd["short_desc"]
-    if request.FILES.get('file'):
-        sb.poster = handle_uploaded_file_poster(request.FILES['file'], str(request.FILES['file']))
-    sb.business_period_start = rjd["start"]
-    sb.business_period_end = rjd["end"]
-
-    sb.subject = rjd["subject"]
-    sb.business_detail = rjd["business_detail"]
-    sb.writing_step = 1
-    sb.save()
-    print(sb.id)
-    return JsonResponse({"result":sb.id})
-
-
-@csrf_exempt
-def vue_set_grant_2(request):
-
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    sb = SupportBusiness.objects.get(id=rjd["id"])
-    tag = rjd["supply_tag"]
-    sb.filter.clear()
-    for t in sb.filter.all():
-        if t.cat_0== "지원형태":
-            sb.filter.remove(t)
-    print(tag)
-    for t in tag:
-        print(t)
-        sb.filter.add(Filter.objects.all().get(name=t))
-    sb.supply_content = rjd["supply_content"]
-    sb.writing_step = 2
-    sb.save()
-    return JsonResponse({"result":"ok"})
-
-@csrf_exempt
-def vue_set_grant_3(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    sb = SupportBusiness.objects.get(id=rjd["id"])
-    tag = rjd["recruit_tag"]
-    sb.filter.clear()
-    for t in sb.filter.all():
-        if t.cat_0 == "기본장르" or t.cat_0 == "영역":
-            sb.filter.remove(t)
-    for t in tag:
-        print(t)
-        sb.filter.add(Filter.objects.get(name=t))
-    sb.object = rjd["object"]
-    sb.apply_start = rjd["apply_start"]
-    sb.apply_end = rjd["apply_end"]
-    sb.condition = rjd["condition"]
-    sb.recruit_size = rjd["recruit_size"]
-    sb.prefer = rjd["prefer"]
-    sb.constraint = rjd["constraint"]
-    sb.writing_step = 3
-    sb.save();
-    return JsonResponse({"result":"ok"})
-
-
-@csrf_exempt
-def vue_set_grant_4(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    sb = SupportBusiness.objects.get(id=rjd["id"])
-
-    sb.pro_0_choose = rjd["pro_0_choose"]
-    sb.pro_0_start = rjd["pro_0_start"].split("T")[0]
-    sb.pro_0_end = rjd["pro_0_end"].split("T")[0]
-    sb.pro_0_open = rjd["pro_0_open"]
-    sb.open_method = rjd["open_method"]
-
-    sb.pro_0_criterion = rjd["pro_0_criterion"]
-    sb.pro_1_choose = rjd["pro_1_choose"]
-    sb.pro_2_choose  = rjd["pro_2_choose"]
-    sb.writing_step = 5
-    sb.save();
-    return JsonResponse({"result":"ok"})
-
-
-
-@csrf_exempt
-def vue_set_grant_5(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    sb = SupportBusiness.objects.get(id=rjd["id"])
-    sb.meta_file_info = rjd["file_list"]
-    sb.writing_step = 5
-    sb.save();
-    return JsonResponse({"result":"ok"})
-
-
-
-@csrf_exempt
-def vue_set_grant_6(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    sb = SupportBusiness.objects.get(id=rjd["id"])
-    sb.ceremony = rjd["ceremony"]
-    sb.faq = rjd["faq"]
-    sb.additional_faq = rjd["additional_faq"]
-    sb.etc = rjd["etc"]
-    sb.writing_step = 6
-    sb.save()
-    return JsonResponse({"result":"ok"})
-
-
-
-#TODO: 주석 풀고 PASS 지울것
-@csrf_exempt
-def vue_get_grant_info(request):
-    result = {}
-    # 모집 마감된 공고문
-    due_sp = SupportBusiness.objects.all().filter(apply_end__lt=datetime.datetime.now()).filter(complete=0).filter(user_id=86)
-    due_set = []
-    for sp in due_sp:
-        result_due = {}
-        result_due["id"] = sp.id
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["author"] = sp.user.name
-        
-        result_due["end"] = sp.apply_end
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        result_due["status"] = "모집종료"
-
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = str(round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2))+":1"
-            pass
-        else:
-            result_due["comp"] = "없음"
-        due_set.append(copy.deepcopy(result_due))
-
-    waiting_sp = SupportBusiness.objects.all().filter(confirm=1).filter(confirm_count=0).filter( user_id=86)
-    waiting_set = []
-    for sp in waiting_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due["id"] = sp.id
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["status"] = "승인대기"
-        result_due["author"] = sp.user.name
-        result_due["updated"] = sp.update_at
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = str(
-            #    round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)) + ":1"
-            pass
-        else:
-            result_due["comp"] = "없음"
-        waiting_set.append(copy.deepcopy(result_due))
-
-    #작성중인 공고
-    writing_sp = SupportBusiness.objects.all().filter(confirm=0).filter(user_id=86)
-    writing_set = []
-    for sp in writing_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due["id"] = sp.id
-        result_due["author"] = sp.user.name
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["updated"] = sp.update_at
-
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        result_due["status"] = "작성중"
-
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        writing_set.append(copy.deepcopy(result_due))
-    #공고중인 공고
-    ing_sp = SupportBusiness.objects.all().filter(confirm=1).filter(apply_end__gte=datetime.datetime.now()).filter(
-        user_id=86)
-    ing_set = []
-    for sp in ing_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due["id"] = sp.id
-        result_due['title'] = sp.title
-        result_due["author"] = sp.user.name
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["status"] = "공고중"
-
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        ing_set.append(copy.deepcopy(result_due))
-
-    #공고 종료된 공고
-    comp_sp = SupportBusiness.objects.all().filter(complete=1).filter(user_id=86)
-    comp_set = []
-    for sp in comp_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due["id"] = sp.id
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["author"] = sp.user.name
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        result_due["status"] = "공고종료"
-
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #esult_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        comp_set.append(copy.deepcopy(result_due))
-    #블라인드된 공고문
-    blind_sp = SupportBusiness.objects.all().filter(is_blind=1).filter(user_id=86)
-    blind_set = []
-    for sp in blind_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due["id"] = sp.id
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["author"] = sp.user.name
-        result_due["end"] = sp.apply_end
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        result_due["status"] = "블라인드"
-
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        blind_set.append(copy.deepcopy(result_due))
-
-    all_sp = SupportBusiness.objects.all().filter( user_id=86)
-    all_set = []
-    for sp in all_sp:
-        result_due = {}
-        result_due["id"] = sp.id
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["author"] = sp.user.name
-        result_due["end"] = sp.apply_end
-        #result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        #result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        try:
-            if sp.apply_end < datetime.datetime.now() and  sp.complete==0 :  #모집 종료 된 공고문
-                result["status"] = "모집종료"
-
-            if sp.confirm == 0:  # 작성중인 공고문
-                result["status"] = "작성중"
-
-            if sp.confirm == 1 and sp.confirm_count == 0:  # 승인대기중인 공고문
-                result["status"] = "승인대기"
-            if  sp.confirm == 1 and sp.apply_end > datetime.datetime.now() and sp.confirm_count >= 1:
-                result["status"] = "공고중"
-
-            if sp.complete==1 : # 공고 종료 된 공고문
-                result_due["status"] = "공고종료"
-
-            if sp.is_blind==1 : #블라인드 공고문
-                result_due["status"] = "블라인드"
-        except:
-            result_due["status"]="작성중"
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            #result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-            pass
-        else:
-            result_due["comp"] = "없음"
-        all_set.append(copy.deepcopy(result_due))
-
-
-    result["due_set"] = due_set
-    result["blind_set"] = blind_set
-    result["writing_set"] = writing_set
-    result["ing_set"] = ing_set
-    result["waiting_set"] = waiting_set
-    result["comp_set"] = comp_set
-    result["all_set"] = all_set
-
-    return JsonResponse(result)
-
-def vue_static_user(request):
-    #총기업수
-    total_startup = len(Startup.objects.all())
-    #총 개인회원수
-    total_user = len(AdditionalUserInfo.objects.all().exclude(auth=5).exclude(auth=4))
-    #기업회원 1개당 평균 사업 참가수
-    avg_apply = round(len(Appliance.objects.all())/total_startup,2)
-    #기업 회원 한개당 평균 사업 선정수
-    avg_award = round(len(Award.objects.all())/total_startup,2)
-
-
-    ## 최종 선정기업
-    # 총 기업회원수
-    total_startup_award = len(Award.objects.all().values('startup_id').distinct())
-    #기업회원 1개당 평균 사업 참가수
-    k=0;
-    for st in Award.objects.all().values('startup_id').distinct():
-        k = k + len(Award.objects.all().filter(startup_id=st["startup_id"]))
-    avg_apply_award = round(k/total_startup_award,2)
-    avg_pick_number = round(len(Award.objects.all())/total_startup_award,2)
-
-    #경기지역 모아보기
-    total_startup_gg = len(Startup.objects.all().filter(filter__name__contains="경기"))
-    k=0;
-    startup_list = []
-    for st in (Startup.objects.all().filter(filter__name__contains="경기")):
-        k = k + len(Award.objects.all().filter(startup=st))
-        startup_list.append(st.id)
-    avg_apply_gg = round(k/total_startup_gg,2)
-    avg_pick_gg = round(len(Award.objects.all().filter(startup_id__in=startup_list))/total_startup_gg,2)
-
-    result={}
-    result["total_startup"]= total_startup
-    result["total_user"]=total_user
-    result["avg_apply"]=avg_apply
-    result["avg_award"]=avg_award
-
-    result["total_startup_award"] = total_startup_award
-    result["avg_apply_award"] = avg_apply_award
-    result["avg_pick_number"] = avg_pick_number
-
-    result["total_startup_gg"]= total_startup_gg
-    result["avg_apply_gg"]= avg_apply_gg
-    result["avg_pick_gg"] =avg_pick_gg
-
-    return JsonResponse(result)
-
-def vue_get_startup_account(request):
-    st= Startup.objects.all()
-    result = {}
-    k=1
-    startup_set=[]
-    for s in st :
-        temp={}
-        temp["index"]=k
-        k=k+1
-        temp["name"] = s.name
-        temp["id"] = s.user.username
-
-        temp["repre"] = s.user.additionaluserinfo.name
-        temp["tel"] = s.user.additionaluserinfo.phone
-        temp["email"] = s.user.username
-        tag_list=[]
-        for t in s.filter.all():
-            tag_list.append(t.name)
-        temp["tag"] = tag_list
-        try:
-            if "경기" in s.address_0:
-                local = "경기"
-            elif "서울" in s.address_0:
-                local = "서울"
-            elif "인천" in s.address_0:
-                local = "인천"
-            else :
-                local = "기타"
-        except:
-            local="기타"
-        temp["local"] = local
-        temp["employ_num"] = s.employee_number
-        temp["apply_num"] = len(Appliance.objects.all().filter(startup=s))
-        temp["award_num"] = len(Award.objects.all().filter(startup=s))
-        temp["join"] = s.user.date_joined
-        temp["tag"]=[]
-        for t in s.filter.all():
-            temp["tag"].append(t.name)
-        startup_set.append(copy.deepcopy(temp))
-    result["startup"] = startup_set
-    user = AdditionalUserInfo.objects.all().exclude(auth=4).exclude(auth=5)
-    p=1
-    user_set = []
-    for u in user:
-        user={}
-        user["index"]=p
-        p=p+1
-        user["id"] = u.user.username
-        user["name"] = u.name
-        user["phone"] = u.phone
-        user["joined"] = u.user.date_joined
-        user_set.append(copy.deepcopy(user))
-    result["user_set"] = user_set
-
-    ## 사업 참여 기업
-    aw_startup_set = Appliance.objects.all().values("startup").distinct()
-    k=1
-    ap_set = []
-    for s in aw_startup_set:
-
-        aw_st={}
-        print(s)
-        st = Startup.objects.get(id=s["startup"])
-        aw_st["index"] = k
-        k=k+1
-        aw_st["name"] = st.name
-        aw_st["repre"] = st.user.additionaluserinfo.name
-        tag_list = []
-        for t in st.filter.all():
-            tag_list.append(t.name)
-        aw_st["tag"] = tag_list
-        try:
-            if "경기" in st.address_0:
-                local = "경기"
-            elif "서울" in st.address_0:
-                local = "서울"
-            elif "인천" in st.address_0:
-                local = "인천"
-            else:
-                local = "기타"
-        except:
-            local="기타"
-        aw_st["local"] = local
-
-
-        aw_st["title"] = Appliance.objects.all().filter(startup=st).last().sb.title
-        if len(Award.objects.all().filter(sb=Appliance.objects.all().filter(startup=st).last().sb).filter(startup=st)) == 0 :
-            aw_st["awarded"] = "탈락"
-        else:
-            aw_st["awarded"] = "선정"
-        aw_st["due_date"] = str(Appliance.objects.all().filter(startup=st).last().sb.apply_end).split(" ")[0]
-        ap_set.append(copy.deepcopy(aw_st))
-    result["ap_set"] = ap_set
-    return JsonResponse(result)
-
-
-
-def vue_add_manager_acc(request):
-
-    if request.method == "POST":
-        if len(User.objects.all().filter(username=request.POST.get("id"))) == 0:
-            add_user = User.objects.create_user(username=request.POST.get("id"), password=request.POST.get("pw"))
-            if add_user is not None:
-                print(request.POST)
-                AdditionalUserInfo(
-                    user=add_user,
-                    name=request.POST.get("name"),
-                    # department=request.POST.get("department"),
-                    belong_to=request.POST.get("department"),
-                    position=request.POST.get("position"),
-                    tel=request.POST.get("tel"),
-                    phone=request.POST.get("phone"),
-                    additional_email=request.POST.get("additional_email"),
-                    boss = request.user.additionaluserinfo,
-                    auth="4"
-                ).save()
-                return HttpResponse("")
-        else:
-            return HttpResponse("no")
-
-    return HttpResponse("")
-
-
-def vue_get_grant_list(request):
-    sb = SupportBusiness.objects.all()
-    k=0
-    result_set = []
-    for s in sb:
-        temp={}
-        temp["index"]=k
-        k=k+1
-        temp["title"] = s.title
-        temp["created_at"] = s.created_at
-        temp["author"] = s.user.name
-        temp["id"] = s.id
-        temp["team"] = s.user.department
-        temp["belong_to"] = s.user.belong_to
-        temp["tel"] = s.user.tel
-        temp["apply_num"] = len(Appliance.objects.all().filter(sb=s))
-        temp["award_num"] = len(Award.objects.all().filter(sb=s))
-        try:
-            if s.apply_start  != ""  or s.apply_start  != None:
-                if s.apply_start < datetime.datetime.now() and s.apply_end > datetime.datetime.now():
-                    status="공고중"
-                elif s.is_blind == 1:
-                    status = "블라인드중"
-                elif s.complete == 1:
-                    status = "공고종료"
-                elif s.complete==0 and s.apply_end < datetime.datetime.now():
-                    status = "모집종료"
-        except:
-            status = ""
-        temp["status"] = status
-        result_set.append(copy.deepcopy(temp))
-
-    return JsonResponse(result_set, safe=False)
-
-
-def vue_get_grant_list_excel(request):
-    sb = SupportBusiness.objects.all()
-    k=0
-    result_set = []
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원사업 리스트")
-    sheet.write(0, 1, "순서")
-    sheet.write(0, 2, "공고명")
-    sheet.write(0, 3, "핸드폰 번호")
-    sheet.write(0, 4, "담당자")
-    sheet.write(0, 5, "팀")
-    sheet.write(0, 6, "기관")
-    sheet.write(0, 7, "연락처")
-    sheet.write(0, 8, "지원기업수")
-    sheet.write(0, 9, "상태")
-    k = 1
-    for s in sb:
-        print(k)
-        sheet.write(k, 1, k)
-        sheet.write(k, 2, s.title)
-        sheet.write(k, 3, s.user.phone)
-        sheet.write(k, 4, s.user.name)
-        sheet.write(k, 5, s.user.department)
-        sheet.write(k, 6, "경기도 콘텐츠진흥원")
-        sheet.write(k, 7, s.user.tel)
-        sheet.write(k, 8, len(Appliance.objects.all().filter(sb=s)))
-        sheet.write(k, 9, len(Award.objects.all().filter(sb=s)))
-        k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    response = HttpResponse(content_type='application/force-download')
-    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
-        "지원사업 리스트.xls", safe='')
-    book.save(response)
-    return response
-
-
-
-from django.views.decorators.csrf import ensure_csrf_cookie
-
-def vue_get_child(request):
-    manager_set = AdditionalUserInfo.objects.all().filter(boss_id=request.GET.get("id")).values("name","id")
-    return JsonResponse(list(manager_set), safe=False)
-
-def vue_get_grant_by_manager(request):
-    grant_set = SupportBusiness.objects.all().filter(user_id=request.GET.get("id")).values("title","id")
-    return JsonResponse(list(grant_set), safe=False)
-
-from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.views.decorators.clickjacking import xframe_options_exempt
-
-@xframe_options_exempt
-def vue_sign(request):
-    login_form = LoginForm()
-    return render(request, 'pc/accounts/login.html', {"form": login_form})
-
-import  requests
-
-@csrf_exempt
-def vue_get_Kakao_auth(request):
-
-    headers = {'Authorization': 'Bearer {0}'.format(request.POST.get(request.POST.get("token")))}
-    upload_result = requests.post("https://kapi.kakao.com/v2/user/me", headers=headers)
-    print(upload_result.text)
-
-@csrf_exempt
-def vue_get_agent_dashboard(request):
-    print(request.POST)
-    print(AdditionalUserInfo.objects.get(id=request.POST.get("id")).additionaluserinfo_set.all())
-    manager_list = []
-    for a in AdditionalUserInfo.objects.get(id=request.POST.get("id")).additionaluserinfo_set.all():
-        manager_list.append(a.id)
-    result = {}
-    # 모집 마감된 공고
-    due_sp = SupportBusiness.objects.all().filter(apply_end__lt=datetime.datetime.now()).filter(complete=0).filter(
-        user_id__in=manager_list)
-    due_set=[]
-    for sp in due_sp:
-        result_due = {}
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["id"]= sp.id
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = str(
-                round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)) + ":1"
-        else:
-            result_due["comp"] = "없음"
-        due_set.append(copy.deepcopy(result_due))
-    # 승인 요청중인 공고
-    waiting_sp = SupportBusiness.objects.all().filter(confirm=1).filter(confirm_count=0).filter( user_id__in=manager_list)
-    waiting_set = []
-    for sp in waiting_sp:
-        result_due = {}
-        result_due["id"] = sp.id
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = str(
-                round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)) + ":1"
-        else:
-            result_due["comp"] = "없음"
-        waiting_set.append(copy.deepcopy(result_due))
-
-
-    # 공고중인 공고
-    ing_sp = SupportBusiness.objects.all().filter(confirm=1).filter(apply_end__gte=datetime.datetime.now()).filter(
-        user_id__in=manager_list)
-    ing_set = []
-    for sp in ing_sp:
-        result_due = {}
-        result_due["id"] = sp.id
-        result_due["pick_date"] = sp.pick_date
-        result_due['title'] = sp.title
-        result_due["start"] = sp.apply_start
-        result_due["end"] = sp.apply_end
-        result_due["apply_num"] = len(Appliance.objects.all().filter(sb_id=sp.id))
-        result_due["int"] = len(AdditionalUserInfo.objects.all().filter(interest=sp))
-        result_due["open_date"] = (sp.created_at)
-        if sp.recruit_size != "" and sp.recruit_size != 0 and sp.recruit_size != None:
-            result_due["comp"] = round(len(Appliance.objects.all().filter(sb_id=sp.id)) / int(sp.recruit_size), 2)
-        else:
-            result_due["comp"] = "없음"
-        ing_set.append(copy.deepcopy(result_due))
-
-
-    result["due_set"] = due_set
-    result["ing_set"] = ing_set
-    result["waiting_set"] = waiting_set
-
-    return JsonResponse(result)
-
-@csrf_exempt
-def vue_get_agent_account(request):
-    account_set = []
-    k=1
-    all_account_set=[]
-    for ac in  AdditionalUserInfo.objects.all().filter(boss_id=request.POST.get("id")):
-        temp={}
-        temp["index"] = k
-        k=k+1
-        temp["id"] = ac.user.username
-        temp["name"] = ac.name
-        temp["position"] = ac.position
-        temp["team"] = ac.department
-        temp["belong_to"] = ac.belong_to
-        temp["tel"] = ac.tel
-        temp["phone"] = ac.phone
-        temp["email"] = ac.user.username
-        temp["joined"] = str(ac.user.date_joined).split(" ")[0]
-        account_set.append(copy.deepcopy(temp))
-    k=1
-    for ac in AdditionalUserInfo.objects.all().filter(auth=4):
-        temp = {}
-        temp["index"] = k
-        k = k + 1
-        temp["id"] = ac.user.username
-        temp["name"] = ac.name
-        temp["position"] = ac.position
-        temp["team"] = ac.department
-        temp["belong_to"] = ac.belong_to
-        temp["tel"] = ac.tel
-        temp["phone"] = ac.phone
-        temp["email"] = ac.user.username
-        temp["joined"] = str(ac.user.date_joined).split(" ")[0]
-        all_account_set.append(copy.deepcopy(temp))
-    result={}
-    result["account_set"] = account_set
-    result["all_account_set"] = all_account_set
-
-    return  JsonResponse(result, safe=False)
-
+#---------------------------<< 로그인 >>-------------------------
+# --------[1.모든 페이지 공통, 로그인 기능]-----------------------------------------------------------------------------
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업, 매니저, 기관관리자, 비로그인 유저
+# 기능 : 인증 메일 보내는 기능
+# 함수 완성 여부 : 함수 완성
+# 사용된 변수/함수명 등 : cert_email/random_code/target/send_mail/
+# 변수 체크 여부 : py(O), VS(0), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
 @csrf_exempt
 def cert_email(request):
     if request.POST.get("type") == "confirm":
         target = request.POST.get("val")
+        #target = "kshradio@naver.com"
         random_code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
         try:
             send_mail(
                 '[G-connect] 인증메일입니다.',
                 '인증코드는 [' + random_code + "] 입니다.",
                 'neogelon@gmail.com',
-                [target],
+                ["kshradio@naver.com"],
                 fail_silently=False,
             )
             EmailConfirmation(
@@ -7014,658 +222,73 @@ def cert_email(request):
         else:
             return HttpResponse("no")
 
-@csrf_exempt
-def vue_toggle_interest_sb(request):
-    user_id = request.POST.get("id")
 
-    if SupportBusiness.objects.get(id=request.POST.get("val")) not in AdditionalUserInfo.objects.get(id=user_id).interest.all():
-        AdditionalUserInfo.objects.get(id=user_id).interest.add(SupportBusiness.objects.get(id=request.POST.get("val")))
-        return HttpResponse("ok-add")
-    else:
-        AdditionalUserInfo.objects.get(id=user_id).interest.remove(SupportBusiness.objects.get(id=request.POST.get("val")))
-        return HttpResponse("ok-remove")
 
-@csrf_exempt
-def vue_toggle_interest_st(request):
-    user_id = request.POST.get("id")
-    if Startup.objects.get(id=request.POST.get("val")) not in AdditionalUserInfo.objects.get(id=user_id).interest_startup.all():
-        AdditionalUserInfo.objects.get(id=user_id).interest_startup.add(Startup.objects.get(id=request.POST.get("val")))
-        return HttpResponse("ok-add")
-    else:
-        AdditionalUserInfo.objects.get(id=user_id).interest_startup.remove(Startup.objects.get(id=request.POST.get("val")))
-        return HttpResponse("ok-remove")
-@csrf_exempt
-def vue_my_interest_set(request):
-    user_id = request.POST.get("id")
-    return JsonResponse(list(AdditionalUserInfo.objects.get(id=user_id).interest_startup.all().values("id")), safe=False)
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업, 매니저, 기관관리자, 비로그인 유저
+# 기능 : 인증 메일 보내는 기능
+# 함수 완성 여부 : 함수 완성
+# 사용된 변수/함수명 등 : cert_email/random_code/target/send_mail/
+# 변수 체크 여부 : py(O), VS(0), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
 
 @csrf_exempt
-def vue_my_interest_set_detail(request):
-    user_id = request.POST.get("id")
-    st_list=[]
-    for k in  (AdditionalUserInfo.objects.get(id=user_id).interest_startup.all().values("id")):
-        st_list.append(k["id"])
-    st = Startup.objects.all().filter(id__in=st_list)
-    result = []
-    for s in st:
-        temp_obj = {}
-        temp_obj["name"] = s.name
-        temp_obj["short_desc"] = s.short_desc
-        temp_obj["tag"] = []
-
-        temp_obj["id"] = s.id
-        for t in s.tag.all():
-            if t.name != "" and t.name != None:
-                temp_obj["tag"].append(t.name)
-        temp_obj["filter"] = []
-        for t in s.tag.all():
-            if t.name != "" and t.name != None:
-                temp_obj["filter"].append(t.name)
-
-        result.append(copy.deepcopy(temp_obj))
-    return JsonResponse(list(result), safe=False)
-@csrf_exempt
-def vue_signup(request):
-    print(request.method)
-    print(request.POST)
-
-    form = LoginForm(request.POST)
-    print(form.is_valid())
+def vue_login_user(request):
+    print(request.body)
     if request.method == "POST":
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        print(user)
 
-        form = LoginForm(request.POST)
-        if form.is_valid() and \
-                        EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[
-                            0].confirmation_code == request.POST.get("confirmation_code"):
-            user = User.objects.create_user(username=form.cleaned_data["username"],
-                                            password=form.cleaned_data["password"])
-            EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[0].confirm = True
-            if user is not None:
-                AdditionalUserInfo(user=user).save()
-                user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
-                if user is not None:
-                    login(request, user)
-                return JsonResponse({"result":"ok","id":user.additionaluserinfo.id, "user":"u"})
-            else:
+        if user is not None:
+
+            login(request, user)
+
+
+            try:
+                if str(user.additionaluserinfo.auth) == "MNG" or (user.additionaluserinfo.auth) == "OPR":
+                    print(("dklasdfl121212k"))
+                    if  (user.additionaluserinfo.auth) == "OPR":
+                        return JsonResponse({"result":"success", "code":"OPR","id":user.additionaluserinfo.id, "session_key": request.session.session_key  })
+                    else:
+                        return JsonResponse({"result":"success","code": "MNG","id":user.additionaluserinfo.id, "session_key":  request.session.session_key })
+                else:
+                    return JsonResponse({"result":"success","code":"USR","id":user.additionaluserinfo.id, "session_key":  request.session.session_key  })
+            except:
                 return JsonResponse({"result":"false"})
         else:
-            return JsonResponse({"result": "false"})
-
-def handle_uploaded_file_movie(file, filename, user_id):
-    print('media/uploads/user/'+ str(user_id) +'/company/movie/')
-    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/movie/'):
-        os.makedirs('media/uploads/user/' + str(user_id) + '/company/movie')
-    with open('media/uploads/user/'+ str(user_id) +'/company/movie/' + filename, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-            return 'media/uploads/user/'+ str(user_id) +'/company/movie/'+filename
-
-@csrf_exempt
-def vue_upload_clip(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    clip = Clip()
-    clip.user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
-    clip.save()
-    if request.FILES.get("file_1"):
-        if rjd["file_name"] == request.FILES.get("file_1").name:
-            path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
-                                                      rjd["user_id"])
-            clip.mov_address = path
-    clip.thumb = "https://img.youtube.com/vi/"+rjd["youtube_id"]+"/0.jpg"
-    clip.title =rjd["title"]
-    for t in rjd["filter_p"]:
-        clip.filter.add(EduFilter.objects.get(name=t.replace("#  ","")))
-        print(t)
-    clip.play = int(rjd["time"])
-    print(rjd["time"])
-    clip.youtube = rjd["youtube_id"]
-    clip.info =  rjd["info"]
-    clip.object = rjd["object"]
-    clip.save()
-    return JsonResponse({"result":"ok"})
-
-@csrf_exempt
-def vue_get_lec_tag(request):
-    result={}
-    result["tag"]=[]
-    for filter in EduFilter.objects.all():
-        temp={}
-        temp["id"] = filter.id
-        temp["name"] = filter.name
-        result["tag"].append(copy.deepcopy(temp))
-    return JsonResponse(result)
-
-import urllib.request
-
-
-@csrf_exempt
-def vue_get_clip_uploaded(request):
-    clip_list = Clip.objects.filter(user_id = request.POST.get("id"))
-    print("kre")
-    result={}
-    result["clip"]=[]
-    ip = urllib.request.urlopen('https://api.ipify.org/').read().decode()
-    result["ip"] = ip
-    for c in clip_list:
-        temp={}
-        temp["title"] = c.title
-        temp["created_at"] = c.created_at
-        temp["user"] = c.user.name
-        temp["play"] = c.play
-
-        temp["thumb"] = c.thumb
-        temp["id"] = c.id
-        result["clip"].append(copy.deepcopy(temp))
-    return  JsonResponse(result)
-
-
-@csrf_exempt
-def vue_upload_course(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    course = Course()
-    course.user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
-    course.save()
-    if request.FILES.get("file_1"):
-        if rjd["img_name"] == request.FILES.get("file_1").name:
-            path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
-                                              rjd["user_id"])
-            course.thumb = path
-    course.title = rjd["title"]
-    for t in rjd["filter_p"]:
-        course.filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
-
-    for t in rjd["clip_list"]:
-        course.clips.add(Clip.objects.get(id=t))
-    course.info = rjd["info"]
-    course.object = rjd["object2"]
-
-    course.rec_dur = rjd["object"]
-    course.save()
-    return JsonResponse({"result": "ok"})
-
-
-@csrf_exempt
-def vue_get_course_uploaded(request):
-    course_list = Course.objects.all().filter(user_id = request.POST.get("id"))
-    result={}
-    result["course_set"]=[]
-    for c in course_list:
-        temp={}
-        temp["id"] = c.id
-        temp["created"] = c.created_at
-        temp["title"] = c.title
-        temp["filter"] = []
-        print(c.clips.all().first())
-        try:
-            temp["entry_point"]= "/course/view/"+str(c.id)+"/"+str(c.clips.all().first().id)
-        except:
-            temp["entry_point"] = ""
-        for f in c.filter.all():
-            print(f.name)
-            temp["filter"].append(f.name)
-        temp["rec_dur"] = c.rec_dur
-        temp["info"] = c.info
-        temp["clips"] = []
-        for clip in c.clips.all():
-            ttem={}
-            ttem["title"]= clip.title
-            ttem["created"] = clip.created_at
-            ttem["play"] = clip.play
-            ttem["int"] = len(clip.additionaluserinfo_set.all())
-            temp["clips"].append(copy.deepcopy(ttem))
-        result["course_set"].append(copy.deepcopy(temp))
-    return JsonResponse(result)
-
-@csrf_exempt
-def vue_upload_path(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    print(rjd)
-    path = Path()
-    path.user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
-    path.save()
-    if request.FILES.get("file1"):
-        if rjd["img_name"] == request.FILES.get("file1").name:
-            path = handle_uploaded_file_movie(request.FILES['file1'], str(request.FILES['file1']),
-                                              rjd["user_id"])
-            path.thumb = path
-    path.title = rjd["title"]
-
-    for t in rjd["filter_p"]:
-        path.filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
-
-    for t in rjd["course_list"]:
-        path.course.add(Course.objects.get(id=t))
-
-    path.info = rjd["info"]
-    path.rec_dur = rjd["object"]
-    path.object = rjd["object2"]
-    path.save()
-    return JsonResponse({"result": "ok"})
-
-
-@csrf_exempt
-def vue_get_clip(request):
-    result={}
-    clip= Clip.objects.get(id=request.POST.get("id"))
-    result["ip"]=  urllib.request.urlopen('https://api.ipify.org/').read().decode()
-    if request.POST.get("user"):
-        if clip in AdditionalUserInfo.objects.get(id= request.POST.get("user")).interest_clip.all() :
-            result["int_clip"] = "true"
-        else:
-            result["int_clip"] = "false"
-    result["title"] = clip.title
-    result["youtube"] = clip.youtube
-    result["mov_address"] = clip.mov_address
-    result["object"] = clip.object
-    result["info"] = clip.info
-    result["play"] = clip.play
-    result["user"] = clip.user.name
-    result["created"] = clip.created_at
-    result["thumb"] = clip.thumb
-
-    result["int"] = len(clip.additionaluserinfo_set.all())
-    result["tag"]=[]
-    for  t in clip.filter.all():
-        result["tag"].append(t.name)
-
-    result["another_clip"]=[]
-    for c in Clip.objects.all().order_by("?")[:4]:
-        temp={}
-        temp["id"] = c.id
-        temp["play"] = c.play
-        temp["title"] = c.title
-        temp["thumb"] = c.thumb
-
-        temp["user"] = clip.user.name
-        temp["created"] = clip.created_at
-        temp["youtube"] = clip.youtube
-        result["another_clip"].append(copy.deepcopy(temp))
-
-    result["another_course"] = []
-    for c in Course.objects.all().order_by("?"):
-        temp = {}
-        temp["id"] = c.id
-        temp["title"] = c.title
-        temp["play"] = c.total_play
-        temp["thumb"] = c.thumb
-        temp["user"] = clip.user.name
-        temp["created"] = clip.created_at
-        try:
-            temp["entry_point"] = "course/view/"+str(c.id) + "/"+ str(c.clips.all().first().id)
-        except Exception as e:
-            pass
-        temp["youtube"] = clip.youtube
-        result["another_course"].append(copy.deepcopy(temp))
-
-
-    return JsonResponse(result)
-
-
-@csrf_exempt
-def vue_get_course(request):
-    result={}
-    clip= Clip.objects.get(id=request.POST.get("clip"))
-    result["title"] = clip.title
-    result["youtube"] = clip.youtube
-    result["mov_address"] = clip.mov_address
-    result["object"] = clip.object
-    result["info"] = clip.info
-    result["play"] = clip.play
-    result["user"] = clip.user.name
-    result["created"] = clip.created_at
-    result["int"] = len(clip.additionaluserinfo_set.all())
-    result["clip_id"] = clip.id
-    result["tag"] = []
-    for t in clip.filter.all():
-        result["tag"].append(t.name)
-    result["another_clip"]=[]
-    k=1
-    for c in Course.objects.get(id=request.POST.get("id")).clips.all():
-        temp={}
-        temp["index"] = k
-        k=k+1
-        temp["id"] = c.id
-        temp["play"] = c.play
-        temp["title"] = c.title
-        result["another_clip"].append(copy.deepcopy(temp))
-
-    result["another_course"] = []
-    for c in Course.objects.all().order_by("?")[:2]:
-        temp = {}
-        temp["id"] = c.id
-        temp["title"] = c.title
-        temp["play"] = c.total_play
-        temp["thumb"] = c.thumb
-        temp["user"] = clip.user.name
-        temp["created"] = clip.created_at
-        temp["youtube"] = clip.youtube
-        result["another_course"].append(copy.deepcopy(temp))
-
-
-
-    return JsonResponse(result)
-
-
-@csrf_exempt
-def vue_get_path(request):
-    result={}
-    try:
-        clip= Clip.objects.get(id=request.POST.get("clip"))
-        result["title"] = clip.title
-        result["youtube"] = clip.youtube
-        result["mov_address"] = clip.mov_address
-        result["object"] = clip.object
-        result["info"] = clip.info
-        result["clip_id"] = clip.id
-        result["int"] = len(clip.additionaluserinfo_set.all())
-        result["play"] = clip.play
-        result["user"] = clip.user.name
-        result["created"] = clip.created_at
-
-    except Exception as e:
-        print(e)
-
-    p = Path.objects.get(id=request.POST.get("id"))
-    result["filter"] = []
-    for t in p.filter.all():
-        result["filter"].append(t.name)
-    result["path_title"] = p.title
-    result["path_rec_dur"] = p.rec_dur
-    result["path_info"] = p.info
-    result["path_object"] = p.object
-    result["total_play"] = p.total_play
-    result["course"]=[]
-    result["another_course"] = []
-
-    k = 1
-    a = 1
-    for c in Path.objects.get(id=request.POST.get("id")).course.all():
-            temp = {}
-            temp["index"] = a
-            a = a + 1
-            k = 1
-            temp["id"] = c.id
-            temp["play"] = c.total_play
-            temp["author"] = c.user.name
-            temp["created"] = c.created_at
-            temp["title"] = c.title
-            temp["info"] = c.info
-            temp["object"] = c.object
-            temp["rec_dur"] = c.rec_dur
-            temp["filter"] = []
-            for f in c.filter.all():
-                temp["filter"].append(f.name)
-
-            temp["clips"] = []
-            for clip in c.clips.all():
-                ttem = {}
-                ttem["index"] = k
-                k = k + 1
-                ttem["id"] = clip.id
-                ttem["play"] = clip.play
-                ttem["title"] = clip.title
-                ttem["info"] = clip.info
-                ttem["object"] = clip.object
-
-
-                temp["clips"].append(copy.deepcopy(ttem))
-            result["course"].append(copy.deepcopy(temp))
-            result["another_course"].append(copy.deepcopy(temp))
-
-    return JsonResponse(result)
-
-
-@csrf_exempt
-def get_startup_application(request):
-    ad_user = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    user = ad_user.user
-    st = Startup.objects.get(user_id=user.id)
-    result={}
-    result["interest"] = []
-    for inte in AdditionalUserInfo.objects.get(id=request.POST.get("id")).interest.all():
-        temp={}
-        temp["title"] = inte.title
-        temp["int"] = len(inte.additionaluserinfo_set.all())
-        if inte.recruit_size == "":
-            temp["comp"] = "없음"
-        else:
-            # temp["comp"] = len(Appliance.objects.all().filter(sb=inte)) / int(inte.recruit_size)
-            # temp["comp"] = round(temp["comp"],2)
-            temp["comp"] = str(len(Appliance.objects.all().filter(sb=inte))) + ":1"
-        temp["date"] = str(inte.apply_end).split(" ")[0]
-        temp["start"] = str(inte.apply_start).split(" ")[0]
-        temp["id"] = inte.id
-        temp["title"] = inte.title
-        temp["due"] = inte.apply_end
-        temp["short_desc"] = inte.short_desc
-        temp["tag"] = []
-        for f in inte.filter.all():
-            temp["tag"].append(f.name)
-        temp["poster"] = inte.poster
-        temp["id"] = inte.id
-
-        result["interest"].append(copy.deepcopy(temp))
-    #작성중인 지원서
-    result["writing"]=[]
-    for ap in Appliance.objects.all().filter(startup=st).filter(is_submit=False):
-        if ap.sb.apply_end > datetime.datetime.now():
-            temp = {}
-            temp["title"] = ap.sb.title
-            temp["int"] = len(ap.sb.additionaluserinfo_set.all())
-            temp["sb_id"] = ap.sb.id
-            if ap.sb.recruit_size == "":
-                temp["comp"] = "없음"
+            if len(User.objects.all().filter(username=username))  > 0:
+                return JsonResponse({"result":"pw_check"})
             else:
-                #temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
-                temp["comp"] = str(len(Appliance.objects.all().filter(sb=ap.sb)))+":1"
-            temp["date"] = str(ap.sb.apply_end).split(" ")[0]
-            temp["start"] = str(ap.sb.apply_start).split(" ")[0]
-            temp["id"] = ap.id
-            result["writing"].append(copy.deepcopy(temp))
-            # 지원완료 지원서
-    result["comp"] = []
-    for ap in Appliance.objects.all().filter(startup=st).filter(is_submit=True):
-        temp = {}
-        temp["title"] = ap.sb.title
-        temp["int"] = len(ap.sb.additionaluserinfo_set.all())
-        if ap.sb.recruit_size == "":
-            temp["comp"] = "없음"
-        else:
-            #temp["comp"] = len(Appliance.objects.all().filter(sb=ap.sb)) / int(ap.sb.recruit_size)
-            #temp["comp"] = round(temp["comp"], 2)
-            temp["comp"] = str(len(Appliance.objects.all().filter(sb=ap.sb))) + ":1"
-        temp["date"] = str(ap.sb.apply_end).split(" ")[0]
-        temp["start"] = str(ap.sb.apply_start).split(" ")[0]
-        temp["id"] = ap.id
-        temp["sb_id"]=ap.sb.id
-        result["comp"].append(copy.deepcopy(temp))
-    return JsonResponse(result)
+                return JsonResponse({"result":'0'})
 
-@csrf_exempt
-def vue_remove_service_product(request):
-    st = Startup.objects.get(user_id = AdditionalUserInfo.objects.get(id=request.POST.get("id")).user.id)
-    Service.objects.all().filter(startup=st).filter(id=request.POST.get("service_id")).delete()
-    return  JsonResponse({"result":"ok"})
-from django.core.serializers import serialize
-from django.forms.models import model_to_dict
-
-@csrf_exempt
-def vue_del_startup_news(request):
-    rjd = json.loads(request.POST.get("json_data"))
-    Activity.objects.get(id=rjd["id"]).delete()
-    return JsonResponse({"result":"ok"})
+# ------------------------------------SNS로그인 기능
 
 
 
-@csrf_exempt
-def vue_get_user_info(request):
-    ad =  AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    result={}
-    result["phone"] = ad.tel
-    result["name"] = ad.name
-    result["agreement"]= ad.agreement
-    result["email"] = ad.user.username
-    result["sns"] =ad.sns
-    return JsonResponse({"result":result})
-
-
-@csrf_exempt
-def vue_set_user_info(request):
-    ad =  AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    ad.tel = request.POST.get("phone")
-    ad.name = request.POST.get("name")
-    if request.POST.get("agreement") == "true":
-        ad.agreement = True
-    else:
-        ad.agreement = False
-    ad.sns = request.POST.get("sns")
-    ad.save()
-    print(ad.sns)
-    return JsonResponse({"result":"ok"})
-
-
-
-
-@csrf_exempt
-def get_home_info(request):
-    gr = SupportBusiness.objects.all().order_by("?")[:6]
-    result={}
-    result["sb_set"] = []
-    for g in gr:
-        team={}
-        team["title"] = g.title
-        team["due"] = g.apply_end
-        team["short_desc"] = g.short_desc
-        team["tag"]=[]
-        for f in g.filter.all():
-            team["tag"].append(f.name)
-        team["poster"]= g.poster
-        team["id"] = g.id
-        result["sb_set"].append(copy.deepcopy(team))
-    return JsonResponse(result)
-
-@csrf_exempt
-def vue_get_startup_list_sample(request):
-    st = Startup.objects.all().order_by("?")[:3]
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["name"] = s.name
-        temp_obj["short_desc"] = s.short_desc
-        temp_obj["tag"]=[]
-        temp_obj["id"]=s.id
-        temp_obj["filter"]=[]
-        for t in s.tag.all():
-            if t.name != "" and t.name != None:
-                temp_obj["tag"].append(t.name)
-        for t in s.filter.all():
-            temp_obj["filter"].append(t.name)
-
-        result.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result), safe=False)
-@csrf_exempt
-def vue_sample_list_sample(request):
-    st = Startup.objects.all().order_by("?")[:3]
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["name"] = s.name
-        temp_obj["short_desc"] = s.short_desc
-        temp_obj["tag"]=[]
-        temp_obj["id"]=s.id
-        for t in s.tag.all():
-            if t.name != "" and t.name != None:
-                temp_obj["tag"].append(t.name)
-        result.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result), safe=False)
-
-
-@csrf_exempt
-def vue_sample_list_clip(request):
-    st = Clip.objects.all().order_by("?")[:3]
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["title"] = s.title
-        temp_obj["thumb"] = s.thumb
-        temp_obj["mov_address"]=s.mov_address
-        temp_obj["youtube"]=s.youtube
-        temp_obj["created"] = s.created_at
-        temp_obj["info"] = s.info
-
-        result.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result), safe=False)
-
-@csrf_exempt
-def vue_sample_course_path(request):
-    st = Course.objects.all().order_by("?")[:3]
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["title"] = s.title
-        temp_obj["thumb"] = s.thumb
-        temp_obj["created"] = s.created_at
-        temp_obj["info"] = s.info
-
-        result.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result), safe=False)
-
-
-@csrf_exempt
-def vue_sample_path_path(request):
-    st = Course.objects.all().order_by("?")[:3]
-    result = []
-    for s in st:
-        temp_obj={}
-        temp_obj["title"] = s.title
-        temp_obj["thumb"] = s.thumb
-        temp_obj["created"] = s.created_at
-        temp_obj["info"] = s.info
-        result.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result), safe=False)
-
-@csrf_exempt
-def vue_get_statics_by_channel(request):
-    path = Path.objects.all()
-    result = {}
-    result["path"]=[]
-    for p in path:
-        temp_path={}
-        temp_path["title"] = p.title
-        temp_path["id"] = p.id
-        temp_path["course"] = []
-        for c in p.course.all():
-            temp_course = {}
-            temp_course["id"] = c.id
-
-            temp_course["title"] = c.title
-            temp_course["clip"] = []
-            for clip in c.clips.all():
-                print("why")
-                temp_clip = {}
-                temp_clip["title"] = clip.title
-                temp_clip["id"] = clip.id
-
-                temp_course["clip"].append(copy.deepcopy(temp_clip))
-            temp_path["course"].append(copy.deepcopy(temp_course))
-        result["path"].append( copy.deepcopy(temp_path))
-    return  JsonResponse(result)
-
-import requests
-import urllib.request
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업
+# 기능 : SNS 버튼으로 로그인 인증
+# 함수 완성 여부 : ㅇ
+# provider,token,url,re,header,email,provider,access_token
+# 변수 체크 여부 : py(0), VS(-), mysql(0)
+#-----------------------------------------------------------------------------------------------------------------------
+from django.contrib.auth.models import User
 @csrf_exempt
 def vue_get_sns_auth(request):
     provider = request.POST.get("provider")
     token = request.POST.get("token")
+    email = ""
+    name=""
     print(provider)
     print(token)
     if provider == "naver":
         # 접근 토큰 발급 받기
-        url = "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=MonomZR2k6j8bS3LEFvy&client_secret=J1ll08KKVd&code="+token+"&state=aaa"
+        url = "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=MonomZR2k6j8bS3LEFvy&client_secret=J1ll08KKVd&code=" + token + "&state=aaa"
         re = requests.get(url)
         print(re.text)
+        # return JsonResponse({})
         header = "Bearer " + re.json()["access_token"]  # Bearer 다음에 공백 추가
         url = "https://openapi.naver.com/v1/nid/me"
         headers = {"Authorization": header}
@@ -7685,26 +308,28 @@ def vue_get_sns_auth(request):
         re = requests.get(url)
         header = "Bearer " + token  # Bearer 다음에 공백 추가
         headers = {"Authorization": header}
-        re = requests.post(url, headers=headers,)
+        re = requests.post(url, headers=headers, )
         print(re.text)
         print(re.json()["properties"]["nickname"])
         print(re.json()["kakao_account"]["email"])
         print(re.json()["properties"]["profile_image"])
         name = re.json()["properties"]["nickname"]
-        email =re.json()["kakao_account"]["email"]
+        email = re.json()["kakao_account"]["email"]
 
-    if provider =="facebook":
-        url = "https://graph.facebook.com/v3.0/oauth/access_token?client_id=162083444444485&redirect_uri=http://gconnect.kr/login&client_secret=1916c66420a16d82b106718eaa8b0ee1&code="+token
+    if provider == "facebook":
+        url = "https://graph.facebook.com/v3.0/oauth/access_token?client_id=162083444444485&redirect_uri=http://gconnect.kr/login&client_secret=1916c66420a16d82b106718eaa8b0ee1&code=" + token
 
         re = requests.get(url)
         print(re.text)
-        print(re.json()["access_token"])
+
         access_token = re.json()["access_token"]
-        access_token = re.json()["access_token"]
-        url = "https://graph.facebook.com/debug_token?input_token="+re.json()["access_token"]+"&access_token=162083444444485|1916c66420a16d82b106718eaa8b0ee1"
+
+        url = "https://graph.facebook.com/debug_token?input_token=" + re.json()[
+            "access_token"] + "&access_token=162083444444485|1916c66420a16d82b106718eaa8b0ee1"
         re = requests.get(url)
         print(re.json()["data"]["user_id"])
-        url = "https://graph.facebook.com/"+re.json()["data"]["user_id"]+"?fields=id,name,first_name,last_name,age_range,link,gender,locale,picture,timezone,updated_time,verified,email&access_token="+access_token
+        url = "https://graph.facebook.com/" + re.json()["data"][
+            "user_id"] + "?fields=id,name,first_name,last_name,age_range,link,gender,locale,picture,timezone,updated_time,verified,email&access_token=" + access_token
         re = requests.get(url)
         print(re.json()["name"])
         name = re.json()["name"]
@@ -7713,300 +338,5178 @@ def vue_get_sns_auth(request):
             print(email)
         except:
             pass
-    # user = User.objects.create_user(email, "", "snslogin12")
-    # print(user)
-    # if user is not None:
-    #     login(request, user)
-    #
-    # user_p  = AdditionalUserInfo()
-    # user_p.user = user
-    # user_p.save()
-    # st = Startup()
-    # st.user = user
-    # st.save()
 
-    return JsonResponse({"name":name, "user_id":  189 })
+    #user = User.objects.get(email=email)
+    user, created = User.objects.get_or_create(username=email)
+
+    if created == True:
+        add = AdditionalUserInfo()
+        add.user = user
+        add.auth="USR"
+        add.save()
+        st = Startup()
+        st.repre_name = name
+        st.repre_email = email
+        st.user= user
+        st.save()
+    engine = import_module(settings.SESSION_ENGINE)
+    session = engine.SessionStore(None)
+
+    session.clear()
+    session.create()
+
+    session[SESSION_KEY] = user.id
+    print("========")
+    print(user.id)
+    session[BACKEND_SESSION_KEY] = 'django.contrib.auth.backends.ModelBackend'
+    #session[HASH_SESSION_KEY] = user.get_session_auth_hash()
+    session.save()
+
+
+
+
+    return JsonResponse({"name": name, "code":"USR" , "user_id": user.additionaluserinfo.id, "session_key":session.session_key}, safe=False)
+
+
+
+
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업유저
+# 기능 : (모든페이지) 좋아요 리스트 가져오는 함수
+# u, result
+# 함수 완성 여부 : O
+# 변수 체크 여부 : py(O), VS(O), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
+# -------------- (모든페이지) 좋아요 리스트 가져오는 함수
+@csrf_exempt
+def vue_get_all_favorite(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    u = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    result = {}
+    result["startup"] = []
+    for i in u.favorite_startup_set.all():
+        result["startup"].append(i.id)
+
+    result["support_business"] = []
+    for i in u.favorite_support_business_set.all():
+        result["support_business"].append(i.id)
+
+    result["clip"] = []
+    for i in u.favorite_clip_set.all():
+        result["clip"].append(i.id)
+
+    result["course"] = []
+    for i in u.favorite_course_set.all():
+        result["course"].append(i.id)
+
+    result["path"] = []
+    for i in u.favorite_path_set.all():
+        result["path"].append(i.id)
+
+    return JsonResponse(result, safe=False)
+
+
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업, 비 로그인 유저
+# 기능 : 지원사업 방문 기록 남기는 기능
+# target, h, id
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(O), VS(O), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
+# --------------- (모든페이지) (통계) 공고문 상세에 들어가면 방문수 카운팅  (고치기 : 변수/ 오류 수정)
+@csrf_exempt
+def hit_support_business(request):
+    target = request.POST.get("target")
+    try:
+        id = request.POST.get("id")
+        h = HitLog()
+        h.user = AdditionalUserInfo.objects.get(id=id)
+        h.support_business_id = target
+        h.save()
+    except:
+        h = HitLog()
+        h.support_business_id = target
+        h.save()
+    return JsonResponse({"result": "success"})
+
+# ------- (공통)
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 로그인한 스타트업 유저
+# 기능 : 스타트업유저가 지원사업 홈, 스타트업 리스트에서 검색시 필터 저장 기능
+# id
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def save_filter(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    print(request.POST)
+    id = json.loads(request.POST.get("gca_id"))
+
+    return JsonResponse({"result":"success"})
+#----------------------------------------------------------------------------------------------------------------------
+# <<가. 회원별 권한 설정>>
+# <목표> 회원별 권한 설정 및 보이는 페이지 정리
+#  1. 회원별 권한 설정
+#       - 기관관리자 : 매니저생성/하위 귀속 매니저의 통합통계 보기, 매니저 공고문 승인 및 블라인드, 열람(기관관리자 뷰)
+#       - 매니저 : 지원서 작성, 기관관리자에 승인요청, 지원자 선발, 통계 열람(본인이 관리하는 사업이 드롭다운드로 보인다.)
+#       - 스타트업 : 회사에 기업정보 저장_회사페이지(서비스/프로덕트, 회사소개, 비공개 정보), 지원서 화면에서 동기화되어서 보여야함.
+#                   관심담기, 지원서 제출(제출한 시점을 기준으로 json 등의 데이터 분리해서 관리할 것
+#  2. 보이는 페이지 url
+#        - index.js : 회원 권한별로 열람할 수 있는 페이지가 지정되어있다
+
+#----------------------------------------------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------------------------------------------------
+# 가. 회원별 권한 설정
+#
+#     <목표>
+#     index.js 에서 네이게이션 가드를 통해서 열람 페이지 제한
+#     그외 : 각 페이지 기능에서 유저의 code 를 검사
+#
+# 기관회원 관리 페이지. 기관 관리자 : 매니저 계정 생성
+#----------------------------------------------------------------------------------------------------------------------
+
+#-----------------<<<<<유저별 권한>>>>>---------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+# [기관관리자]
+#       1. 매니저 계정 생성
+#       2. 공고문에 대한 블라인드 처리 권한, 승인 요청한 공고문에 대한 블라인드/승인
+#       3. 전체 지원사업/ 회원 열람
+#       4. 통계 데이터 : 전체 지원사업, 매니저별 지원사업, 회원 통계, 사이트 통계
+#-----------------------------------------------------------------------------------------------------------------------
+
+# ------------(기관관리자) 매니저 계정 생성-----------------------------------------------------------------------------
+# --------[기관 회원관리, 매니저 계정 추가 ]----------------------------------------------------------------------------
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관 관리자
+# 기능 : 기관 회원관리, 매니저 계정 추가
+# add_user, mng_boss_id, mng_boss, new_user,
+# 함수 완성 여부 : 완성
+# 변수 체크 여부 : py(O), VS(O), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_add_mng_acc(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    if request.method == "POST":
+        if len(User.objects.all().filter(username=request.POST.get("id"))) == 0:
+            print(request.POST)
+            add_user = User.objects.create_user(username=request.POST.get("id"), password=request.POST.get("pw"))
+            if add_user is not None:
+
+                print(request.POST)
+                mng_boss_id=request.POST.get("mng_boss")
+                mng_boss = AdditionalUserInfo.objects.get(id=mng_boss_id)
+                new_user = AdditionalUserInfo()
+                print(User.objects.get(username=request.POST.get("id")))
+                print(type(User.objects.get(username=request.POST.get("id"))))
+                new_user.user=User.objects.get(username=request.POST.get("id"))
+
+                new_user.mng_name=request.POST.get("mng_name")
+
+                new_user.mng_kikwan=request.POST.get("mng_kikwan")
+                new_user.mng_bonbu=request.POST.get("mng_bonbu")
+                new_user.mng_team=request.POST.get("mng_team")
+                new_user.mng_position=request.POST.get("mng_position")
+                new_user.mng_tel=request.POST.get("mng_tel")
+                new_user.mng_phone=request.POST.get("mng_phone")
+                new_user.mng_email=request.POST.get("mng_email")
+                new_user.mng_boss = mng_boss
+                new_user.auth="MNG"
+                new_user.save()
+                return HttpResponse("ok")
+        else:
+            return HttpResponse("no")
+
+    return HttpResponse("")
+
+
+# --------(대시보드) '승인요청, 공고중 모집종료' 기관관리자 홈화면------------------------------------------------------
+# --------[기관관리자. 대시보드 데이터 계산하기]------------------------------------------------------------------------
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자
+# 기능 : 대시보드 데이터 계산
+# mng_list, result, end_support_business, result_end, end_set, waiting_support_business, waiting_set, result_end,
+# ing_support_business, ing_set ,
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(), VS(), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_opr_dashboard(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    mng_list = []
+    print(request.POST)
+
+    for a in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).additionaluserinfo_set.all():
+        mng_list.append(a.id)
+    result = {}
+    # 모집 마감된 공고
+    end_support_business = SupportBusiness.objects.all().filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+        support_business_author_id__in=mng_list)
+    end_set=[]
+    for support_business in end_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_id"]= support_business.id
+        result_end["opr_support_business_author_id"] = support_business.support_business_author.id
+
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))/int(support_business.support_business_recruit_size),1))
+            if number == "0.0":
+                number ="0"
+            result_end["opr_comp"] = number +" : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) )+" : 1"
+
+
+
+
+        end_set.append(copy.deepcopy(result_end))
+    # 승인 요청중인 공고
+    waiting_support_business = SupportBusiness.objects.all().filter(support_business_status="2").filter(support_business_author_id__in=mng_list)
+    waiting_set = []
+    for support_business in waiting_support_business:
+        result_end = {}
+        result_end["opr_id"] = support_business.id
+        result_end["opr_support_business_award_date_ymd"] = str(support_business.support_business_update_at_ymdt).split(" ")[0]
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+            result_end["opr_comp"] =  number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+
+        waiting_set.append(copy.deepcopy(result_end))
+
+
+    # 공고중인 공고
+    ing_support_business = SupportBusiness.objects.all().filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list)
+    ing_set = []
+    print("공고중인 공고")
+    print(ing_support_business)
+    
+    for support_business in ing_support_business:
+        result_end = {}
+        result_end["opr_id"] = support_business.id
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_support_business_author_id"] = support_business.support_business_author.id
+        result_end["opr_open_date"] = (support_business.support_business_created_at_ymdt)
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number="0"
+            result_end["opr_comp"] =  number + " : 1"
+
+        else:
+            result_end["opr_comp"] = str(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        ing_set.append(copy.deepcopy(result_end))
+    result["opr_end_set"] = end_set
+    result["opr_ing_set"] = ing_set
+    result["opr_waiting_set"] = waiting_set
+
+    return JsonResponse(result)
+
+# ------------(기관관리자) 전체 지원사업 공고문의 상태와 정보를 불러온다.---------------------(고치기 : 변수/ 오류 수정)
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자
+# 기능 : 전체 지원사업 공고문의 상태와 정보를 불러온다
+#  result, user_list, end_support_business , end_set,result_end,waiting_support_business,waiting_set,writing_support_business
+#  waiting_set, ing_support_business, ing_set, comp_support_business,comp_set, blind_support_business,blind_set,
+#  all_support_business , all_set
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(), VS(), mysql(O)
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+
+#---------------------(통계) (기관관리자) 기관 관리자가 기관회원 리스트 화면에서 하위 매니저 호출
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자
+# 기능 : 기관 관리자가 기관회원 리스트 화면에서 하위 매니저 호출
+# id, mngs, temp, m_list
+# 함수 완성 여부 :
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자
+# 기능 : 기관 관리자가 기관회원 리스트 화면에서 하위 매니저 호출
+# id, mng_acc, temp
+# 함수 완성 여부 :
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_mng_acc(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    id = request.GET.get("id")
+    mng_acc = AdditionalUserInfo.objects.get(id=id)
+    temp={}
+    temp["id"] = mng_acc.user.username
+    temp["mng_name"] = mng_acc.mng_name
+    temp["mng_kikwan"] = mng_acc.mng_kikwan
+    temp["mng_bonbu"] = mng_acc.mng_bonbu
+    temp["mng_team"] = mng_acc.mng_team
+    temp["mng_position"] = mng_acc.mng_position
+    temp["mng_tel"] = mng_acc.mng_tel
+    temp["mng_phone"] = mng_acc.mng_phone
+    temp["mng_email"] = mng_acc.mng_email
+    temp["mng_website"] = mng_acc.mng_website
+    return JsonResponse((temp), safe = False)
 
 
 @csrf_exempt
-def vue_get_startup_detail_manager(request):
-    print(request.GET.get("id"))
-    # st= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    st = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+def vue_get_support_business_by_author(request):
+    support_business = QuaterTableSupportBusiness.objects.all().filter(
+        qt_support_business_author=AdditionalUserInfo.objects.get(id=request.GET.get("author_id")))
+    if request.GET.get("support_business_status")=="ing":
+        support_business = support_business.filter(qt_support_business_status=3)
+    else:
+        support_business = support_business.exclude(qt_support_business_status=3)
+    result=[]
+    for s in support_business:
+        result.append({
+            "value":s.qt_support_business.id, "label":s.qt_support_business.support_business_name
+        })
+    return JsonResponse(result , safe=False)
+
+
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_opr_acc(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    id = request.GET.get("id")
+    mng_acc = AdditionalUserInfo.objects.get(id=id)
+    temp={}
+    temp["opr_id"] = mng_acc.user.username
+    temp["opr_mng_name"] = mng_acc.mng_name
+    temp["opr_mng_kikwan"] = mng_acc.mng_kikwan
+    temp["opr_mng_bonbu"] = mng_acc.mng_bonbu
+    temp["opr_mng_team"] = mng_acc.mng_team
+    temp["opr_mng_position"] = mng_acc.mng_position
+    temp["opr_mng_tel"] = mng_acc.mng_tel
+    temp["opr_mng_phone"] = mng_acc.mng_phone
+    temp["opr_mng_email"] = mng_acc.mng_email
+    temp["opr_mng_website"] = mng_acc.mng_website
+
+    return JsonResponse((temp), safe = False)
+
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자, 매니저
+# 기능 : 기관관리자, 매니저가 바뀐 계정정보를 저장후 업데이트할수있다.
+# id, mng_acc
+# 함수 완성 여부 :
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_set_mng_acc(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    id = request.POST.get("id")
+    mng_acc = AdditionalUserInfo.objects.get(id=id)
+    mng_acc.mng_name = request.POST.get("mng_name")
+    mng_acc.mng_kikwan = request.POST.get("mng_kikwan")
+    mng_acc.mng_bonbu= request.POST.get("mng_bonbu")
+    mng_acc.mng_team= request.POST.get("mng_team")
+    mng_acc.mng_position= request.POST.get("mng_position")
+    mng_acc.mng_tel= request.POST.get("mng_tel")
+    mng_acc.mng_phone = request.POST.get("mng_phone")
+    mng_acc.mng_email = request.POST.get("mng_email")
+    mng_acc.mng_website = request.POST.get("mng_website")
+    mng_acc.save()
+    return JsonResponse({"result":"ok"}, safe = False)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# [매니저]
+#-----------------------------------------------------------------------------------------------------------------------
+
+# ----[[매니저 홈화면 : 대시보드]]
+# --------[매니저가 로그인하고, 매니저 홈화면인, 대시보드로 이동 > 서버에서 대시보드에 데이터 나타내는 기능]----(매니저)
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 매니저,
+# 기능 : 매니저가 로그인하고, 매니저 홈화면인, 대시보드로 이동 > 서버에서 대시보드에 데이터 나타내는 기능
+# result, user_id, end_support_business, end_set, writing_support_business, ing_support_business,
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+@csrf_exempt
+def vue_get_dashboard(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
     result = {}
+    support_business_author_id = request.GET.get("gca_id")
+    #모집 마감된 공고문
+    print(datetime.datetime.now())
+    end_support_business = SupportBusiness.objects.all().filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(support_business_author_id=support_business_author_id)
+    end_set = []
+    for support_business in end_support_business:
+        result_end={}
+        result_end["id"] = support_business.id
+        result_end["author_id"] = support_business.support_business_author.id
+        result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end['support_business_poster'] = support_business.support_business_poster
 
-    result["back_img"] = st.back_img
-    result["logo"] = st.logo
-    result["homepage"] = st.website
-    result["youtube"] = st.youtube
-    result["insta"] = st.insta
-    result["facebook"] = st.facebook
-    result["tag_string"] = st.tag_string
-    result["found_date"]= st.established_date
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] =len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))/int(support_business.support_business_recruit_size),1))
+            if( number == "0.0" ):
+                number= "0"
+            result_end["comp"] = number +" : 1"
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) )+" : 1"
+        end_set.append(copy.deepcopy(result_end))
+    blind_support_business = SupportBusiness.objects.all().filter(support_business_status="6").filter(support_business_author_id=support_business_author_id)
+    blind_set = []
+    for support_business in blind_support_business:
+        result_end = {}
+        result_end["id"] = support_business.id
+        result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end['support_business_poster'] = support_business.support_business_poster
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number = "0"
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        blind_set.append(copy.deepcopy(result_end))
 
+    writing_support_business = SupportBusiness.objects.all().filter(support_business_status="1").filter(support_business_author_id=support_business_author_id)
+    writing_set = []
+    for support_business in writing_support_business:
+        result_end = {}
+        result_end["id"] = support_business.id
+        result_end["support_business_award_date_ymd"] = str(support_business.support_business_update_at_ymdt).split(" ")[0]
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end['support_business_poster'] = support_business.support_business_poster
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number = "0"
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        writing_set.append(copy.deepcopy(result_end))
+    print(timezone.now())
+    ing_support_business = SupportBusiness.objects.all().filter(support_business_status="3").filter(support_business_author_id=support_business_author_id).filter(support_business_apply_end_ymdt__gt=timezone.now())
+    ing_set = []
+    for support_business in ing_support_business:
+        print(support_business.support_business_name)
+        result_end = {}
+        result_end["id"] = support_business.id
+        result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+        result_end["author_id"] = support_business.support_business_author.id
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end['support_business_poster'] = support_business.support_business_poster
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number = "0"
+            result_end["comp"] = number + " : 1"
+
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        ing_set.append(copy.deepcopy(result_end))
+
+    result["end_set"] = end_set
+    result["blind_set"] = blind_set
+    result["writing_set"] = writing_set
+    result["ing_set"] = ing_set
+
+    return JsonResponse(result)
+
+
+# ------------ (매니저) 본인이 올린 전체 지원사업에 대해서 정보와 상태를 불러오는 함수--------(고치기 : 변수/ 오류 수정)
+# --------[지원 사업 관리 페이지, 지원사업 리스트 받아오기  ]-------
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 매니저,
+# 기능 : 지원 사업 관리 페이지, 지원사업 리스트 받아오기
+# result,user_id, end_support_business, end_set, waiting_support_business, waiting_set, writing_support_business, writing_set
+# ing_support_business , ing_set, comp_support_business, comp_set, all_support_business , all_set
+# 함수 완성 여부 : 미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_support_business_info(request):
+
+    result = {}
+    # 모집 마감된 공고문
+    support_business_author_id = request.POST.get("id")
+    #end_support_business = SupportBusiness.objects.all().filter(apply_end__lt=datetime.datetime.now()).filter(status="4").filter(user_id=user_id)
+    end_support_business = SupportBusiness.objects.all().filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+        support_business_author_id=support_business_author_id)
+
+    end_set = []
+    for support_business in end_support_business:
+        result_end = {}
+        result_end["id"] = support_business.id
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["status"] = "모집종료"
+
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number = "0"
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        end_set.append(copy.deepcopy(result_end))
+
+    waiting_support_business = SupportBusiness.objects.all().filter(support_business_status="2").filter( support_business_author_id=support_business_author_id)
+    waiting_set = []
+    for support_business in waiting_support_business:
+        result_end = {}
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["id"] = support_business.id
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["status"] = "승인대기"
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end["updated"] = support_business.support_business_update_at_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number = "0"
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        waiting_set.append(copy.deepcopy(result_end))
+
+    # #작성중인 공고
+    writing_support_business = SupportBusiness.objects.all().filter(support_business_status="1").filter(support_business_author_id=support_business_author_id)
+    writing_set = []
+    for support_business in writing_support_business:
+        result_end = {}
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["id"] = support_business.id
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["updated"] = support_business.support_business_update_at_ymdt
+
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["status"] = "작성중"
+
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number ="0"
+            result_end["comp"] =  number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        writing_set.append(copy.deepcopy(result_end))
+    #공고중인 공고
+    ing_support_business = SupportBusiness.objects.all().filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.datetime.now()).filter(
+        support_business_author_id=support_business_author_id)
+    ing_set = []
+    for support_business in ing_support_business:
+        result_end = {}
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["id"] = support_business.id
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["status"] = "공고중"
+
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number ="0"
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        ing_set.append(copy.deepcopy(result_end))
+
+    #공고 종료된 공고
+    comp_support_business = SupportBusiness.objects.all().filter(support_business_status="5").filter(support_business_apply_end_ymdt__lte=datetime.datetime.now()).filter(support_business_author_id=support_business_author_id)
+    comp_set = []
+    for support_business in comp_support_business:
+        result_end = {}
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["id"] = support_business.id
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["status"] = "공고종료"
+
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number="0"
+            result_end["comp"] = number+ " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        comp_set.append(copy.deepcopy(result_end))
+    #블라인드된 공고문
+    blind_support_business = SupportBusiness.objects.all().filter(support_business_status="6").filter(support_business_author_id= support_business_author_id)
+    blind_set = []
+    for support_business in blind_support_business:
+        result_end = {}
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["id"] = support_business.id
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["author"] = support_business.support_business_author.mng_name
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["status"] = "블라인드"
+        result_end["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number = "0"
+            result_end["comp"] = number  + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        blind_set.append(copy.deepcopy(result_end))
+
+    all_support_business = SupportBusiness.objects.all().filter(support_business_author_id=support_business_author_id)
+
+    all_set = []
+    for support_business in all_support_business:
+        result_end = {}
+        result_end["id"] = support_business.id
+        result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end['support_business_name'] = support_business.support_business_name
+        result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        try:
+            result_end["author"] = support_business.support_business_author.mng_name
+        except Exception as e:
+            print(e)
+        result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        try:
+            if support_business.support_business_status == "4":  # 작성중인 공고문
+                result_end["status"] = "모집종료"
+            if support_business.support_business_status == "1":  # 작성중인 공고문
+                result_end["status"] = "작성중"
+            if support_business.support_business_status == "2":  # 승인대기중인 공고문
+                result_end["status"] = "승인대기"
+            if support_business.support_business_status == "3":
+                result_end["status"] = "공고중"
+            if support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+                result_end["status"] = "모집종료"
+            if support_business.support_business_status == "5":  # 공고 종료 된 공고문
+                result_end["status"] = "공고종료"
+            if support_business.support_business_status == "6":  # 블라인드 공고문
+                result_end["status"] = "블라인드"
+        except Exception as e:
+            print(e)
+            print("durl")
+            result_end["status"]="작성중"
+        result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+
+            result_end["comp"] = number + " : 1"
+            pass
+        else:
+            result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        all_set.append(copy.deepcopy(result_end))
+
+
+    result["end_set"] = end_set
+    result["blind_set"] = blind_set
+    result["writing_set"] = writing_set
+    result["ing_set"] = ing_set
+    result["waiting_set"] = waiting_set
+    result["comp_set"] = comp_set
+    result["all_set"] = all_set
+
+    return JsonResponse(result)
+
+# --------(매니저) (기관관리자) 전체지원사업 관리 > 지원사업 모두 불러올 때 + 타매니저 작성 공고 포함 - (고치기 : 변수/ 오류 수정)
+# --------[공고문 리스트 가져오기,  ]-------
+
+
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : (매니저) (기관관리자)
+# 기능 : 공고문 리스트 가져오기,
+# support_business, result_set, temp, status
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_support_business_list(request):
+    support_business = SupportBusiness.objects.all().exclude(support_business_author_id=request.GET.get("gca_id"))
+    k=0
+    result_set = []
+    for s in support_business:
+        temp={}
+        temp["id"] = s.id
+        temp["index"]=k
+        k=k+1
+        temp["support_business_name"] = s.support_business_name
+        temp["support_business_created_at_ymdt"] = s.support_business_created_at_ymdt
+        temp["author"] = s.support_business_author.mng_name
+        temp["mng_team"] = s.support_business_author.mng_team
+        temp["mng_kikwan"] = s.support_business_author.mng_kikwan
+        temp["mng_tel"] = s.support_business_author.mng_tel
+        temp["apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
+        temp["award_num"] = len(Award.objects.all().filter(support_business=s))
+        status=""
+        try:
+
+            if  s.support_business_status=="1":
+                status="작성중"
+            elif s.support_business_status=="2":
+                status="승인대기중"
+            elif s.support_business_status=="3":
+                status="공고중"
+            elif s.support_business_status == "4":
+                status = "모집종료"
+            elif s.support_business_status == "5":
+                status = "공고종료"
+            elif s.support_business_status == "6":
+                status = "블라인드중"
+
+        except:
+            print("error")
+            status = ""
+        temp["status"] = status
+        print(status)
+        result_set.append(copy.deepcopy(temp))
+
+    return JsonResponse(result_set, safe=False)
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# [스타트업]
+#-----------------------------------------------------------------------------------------------------------------------
+
+@csrf_exempt
+def opr_vue_get_support_business_list(request):
+    support_business = SupportBusiness.objects.all()
+    k=0
+    result_set = []
+    for s in support_business:
+        temp={}
+        temp["opr_id"] = s.id
+        temp["opr_index"]=k
+        k=k+1
+        temp["opr_support_business_name"] = s.support_business_name
+        temp["opr_support_business_apply_start_ymd"] = s.support_business_apply_start_ymd
+        temp["opr_author"] = s.support_business_author.mng_name
+        temp["opr_mng_team"] = s.support_business_author.mng_team
+        temp["opr_mng_kikwan"] = s.support_business_author.mng_kikwan
+        temp["opr_mng_tel"] = s.support_business_author.mng_tel
+        temp["opr_apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
+        temp["opr_award_num"] = len(Award.objects.all().filter(support_business=s))
+        opr_status=""
+        try:
+
+            if  s.support_business_status=="1":
+                opr_status="작성중"
+            elif s.support_business_status=="2":
+                opr_status="승인대기중"
+            elif s.support_business_status=="3":
+                opr_status="공고중"
+            elif s.support_business_status == "4":
+                opr_status = "모집종료"
+            elif s.support_business_status == "5":
+                opr_status = "공고종료"
+            elif s.support_business_status == "6":
+                opr_status = "블라인드중"
+
+        except:
+            print("error")
+            opr_status = ""
+        temp["opr_status"] = opr_status
+        result_set.append(copy.deepcopy(temp))
+
+    return JsonResponse(result_set, safe=False)
+
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 모든 유저
+# 기능 :  '서비스/프로덕트, 기업소개, 소식' 열람하는 함수
+# result, startup, selected_company_filter_list, obj
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+#------------ (모든유저) 타 스타트업 '서비스/프로덕트, 기업소개, 소식' 열람하는 함수
+@csrf_exempt
+def vue_get_startup_detail(request):
+    print(request.GET.get("id"))
+    # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    if(request.GET.get("area")=="pub"):
+        startup = Startup.objects.get(id=request.GET.get("id"))
+    else:
+        startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    result = {}
+    result["back_img"] = startup.back_img
+    result["logo"] = startup.logo
+    result["company_website"] = startup.company_website
+    result["company_youtube"] = startup.company_youtube
+    result["company_instagram"] = startup.company_instagram
+    result["company_facebook"] = startup.company_facebook
+    result["company_keyword"] = startup.company_keyword
+    result["established_date"]= startup.established_date
+    result["company_short_desc"] = startup.company_short_desc
+    result["company_intro"] = startup.company_intro
     result["select_tag"]= []
-    for f in st.filter.all():
-        result["select_tag"].append(f.name)
-    result["startup_id"] = st.id
-    result["tel"]=st.user.additionaluserinfo.tel
-    result["name"] = st.name
-    result["repre_name"] = st.user.additionaluserinfo.name
-    # result["logo"] = st.thumbnail
-    result["short_desc"] = st.short_desc
-    result["intro_text"] = st.intro_text
-    result["information"] = {}
-    result["information"]["id"] = st.id
-    result["information"]["tag"] = []
-    for t in st.tag.all():
-        if t.name != "" and t.name != None:
-            result["information"]["tag"].append(t.name)
-    result['information']["homepage"] = st.website
-    result['information']["email"] = st.user.username
-    result["location"] = st.address_0
-    result["location2"] = st.address_detail_0
+    for f in startup.selected_company_filter_list.all():
+        result["select_tag"].append(f.filter_name)
+    result["startup_id"] = startup.id
+    result["repre_tel"]=startup.repre_tel
+    result["company_name"] = startup.company_name
+    result["company_kind"] = startup.company_kind
+    result["repre_name"] = startup.repre_name
+    result["repre_email"] = startup.user.username
+    print("here")
+    print(result["repre_email"])
+    # result["logo"] = startup.clip_thumbnail_selected_company_filter_list
 
-    try:
-        result["business_file"] = st.business_file.split("/")[-1]
-    except:
-        result["business_file"]=""
-    result["business_file_path"] = st.business_file
-    if result["business_file"] == "":
-        result["business_file"] = "파일을 업로드 하세요."
-        result["business_file_path"] = ""
+    result["information"] = {}
+    result["information"]["id"] = startup.id
+    result["information"]["tag"] = []
+    result["support_business_tag"]=[]
+    for f in startup.selected_company_filter_list.all():
+        if f.cat_0=="지원형태":
+            result["support_business_tag"].append(f.filter_name)
+    result["select_tag"]= []
+
+    for f in startup.selected_company_filter_list.all():
+        result["information"]["tag"].append(f.filter_name)
+
+    for t in startup.selected_company_filter_list.all():
+        if t.filter_name != "" and t.filter_name != None:
+            result["information"]["tag"].append(t.filter_name)
+    result['information']["company_website"] = startup.company_website
+    result["information"]["repre_email"] =  startup.user.username
+    result["address_0"] = startup.address_0
+    result["address_1"] = startup.address_1
+    result["ip_chk"] = startup.ip_chk
+    result["revenue_chk"] = startup.revenue_chk
+    result["export_chk"] = startup.export_chk
+    result["company_invest_chk"] = startup.company_invest_chk
     result["service"] = []
+
+
+
     result["tag"] = []
 
-    for f in st.filter.all():
-        result["tag"].append(f.name)
+    for f in startup.selected_company_filter_list.all():
+        result["tag"].append(f.filter_name)
 
-    for service in st.service_set.all():
+    for service  in startup.service_set.all():
         obj = {}
-        obj["intro"] = service.intro
-        obj["file"] = service.file
-        obj["file_name"] = service.file.split("/")[-1]
-        obj["name"] = service.name
-        obj["img"] = service.img
-        obj["img_name"] = service.img.split("/")[-1]
+        obj["service_intro"] = service.service_intro
+        obj["service_file"] = service.service_file
+        obj["file_name"] = service.service_file.split("/")[-1]
+        obj["service_name"] = service.service_name
+        obj["service_img"] = service.service_img
+        obj["img_name"] = service.service_img.split("/")[-1]
         obj["id"] = service.id
         result["service"].append(copy.deepcopy(obj))
-    result["history"] = []
-    for history in st.history_set.all():
+    result["company_history"] = []
+    for history in startup.history_set.all():
         obj = {}
-        obj["year"] = history.year
-        obj["month"] = history.month
-        obj["content"] = history.content
+        obj["company_history_year"] = history.company_history_year
+        obj["company_history_month"] = history.company_history_month
+        obj["company_history_content"] = history.company_history_content
         obj["id"] = history.id
-        result["history"].append(copy.deepcopy(obj))
-    result["revenue"] = []
-    for revenue in st.revenue_set.all():
-        obj = {}
-        obj["year"] = revenue.year
-        obj["num"] = revenue.size
-        obj["id"] = revenue.id
-        result["revenue"].append(copy.deepcopy(obj))
-    result["trade"] = []
-    for trade in st.tradeinfo_set.all():
-        obj = {}
-        obj["year"] = trade.year
-        obj["size"] = trade.size
-        obj["id"] = trade.id
-        result["trade"].append(copy.deepcopy(obj))
+        result["company_history"].append(copy.deepcopy(obj))
+
+    result["revenue_before_year_0"] = startup.revenue_before_year_0
+    result["revenue_before_year_1"] = startup.revenue_before_year_1
+    result["revenue_before_year_2"] = startup.revenue_before_year_2
+    result["revenue_before_0"] = startup.revenue_before_0
+    result["revenue_before_1"] = startup.revenue_before_1
+    result["revenue_before_2"] = startup.revenue_before_2
+
+
+    result["export_before_year_0"] = startup.export_before_year_0
+    result["export_before_year_1"] = startup.export_before_year_1
+    result["export_before_year_2"] = startup.export_before_year_2
+    result["export_before_0"] = startup.export_before_0
+    result["export_before_1"] = startup.export_before_1
+    result["export_before_2"] = startup.export_before_2
+    result["export_before_nation_0"] = startup.export_before_nation_0
+    result["export_before_nation_1"] = startup.export_before_nation_1
+    result["export_before_nation_2"] = startup.export_before_nation_2
+    result["attached_cert_file"]= startup.attached_cert_file
+    result["attached_ip_file"] = startup.attached_ip_file
+
+
     result["invest"] = []
-    for invest in st.fund_set.all():
+
+    for invest in startup.companyinvest_set.all():
         obj = {}
-        obj["year"] = invest.year
-        obj["size"] = invest.size
-        obj["agency"] = invest.agency
-        obj["step"] = invest.step
-        obj["currency"] = invest.currency
+        obj["company_invest_year"] = invest.company_invest_year
+        obj["company_invest_size"] = invest.company_invest_size
+        obj["company_invest_agency"] = invest.company_invest_agency
         result["invest"].append(copy.deepcopy(obj))
+
     result["news"] = []
-
-
-    for news in st.activity_set.order_by("-created_at").all():
+    for news in startup.activity_set.order_by("-company_activity_created_at").all():
         obj = {}
-        obj["date"] = news.created_at
-        obj["content"] = news.text
-        obj["img"] = news.img
-        obj["youtube"] = news.youtube
-
+        obj["company_activity_created_at"] = news.company_activity_created_at
+        obj["company_activity_text"] = news.company_activity_text
+        obj["company_activity_img"] = news.company_activity_img
+        obj["company_activity_youtube"] = news.company_activity_youtube
         obj["like_num"] = len(news.activitylike_set.all())
         obj["rep_num"] = len(news.reply_set.all())
         obj["id"] = news.id
+
         obj["rep"] = []
         for rep in news.reply_set.all():
             temp = {}
-            # temp["logo"] = rep.activity.startup.thumbnail
-            temp["content"] = rep.text
-            temp["date"] = rep.created_at
+            # temp["logo"] = rep.activity.startup.clip_thumbnail
+            temp["company_activity_text"] = rep.company_activity_text
+            temp["company_activity_created_at"] = rep.company_activity_created_at
             temp["id"] = rep.id
             obj["rep"].append(copy.deepcopy(temp))
         result["news"].append(copy.deepcopy(obj))
     print("end")
     return JsonResponse(result)
 
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : (스타트업 유저)
+# 기능 : 스타트업정보 -회사 소개 가져오기,
+# startup,result - result["back_img"],result["logo"],result["company_website"],result["company_youtube"],result["company_instagram"]
+# result["company_facebook"], result["established_date"], result["select_tag"], result["repre_tel"], result["repre_email"]
+# .result["startup_id"], result["company_name"], result["repre_name"], result["company_keyword"], result["address_0"]
+# result["address_1"], result["company_intro"], result["information"], result["information"], result["information"]["id"]
+# ,result["information"]["tag"],   result['information']["company_website"], result['information']["repre_email"] , result["location"]
+# result["service"], result["tag"] , result["company_history"],  obj["company_history_year"], obj["company_history_month"],obj["company_history_content"]
+# result["service"], result["tag"] , result["company_history"],  obj["company_history_year"], obj["company_history_month"],obj["company_history_content"]
+
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(o), VS(o), mysql(o)
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_startup_detail_base(request):
+
+    # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    result = {}
+
+    result["back_img"] = startup.back_img
+    result["logo"] = startup.logo
+    result["company_website"] = startup.company_website
+    result["company_youtube"] = startup.company_youtube
+    result["company_instagram"] = startup.company_instagram
+    result["company_facebook"] = startup.company_facebook
+    result["established_date"]= str(startup.established_date).split("T")[0]
+    result["select_tag"]= ""
+    result["repre_tel"] =startup.repre_tel
+    result["repre_email"] = startup.user.username
+    result["startup_id"] = startup.id
+    result["company_name"] = startup.company_name
+    result["repre_name"] = startup.repre_name
+    result["company_keyword"] = startup.company_keyword
+    result["company_kind"] = startup.company_kind
+
+    result["address_0"] = startup.address_0
+    result["address_1"] = startup.address_1
+    result["company_intro"] = startup.company_intro
+    result["information"] = {}
+    result["information"]["id"] = startup.id
+    result["information"]["tag"] = []
+    result['information']["company_website"] = startup.company_website
+    result['information']["repre_email"] = startup.user.username
+    try:
+        result["location"] = startup.address_0 + startup.address_1
+    except:
+        pass
+    result["service"] = []
+    result["tag"] = []
+    for f in startup.selected_company_filter_list.all():
+        result['information']["tag"].append(f.filter_name)
+    result["company_history"] = []
+    for history in startup.history_set.all():
+        obj = {}
+        obj["company_history_year"] = history.company_history_year
+        obj["company_history_month"] = history.company_history_month
+        obj["company_history_content"] = history.company_history_content
+        obj["id"] = history.id
+        result["company_history"].append(copy.deepcopy(obj))
+    result["intro_tag"] = []
+    result["select_tag"] = []
+    for f in startup.selected_company_filter_list.all():
+        if f.cat_0=="기본장르" or f.cat_0 =="영역" or f.cat_0=="조건":
+            result["intro_tag"].append(f.filter_name)
+            result["select_tag"].append(f.filter_name)
+
+    return JsonResponse(result)
+
+
+
+
+# -------- (스타트업) 회원가입]-----------------------------------------------------------------------------------------
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : (스타트업 유저 )
+# 기능 : 스타트업회원가입
+# startup,result ,form, EmailConfirmation, user,
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+@csrf_exempt
+def vue_signup(request):
+    form = LoginForm(request.POST)
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+        if form.is_valid() and \
+                        EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[
+                            0].confirmation_code == request.POST.get("confirmation_code"):
+            user = User.objects.create_user(username=form.cleaned_data["username"],
+                                            password=form.cleaned_data["password"])
+            EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[0].confirm = True
+            if user is not None:
+                AdditionalUserInfo(user=user,repre_email=form.cleaned_data["username"],  auth="USR").save()
+                Startup(user=user, repre_email=form.cleaned_data["username"], company_name="", company_short_desc="" ).save()
+                user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
+                print(user)
+                print(user.pk)
+                if user is not None:
+                    login(request, user)
+                    print("before_session_create")
+
+                    engine = import_module(settings.SESSION_ENGINE)
+                    session = engine.SessionStore(None)
+
+                    session.clear()
+                    session.create()
+
+                    session[SESSION_KEY] = user.pk
+                    print("========")
+
+                    session[BACKEND_SESSION_KEY] = 'django.contrib.auth.backends.ModelBackend'
+                    # session[HASH_SESSION_KEY] = user.get_session_auth_hash()
+                    session.save()
+
+                    print(user.id)
+                    print(session.session_key)
+
+                return JsonResponse({"result":"ok","id":user.additionaluserinfo.id, "user":"USR", "code":"USR", "session_key":session.session_key})
+            else:
+                return JsonResponse({"result":"false","message":"이미 가입"})
+        else:
+            return JsonResponse({"result": "false","message":"유효하지 않은폼"})
+
+
+
+
+# ---- (스타트업) 계정정보 ---------------------------------------------------------------------------------------------
+# --------[유저 인포메이션 정보저장]-------
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업,
+# 기능 : 유저 인포메이션 정보저장
+# ad
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+#TODO: 소셜 로그인시 네이버, 페이스북, 카카오톡  인증 여부 테이블-프로바이더 테이블 만들고 계정페이지에서 나타낼것 - 기관관,매니저 - 개인회원 페이지 연동.
+@csrf_exempt
+def vue_set_usr_info(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    ad.user.startup.repre_tel = request.POST.get("repre_tel")
+    ad.user.startup.repre_name = request.POST.get("repre_name")
+    ad.user.startup.save()
+    if request.POST.get("agreement") == True:
+        ad.agreement = True
+    else:
+        ad.agreement = False
+    ad.sns = request.POST.get("sns")
+    ad.save()
+    print(ad.sns)
+    return JsonResponse({"result": "ok"})
+
+# ---- (스타트업) db에 입력된 계정정보를 뷰단에 뿌려주는 함수
+
+# ---- (스타트업) 계정정보 ---------------------------------------------------------------------------------------------
+# --------[유저 인포메이션 정보저장]-------
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업,
+# 기능 : 유저 인포메이션 정보저장
+# result
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_usr_info(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    ad = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+
+    result = {}
+    result["repre_tel"] =  ad.user.startup.repre_tel
+    result["repre_name"] =  ad.user.startup.repre_name
+    result["agreement"] = ad.agreement
+    result["repre_email"] = ad.user.username
+    result["sns"] = ad.sns
+    return JsonResponse({"result": result})
+
+
+
+
+#---------------------(기관관리자) 스타트업 리스트를 가져와서 스타트업들에게 알람은 추가하는 DB : 기관 관리자가 승인하게되면, 해당 지원사업에 비슷한 필터를 등록한 스타트업에게 알람간다.
+
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 기관관리자,
+# 기능 : 스타트업 리스트를 가져와서 스타트업들에게 알람은 추가하는 DB
+# filter_list, a
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+def vue_get_alarm_startup(arr,msg, support_business_id):
+
+    startup_list=[]
+    filter_list = arr
+    #동일한 필터를 가진 스타트업
+    filter_startup_list = Startup.objects.filter(selected_company_filter_list__in=filter_list)
+    #좋아요를 누른 스타트업
+    favorite_additionaluser_list = AdditionalUserInfo.objects.filter(favorite=SupportBusiness.objects.get(id=support_business_id))
+    print(favorite_additionaluser_list)
+    #지원사업에 지원한 스타트업
+    apply_startup = Startup.objects.filter(appliance__support_business=SupportBusiness.objects.get(id=support_business_id))
+    print(apply_startup)
+    # for s in filter_startup_list:
+    #     if s.support_business_author.additionaluserinfo.id not in startup_list:
+    #         startup_list.append(s.support_business_author.additionaluserinfo.id)
+    for s in favorite_additionaluser_list:
+        if s.id not in startup_list:
+            startup_list.append(s.id)
+    for s in apply_startup:
+        if s.user.additionaluserinfo.id not in startup_list:
+            startup_list.append(s.user.additionaluserinfo.id)
+
+    for s in startup_list:
+        a = Alarm()
+        a.support_business_author_id = s
+        a.alarm_content = msg
+        a.user = AdditionalUserInfo.objects.get(id=s)
+        a.alarm_origin_support_business_id =  support_business_id
+        a.save()
+
+# ----------(스타트업) 스타트업의 정보가 변경되었을 때, 해당 스타트업에 좋아요 누른 '스타트업 유저'에게 알람을 준다.
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업,
+# 기능 :  스타트업의 정보가 변경되었을 때, 해당 스타트업에 좋아요 누른 '스타트업 유저'에게 알람을 준다
+# follow_users, startup_name, a
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+def vue_get_follow_startup(st_id):
+
+    follow_users = Startup.objects.get(id=st_id).additionaluserinfo_set
+    startup_name = Startup.objects.get(id=st_id).company_name
+    print("add alarm")
+    for a_follow_user in follow_users.all():
+        print("add alarm2")
+        a = Alarm()
+        a.user = a_follow_user
+        a.alarm_content = startup_name + "의 정보가 변경되었습니다"
+        a.alarm_origin_st = Startup.objects.get(id=st_id)
+        a.save()
+
+
+
+# -----(중복) : 뷰단에서 찾아서 수정/통합 후 삭제=> 함수 변경 2018-08-18T11:53:00Z
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업,
+# 기능 :  스타트업 유저의 관심 지원사업 리스트를 보여준다
+# id, ad, f, list
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+# ----------(스타트업) 모든 읽지 않은 알람 리스트 불러오기
+#-----[체크리스트]------------------------------------------------------------------------------------------------------
+# 대상 : 스타트업,
+# 기능 :  모든 읽지 않은 알람 리스트 불러오기
+# user_id, user, alarm_set,
+# 함수 완성 여부 :  미완성
+# 변수 체크 여부 : py(), VS(), mysql()
+#-----------------------------------------------------------------------------------------------------------------------
+@csrf_exempt
+def get_unread_alarm(request):
+    try:
+        user_id = request.GET.get("id")
+        user = AdditionalUserInfo.objects.get(id=user_id)
+        alarm_set = []
+        for a in Alarm.objects.filter(user=user).filter(alarm_read=False):
+            alarm_set.append({
+                "id":a.id,
+                "alarm_content":a.alarm_content,
+                "alarm_origin_support_business":a.alarm_origin_support_business_id,
+                "alarm_origin_st":a.alarm_origin_st_id,
+                "alarm_created_at":a.alarm_created_at,
+            })
+    except:
+        pass
+        return  ""
+    return JsonResponse((alarm_set), safe=False)
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 나. 기관 관리자가 매니저 회원 생성
+#       <목표>
+#       공고문을 등록할수 있는 매니저를 생성한다
+#       매니저가 쓴 공고문의 통계를 취합해서 볼수 있다.
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+# --------[기관 회원관리 - 매니저 계정 정보 조회 ]------- (기관관리자)
+@csrf_exempt
+def vue_get_opr_account(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    account_set = []
+    k=1
+    all_account_set=[]
+    for ac in  AdditionalUserInfo.objects.all().filter(mng_boss_id=request.POST.get("id")).order_by("-id"):
+        temp={}
+        temp["index"] = k
+        k=k+1
+        temp["id"] = ac.user.username
+        temp["mng_name"] = ac.mng_name
+        temp["mng_position"] = ac.mng_position
+        temp["mng_bonbu"] = ac.mng_bonbu
+        temp["mng_kikwan"] = ac.mng_kikwan
+        temp["mng_team"] = ac.mng_team
+        temp["mng_tel"] = ac.mng_tel
+        temp["mng_phone"] = ac.mng_phone
+        temp["mng_email"] = ac.mng_email
+        temp["mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        account_set.append(copy.deepcopy(temp))
+    k=1
+    for ac in AdditionalUserInfo.objects.all().filter(Q(auth="MNG")|Q(auth="OPR")|Q(auth="4")).order_by("-id"):
+        temp = {}
+        temp["index"] = k
+        k = k + 1
+        temp["id"] = ac.user.username
+        temp["mng_name"] = ac.mng_name
+        temp["mng_position"] = ac.mng_position
+        temp["mng_bonbu"] = ac.mng_bonbu
+        temp["mng_kikwan"] = ac.mng_kikwan
+        temp["mng_team"] = ac.mng_team
+        try:
+            temp["mng_sangsa"] = ac.mng_boss.mng_name
+        except:
+            temp["mng_sangsa"] = ""
+        temp["mng_tel"] = ac.mng_tel
+        temp["mng_phone"] = ac.mng_phone
+        temp["mng_email"] = ac.mng_email
+        temp["mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        all_account_set.append(copy.deepcopy(temp))
+    result={}
+    result["account_set"] = account_set
+    result["all_account_set"] = all_account_set
+
+    return  JsonResponse(result, safe=False)
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 다. 매니저 : 공고문 생성 + 지원서 양식지정
+#       <목표>
+#       매니저는 유저가 지원할수있는 공고문과 지원서 양식을 생성할수있다.
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+# --------[공고문 정보 업데이트 기능 : 공통]------------------------------------------------------------------ (매니저)
+@csrf_exempt
+def vue_set_support_business_information(request):
+    support_business = SupportBusiness.objects.get(id=request.GET.get("id"))
+    rjd = json.loads(request.POST.get("json_data"))
+    support_business.support_business_name = rjd["support_business_name"]
+    support_business.support_business_name_tag = rjd["support_business_name_tag"]
+    support_business.support_business_name_sub = rjd["support_business_name_sub"]
+    support_business.support_business_poster = rjd["support_business_poster"]
+    support_business.support_business_short_desc = rjd["support_business_short_desc"]
+    support_business.support_business_subject = rjd["support_business_subject"]
+    support_business.support_business_detail = rjd["support_business_detail"]
+    support_business.support_business_apply_start_ymd = rjd["support_business_apply_start_ymd"]
+    support_business.support_business_apply_end_ymdt = rjd["support_business_apply_end_ymdt"]
+    support_business.support_business_object = rjd["support_business_object"]
+    support_business.support_business_prefer = rjd["support_business_prefer"]
+    support_business.support_business_constraint = rjd["support_business_constraint"]
+    support_business.support_business_recruit_size = rjd["support_business_recruit_size"]
+    support_business.support_business_pro_0_choose = rjd["support_business_pro_0_choose"]
+    support_business.support_business_pro_0_start_ymd = rjd["support_business_pro_0_start_ymd"]
+    support_business.support_business_pro_0_end_ymd = rjd["support_business_pro_0_end_ymd"]
+    support_business.support_business_pro_0_open_ymd = rjd["support_business_pro_0_open_ymd"]
+    support_business.support_business_pro_0_criterion = rjd["support_business_pro_0_criterion"]
+    support_business.support_business_pro_1_choose = rjd["support_business_pro_1_choose"]
+    support_business.support_business_pro_1_start_ymd = rjd["support_business_pro_1_start_ymd"]
+    support_business.support_business_pro_1_end_ymd = rjd["support_business_pro_1_end_ymd"]
+    support_business.support_business_pro_1_open_ymd = rjd["support_business_pro_1_open_ymd"]
+    support_business.support_business_pro_1_criterion = rjd["support_business_pro_1_criterion"]
+    support_business.support_business_pro_2_choose = rjd["support_business_pro_2_choose"]
+    support_business.support_business_pro_2_start_ymd = rjd["support_business_pro_2_start_ymd"]
+    support_business.support_business_pro_2_end_ymd = rjd["support_business_pro_2_end_ymd"]
+    support_business.support_business_pro_2_open_ymd = rjd["support_business_pro_2_open_ymd"]
+    support_business.support_business_pro_2_criterion = rjd["support_business_pro_2_criterion"]
+    support_business.support_business_supply_content = rjd["support_business_supply_content"]
+    support_business.mng_support_business_step_6_etc_input = rjd["mng_support_business_step_6_etc_input"]
+    support_business.support_business_ceremony_start_ymd = rjd["support_business_ceremony_start_ymd"]
+    support_business.support_business_ceremony_end_ymd = rjd["support_business_ceremony_end_ymd"]
+    support_business.support_business_faq = rjd["support_business_faq"]
+    support_business.support_business_additional_faq = rjd["support_business_additional_faq"]
+    support_business.support_business_meta = rjd["support_business_meta"]
+    support_business.support_business_meta_0 = rjd["support_business_meta_0"]
+
+
+    return JsonResponse({"result":"ok"})
+
+
+
+import base64
+import os.path
+#-----------------------------------------------------------------------------------------------------------------------
+# --------[공고문 생성 프로세스 시작! //공고문 생성시 필터 사용: SBF 사용]----------------------------------------------
+# --------[공고문 작성 기능 (지원서 작성 첫번째 페이지, 1 페이지) : 공고문 수정하기]------- (매니저)
+# 첫번째 작성시 'new'의 동작 시점을 한단계 앞당기기 [현재 시점 : 공고문 작성 1p->2p => 변경시점 : 공고문 작성 버튼 눌렀을 때]
+# 단, 조심할 것! 매주기마다 url만 생성되고 내용이 없는 공고문은 삭제하기
+
+@csrf_exempt
+def vue_make_application(request):
+    new_support_business = SupportBusiness()
+    new_support_business.support_business_author_id = request.GET.get("gca_id")
+    new_support_business.save()
+    print(new_support_business.id)
+    return JsonResponse({"id":new_support_business.id})
+
+@csrf_exempt
+def vue_set_mng_support_business_step_1(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    if rjd["id"] != "new":
+        support_business = SupportBusiness.objects.get(id=rjd["id"])
+    else:
+        support_business = SupportBusiness()
+    print(rjd)
+    support_business.support_business_name = rjd["support_business_name"]
+    support_business.support_business_author_id = rjd["support_business_author_id"]
+    try:
+        support_business.support_business_name_tag = rjd["support_business_name_tag"]
+    except:
+        pass
+    try:
+        support_business.support_business_short_desc = rjd["support_business_short_desc"]
+    except:
+        pass
+        support_business.support_business_status = "1"
+        support_business.save()
+    if request.FILES.get('file'):
+        support_business.support_business_poster = handle_uploaded_file_poster(request.FILES['file'], str(request.FILES['file']))
+        print(os.path.exists( support_business.support_business_poster) )
+        print("exist check")
+        with open( support_business.support_business_poster, "rb") as image_file:
+            print(image_file)
+            encoded_string = base64.b64encode(image_file.read())
+        print(encoded_string)
+        print("========")
+        print(encoded_string.decode('utf-8'))
+        support_business.support_business_poster_data_url ="data:image/"+support_business.support_business_poster.split(".")[-1]+";base64,"+ encoded_string.decode('utf-8')
+    try:
+        support_business.support_business_meta_0= rjd["support_business_meta_0"]
+    except:
+        pass
+    try:
+        support_business.support_business_subject = rjd["support_business_subject"]
+    except:
+        pass
+    try:
+        support_business.support_business_detail = rjd["support_business_detail"]
+    except:
+        pass
+    print(support_business.support_business_detail)
+    try:
+        support_business.support_business_name_sub = rjd["support_business_name_sub"]
+    except:
+        pass
+    support_business.save()
+    print(support_business.id)
+    return JsonResponse({"result":support_business.id})
+
+
+# --------[공고문 내용 업데이트 기능 (지원서 작성 두번째 페이지, 2 페이지) : 공고문 수정하기]------- (매니저)
+@csrf_exempt
+def vue_set_mng_support_business_step_2(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    tag = rjd["supply_tag"]
+    support_business.support_business_status = "1"
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_0 == "지원형태":
+            support_business.selected_support_business_filter_list.remove(t)
+    for t in tag:
+        support_business.selected_support_business_filter_list.add(SupportBusinessFilter.objects.all().get(filter_name=t))
+    try:
+        support_business.support_business_supply_content = rjd["support_business_supply_content"]
+    except:
+        pass
+    support_business.save()
+    return JsonResponse({"result":"ok"})
+
+
+
+
+
+# --------[공고문 내용 업데이트 기능 (지원서 작성 세번째 페이지) 3 페이지 : 공고문 수정하기]------- (매니저)
+from django.utils import timezone
+@csrf_exempt
+def vue_set_mng_support_business_step_3(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    tag = rjd["recruit_tag"]
+
+    support_business.support_business_status = "1"
+    # 모집 분야 필터
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_0 == "기본장르" or t.cat_0 == "영역":
+            support_business.selected_support_business_filter_list.remove(t)
+    for t in tag:
+        print(t)
+        support_business.selected_support_business_filter_list.add(SupportBusinessFilter.objects.get(filter_name=t))
+
+    # 모집 조건 필터
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_0 == "조건":
+            support_business.selected_support_business_filter_list.remove(t)
+    for t in tag:
+        print(t)
+        support_business.selected_support_business_filter_list.add(SupportBusinessFilter.objects.get(filter_name=t))
+
+    if rjd["support_business_apply_start_ymd"] !="":
+        if rjd["support_business_apply_start_ymd"].split("T")[0] != "":
+            support_business.support_business_apply_start_ymd = rjd["support_business_apply_start_ymd"].split("T")[0]
+            support_business.save()
+    if rjd["support_business_apply_end_ymdt"] !="":
+        support_business.support_business_apply_end_ymdt = rjd["support_business_apply_end_ymdt"].split(".")[0]
+    print("=================================================================")
+    print(support_business.support_business_apply_start_ymd)
+    print(support_business.support_business_apply_end_ymdt)
+    print("-----------")
+
+    print(rjd["support_business_apply_start_ymd"])
+    print( rjd["support_business_apply_start_ymd"].split("T")[0])
+    print( rjd["support_business_apply_start_ymd"].split("T")[1])
+    print( rjd["support_business_apply_end_ymdt"].split("T")[0])
+    print( rjd["support_business_apply_end_ymdt"].split("T")[1])
+
+
+    print("===================================================================")
+    support_business.save()
+    try:
+        support_business.support_business_recruit_size = rjd["support_business_recruit_size"]
+    except:
+        pass
+    try:
+        support_business.support_business_prefer = rjd["support_business_prefer"]
+    except:
+        pass
+    try:
+        support_business.support_business_constraint = rjd["support_business_constraint"]
+    except:
+        pass
+
+
+
+    try:
+        support_business.mng_support_business_step_3_etc_input_mojipjogun = rjd["mng_support_business_step_3_etc_input_mojipjogun"]
+    except:
+        pass
+    try:
+        support_business.mng_support_business_step_3_etc_input_mojipgenre = rjd["mng_support_business_step_3_etc_input_mojipgenre"]
+    except:
+        pass
+
+    try:
+        if rjd["support_business_prefer_chk"] == True:
+            support_business.support_business_prefer_chk = True
+        else :
+            support_business.support_business_prefer_chk = False
+
+    except:
+        support_business.support_business_prefer_chk = False
+
+    try:
+        if rjd["support_business_constraint_chk"] == True:
+            support_business.support_business_constraint_chk = True
+        else :
+            support_business.support_business_constraint_chk = False
+    except:
+        support_business.support_business_constraint_chk = False
+
+    try:
+        support_business.support_business_update_at_ymdt = timezone.now()
+    except:
+        pass
+    support_business.save()
+    return JsonResponse({"result":"ok"})
+
+
+# --------[공고문 내용 업데이트 기능 (지원서 작성 네번째 페이지) 4 페이지 : 공고문 수정하기]------- (매니저)
+@csrf_exempt
+def vue_set_mng_support_business_step_4(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    support_business.support_business_status = "1"
+    support_business.support_business_pro_0_choose = rjd["support_business_pro_0_choose"]
+    try:
+        if rjd["support_business_pro_0_start_ymd"] !="":
+            support_business.support_business_pro_0_start_ymd = rjd["support_business_pro_0_start_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_0_end_ymd"].split("T")[0] !="":
+            support_business.support_business_pro_0_end_ymd = rjd["support_business_pro_0_end_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_0_open_ymd"] != "":
+            support_business.support_business_pro_0_open_ymd = rjd["support_business_pro_0_open_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        support_business.support_business_pro_0_criterion = rjd["support_business_pro_0_criterion"]
+    except:
+        pass
+    try:
+        support_business.support_business_pro_1_choose = rjd["support_business_pro_1_choose"]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_1_start_ymd"] != "":
+            support_business.support_business_pro_1_start_ymd = rjd["support_business_pro_1_start_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_1_end_ymd"].split("T")[0] != "":
+            support_business.support_business_pro_1_end_ymd = rjd["support_business_pro_1_end_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_1_open_ymd"] != "":
+            support_business.support_business_pro_1_open_ymd = rjd["support_business_pro_1_open_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        support_business.support_business_pro_1_criterion = rjd["support_business_pro_1_criterion"]
+    except:
+        pass
+    try:
+        support_business.support_business_pro_2_choose = rjd["support_business_pro_2_choose"]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_2_start_ymd"] != "":
+            support_business.support_business_pro_2_start_ymd = rjd["support_business_pro_2_start_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_2_end_ymd"].split("T")[0] != "":
+            support_business.support_business_pro_2_end_ymd = rjd["support_business_pro_2_end_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_pro_2_open_ymd"] != "":
+            support_business.support_business_pro_2_open_ymd = rjd["support_business_pro_2_open_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        support_business.support_business_pro_2_criterion = rjd["support_business_pro_2_criterion"]
+    except:
+        pass
+
+    support_business.save()
+    return JsonResponse({"result":"ok"})
+
+    # --------[공고문 내용 업데이트 기능 (지원서 작성 다섯번째 페이지) 5 페이지 : 공고문 수정하기]------- (매니저)
+@csrf_exempt
+def vue_set_mng_support_business_step_5(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    support_business.support_business_status = "1"
+    try:
+        support_business.support_business_meta = rjd["support_business_meta"]
+    except:
+        pass
+    try:
+
+        support_business.support_business_etc_file_title_mng = rjd["support_business_etc_file_title_mng"]
+    except:
+        pass
+
+    support_business.save();
+    return JsonResponse({"result":"ok"})
+
+
+
+    # --------[공고문 내용 업데이트 기능 (지원서 작성 여섯번째 페이지) 6 페이지 : 공고문 수정하기]------- (매니저)
+@csrf_exempt
+def vue_set_mng_support_business_step_6(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    support_business.support_business_status = "1"
+    try:
+        if rjd["support_business_ceremony_start_ymd"] != '':
+            support_business.support_business_ceremony_start_ymd = rjd["support_business_ceremony_start_ymd"].split("T")[0]
+    except:
+        pass
+    try:
+        if rjd["support_business_ceremony_end_ymd"] != '':
+            support_business.support_business_ceremony_end_ymd = rjd["support_business_ceremony_end_ymd"].split("T")[0]
+    except:
+        pass
+
+    try:
+        support_business.support_business_faq = rjd["support_business_faq"]
+    except Exception as e:
+        print(e)
+    try:
+        support_business.support_business_additional_faq = rjd["support_business_additional_faq"]
+    except Exception as e:
+        print(e)
+    try:
+        support_business.mng_support_business_step_6_etc_input = rjd["mng_support_business_step_6_etc_input"]
+    except Exception as e:
+        print(e)
+
+    if rjd["mng_support_business_step_6_etc_input_chk"] == True:
+        support_business.mng_support_business_step_6_etc_input_chk = True
+    else:
+        support_business.mng_support_business_step_6_etc_input_chk = False
+    if rjd["support_business_ceremony_chk"] == True:
+        support_business.support_business_ceremony_chk = True
+    else:
+        support_business.support_business_ceremony_chk = False
+    if  rjd["support_business_faq_chk"] == True:
+        support_business.support_business_faq_chk = True
+    else:
+        support_business.support_business_faq_chk = False
+    if rjd["support_business_additional_faq_chk"]== True:
+        support_business.support_business_additional_faq_chk = True
+    else:
+        support_business.support_business_additional_faq_chk = False
+
+    support_business.save()
+    return JsonResponse({"result":"ok"})
+
+
+
+
+    # --------[공고문 제출하기 기능 (지원서 작성 마무리) 6 페이지 : 공고문 제출하기]------- (매니저)
+@csrf_exempt
+def mng_support_business_step_7(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    id = json.loads(request.POST.get("json_data"))["id"]
+    support_business = SupportBusiness.objects.get(id=id)
+    support_business.support_business_status = "2"
+    support_business.save();
+    return JsonResponse({"result":"success"})
+
+#----------------공고문 작성/제출하기 완료!!----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 라. 기관 관리자 : 승인
+#       <목표>
+#       기관 관리자는 매니저가 작성하고 승인 요청한 공고문을 승인할 수 있다.
+#       <승인 단계>
+#           - 공고문 작성중 : 1
+#           - 승인 요청 : 2
+#           - 공고중
+#           - 모집종료 : 4
+#           - 공고종료 : 5
+#           - 블라인드 : 6
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+#------------ (기관관리자) 승인 요청된 공고문, 승인 완료된 공고문 블라인드 하기
+@csrf_exempt
+def support_business_blind(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    id =request.GET.get("id")
+    support_business = SupportBusiness.objects.get(id=id)
+    support_business.support_business_status = "6"
+    support_business.save()
+    vue_get_alarm_startup(support_business.selected_support_business_filter_list.all(),"해당 지원사업이 블라인드 처리되었습니다.",id)
+
+    return JsonResponse({"result":"success"})
+
+
+#------------ (기관관리자) 매니저가 승인요청한 공고문을 승인하기 : 승인요청(2) > 공고중(3)
+@csrf_exempt
+def support_business_open(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    id = request.GET.get("id")
+    support_business = SupportBusiness.objects.get(id=id)
+    support_business.support_business_status = "3"
+    support_business.save();
+    vue_get_alarm_startup(support_business.selected_support_business_filter_list.all(),"공고문이 등록/수정되었습니다.",id)
+    return JsonResponse({"result":"success"})
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 마. 매니저 : 지원사업 관리, 승인/ 블라인드/ 날짜별로 구분되어 모집마감, 공고종료
+#       <목표>
+#       지원사업의 단계에 따라 '지원사업 공고문'이 분류되어 리스트로 나타난다.
+#----------------------------------------------------------------------------------------------------------------------
+
+import threading
+def setInterval(func,time):
+    e = threading.Event()
+    while not e.wait(time):
+        func()
+
+def set_support_business_status():
+    print("set")
+    for support_business in SupportBusiness.objects.all():
+        try:
+            if support_business.support_business_status == "3" and support_business.support_business_apply_end_ymdt < timezone.now():
+                support_business.support_business_status = "4"
+                support_business.save()
+        except:
+            print(support_business)
+@csrf_exempt
+def set_support_business_status_trigger(request):
+    setInterval(set_support_business_status, 10)
+    return HttpResponse("")
+
+
+
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 바. 기업 정보 제대로 저장될것, 동기화 될것, -> 프로필_마이페이지(계정 관련), 스타트업 상세 페이지_서비스/프로덕트
+#       <목표>
+#        프로필_마이페이지(계정 관련), 스타트업 상세 페이지_서비스/프로덕트간 정보가 동기화 되어 화면에 나타날것
+#----------------------------------------------------------------------------------------------------------------------
+
+# ------[ 중복 그룹 2 ]----def 2개 중복-----------------------------------------------------------------------------------
+# --------[1.스타트업 정보 저장 기능, 로그인 기능]------------------------------------------------------------------
+#------------ (스타트업) 내 회사 정보 저장 : 내 기업페이지 관리
+# >> 기업 소개 페이지에서 많은 데이터 들이 접속을 하면서 사이트가 응답없음이 되어서 페이지에서 필요한 데이터만 남겨서
+# 함수를 만들었습니다.
+#-----[1/2]----
+@csrf_exempt
+def vue_update_startup_detail_base(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
+    startup = Startup.objects.get(id=rjd["startup_id"])
+
+    startup.company_website = rjd["information"]["company_website"]
+    startup.repre_email =  rjd["repre_email"]
+    startup.repre_name = rjd["repre_name"]
+    startup.repre_tel = rjd["repre_tel"]
+    startup.company_intro = rjd["company_intro"]
+    try:
+        startup.company_kind = rjd["company_kind"]
+    except:
+        pass
+    startup.company_youtube = rjd["company_youtube"]
+    startup.company_instagram = rjd["company_instagram"]
+    startup.company_keyword = rjd["company_keyword"]
+    startup.established_date = rjd["established_date"].split("T")[0]
+    startup.company_facebook = rjd["company_facebook"]
+    startup.address_0= rjd["address_0"]
+    startup.address_1 = rjd["address_1"]
+    for f in startup.selected_company_filter_list.all():
+        if f.cat_0 =="영역" or f.cat_0 =="기본장르" or f.cat_0 =="조건":
+            startup.selected_company_filter_list.remove(f)
+    for k in rjd["select_tag"]:
+        print(k)
+        startup.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=k))
+    startup.user.additionaluserinfo.save()
+    startup.save()
+    try:
+        History.objects.all().filter(startup=startup).delete()
+        for history in rjd["company_history"]:
+            if history.get("id"):
+                his = History.objects.get(id=history.get("id"))
+            else:
+                his = History()
+            try:
+                his.company_history_month = history["company_history_month"]
+            except:
+                pass
+            if history["company_history_year"] !="" or  history["company_history_content"] !="":
+                his.company_history_year = history["company_history_year"]
+                his.company_history_content = history["company_history_content"]
+                his.startup = startup
+
+                his.save()
+    except:
+        pass
+
+    startup.save()
+    vue_get_follow_startup(rjd["startup_id"])
+    return JsonResponse(
+        {"result":"ok"}
+    )
+
+@csrf_exempt
+def vue_update_startup_head_detail(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    startup = Startup.objects.get(id=rjd["startup_id"])
+    startup.company_name = rjd["company_name"]
+    startup.company_short_desc = rjd["company_short_desc"]
+
+    if request.FILES.get("back_img"):
+        startup.back_img =handle_uploaded_file_business_back(request.FILES['back_img'], str(request.FILES['back_img']),
+                                                                rjd["startup_id"])
+    if request.FILES.get("logo"):
+        startup.logo = handle_uploaded_file_service_logo(request.FILES['logo'], str(request.FILES['logo']),
+                                                     rjd["startup_id"])
+    startup.save()
+    return JsonResponse(
+        {"result":"ok"}
+    )
+
+#-----[2/2]----
+#--- (중복) 스타트업 정보 저장 >> 기업 소개 페이지를 제외한 모든 페이지의 정보 저장
+#
+@csrf_exempt
+def vue_update_startup_news_detail(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    print(request.POST)
+    rjd = json.loads(request.POST.get("json_data"))
+    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
+    startup = Startup.objects.get(id=rjd["startup_id"])
+
+
+    for act in rjd["news"]:
+        if act.get("id"):
+            activity = Activity.objects.get(id=act.get("id"))
+        else:
+            activity = Activity()
+        activity.company_activity_text = act["company_activity_text"]
+        activity.company_activity_youtube = act["company_activity_youtube"]
+        activity.startup = startup
+        try:
+            if act["company_activity_img"] == request.FILES.get("file_news").name:
+                path_news_img = handle_uploaded_file_business_file(request.FILES['file_news'], str(request.FILES['file_news']), startup.id)
+                activity.company_activity_img = path_news_img
+        except:
+            pass
+        activity.save()
+        activity_id = activity.id
+        try:
+            for rep in act["rep"]:
+                if rep.get("id"):
+                    reply = Reply.objects.get(id=rep.get("id"))
+                else:
+                    reply = Reply()
+                    reply.company_activity_author = Startup.objects.get(id=rjd["startup_id"])
+                reply.company_activity_text = rep["company_activity_text"]
+                reply.activity_id = activity_id
+                reply.save()
+        except Exception as e:
+            print(e)
+            pass
+    vue_get_follow_startup(rjd["startup_id"])
+    return JsonResponse({"result":"ok"})
+
+@csrf_exempt
+def vue_update_startup_detail(request):
+
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    print(request.POST)
+    rjd = json.loads(request.POST.get("json_data"))
+    #file_path = handle_uploaded_file(request.FILES['file'], str(request.FILES['file']), rjd["startup_id"]  )
+    startup = Startup.objects.get(id=rjd["startup_id"])
+
+    startup.company_intro =  rjd["company_intro"]
+    startup.company_website = rjd["information"]["company_website"]
+    startup.company_kind = rjd["company_kind"]
+    startup.ip_chk = rjd["ip_chk"]
+    print(rjd["ip_chk"])
+    print(startup.ip_chk)
+    startup.revenue_chk = rjd["revenue_chk"]
+    startup.export_chk = rjd["export_chk"]
+    startup.company_invest_chk = rjd["company_invest_chk"]
+
+    startup.revenue_before_0 = rjd["revenue_before_0"]
+    startup.revenue_before_1 = rjd["revenue_before_1"]
+    startup.revenue_before_2 = rjd["revenue_before_2"]
+    startup.revenue_before_year_0 = rjd["revenue_before_year_0"]
+    startup.revenue_before_year_1 = rjd["revenue_before_year_1"]
+    startup.revenue_before_year_2 = rjd["revenue_before_year_2"]
+
+    startup.export_before_0 = rjd["export_before_0"]
+    startup.export_before_1 = rjd["export_before_1"]
+    startup.export_before_2 = rjd["export_before_2"]
+
+    startup.export_before_nation_0 = rjd["export_before_nation_0"]
+    startup.export_before_nation_1 = rjd["export_before_nation_1"]
+    startup.export_before_nation_2 = rjd["export_before_nation_2"]
+
+    startup.export_before_year_0 =  rjd["export_before_year_0"]
+    startup.export_before_year_1 =  rjd["export_before_year_1"]
+    startup.export_before_year_2 =  rjd["export_before_year_2"]
+
+    try:
+        startup.attached_cert_file = handle_uploaded_file_business_file(request.FILES['attached_cert_file'], str(request.FILES['attached_cert_file']),rjd["startup_id"])
+        print(startup.attached_cert_file)
+    except Exception as e:
+        print(e)
+        pass
+    try:
+        print("ipfile")
+
+        startup.attached_ip_file =  handle_uploaded_file_business_file(request.FILES['attached_ip_file'], str(request.FILES['attached_ip_file']),rjd["startup_id"])
+        print(startup.attached_ip_file)
+    except Exception as e:
+        print(e)
+        pass
+
+    try:
+        for t in startup.selected_company_filter_list.all():
+            if t.cat_0 == "지원형태":
+                startup.selected_company_filter_list.remove(t)
+        for t in rjd["support_business_tag"]:
+            startup.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=t))
+    except Exception as e:
+        print(e)
+        pass
+    startup.address_0 = rjd["address_0"]
+    startup.repre_email = rjd["information"]["repre_email"]
+
+    try:
+        if request.FILES.get("ip__0"):
+            path = handle_uploaded_file_business_file(request.FILES['ip__0'], str(request.FILES['ip__0']), rjd["startup_id"])
+            startup.attached_ir_file = path
+        startup.save()
+    except:
+        print("예외 발생")
+        pass
+
+    CompanyInvest.objects.all().filter(startup=startup).delete()
+
+    for invest in rjd["invest"]:
+        try:
+            date = invest["company_invest_year"].split("T")[0]
+            CompanyInvest(
+                startup=startup,
+                company_invest_year = date,
+                company_invest_size=invest["company_invest_size"],
+                company_invest_agency=invest["company_invest_agency"],
+            ).save()
+        except:
+            pass
+
+    for service in rjd["service"]:
+        print(service)
+
+        if service.get("id"):
+            ser = Service.objects.get(id = service["id"])
+            ser.service_intro = service["service_intro"]
+            ser.service_name = service["service_name"]
+            try:
+                print(service["service_img"].strip())
+                print(request.FILES)
+                for key in request.FILES.keys():
+                    print("업로드 파일 이름:",end="")
+                    print(request.FILES[key].name)
+
+                    if service["service_img"].strip()  == request.FILES[key].name :
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.service_img = path
+            except Exception as e:
+                print(e)
+            try:
+                for key in request.FILES.keys():
+                    if service["file_name"].strip()  == request.FILES[key].name :
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.service_file = path
+            except Exception as e:
+                print(e)
+            ser.save()
+
+        else :
+            ser = Service()
+            try:
+                ser.service_intro = service["service_intro"]
+            except:
+                pass
+            try:
+                ser.service_name = service["service_name"]
+            except:
+                pass
+            try:
+                for key in request.FILES.keys():
+                    if service["file_name"].strip() == request.FILES[key].name:
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.service_file = path
+            except Exception as e:
+                print(e)
+            try:
+                for key in request.FILES.keys():
+                    if service["service_img"].strip() == request.FILES[key].name:
+                        path = handle_uploaded_file_service_product(request.FILES[key], str(request.FILES[key]),
+                                                                    rjd["startup_id"])
+                        ser.service_img = path
+            except Exception as e:
+                print(e)
+
+            ser.startup = startup
+            ser.save()
+
+
+    startup.save()
+
+    vue_get_follow_startup(rjd["startup_id"])
+
+
+    return JsonResponse({
+        "attached_cert_file":startup.attached_cert_file,
+        "attached_ip_file": startup.attached_ip_file
+    },safe=False)
+
+
+
+
+
+
+def handle_uploaded_file_service_product(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/service_product/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
+    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+        return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
+
+def handle_uploaded_file_business_file(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/business_file/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/business_file/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/business_file')
+    with open('media/uploads/user/'+ str(user_id) +'/company/business_file/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+        return 'media/uploads/user/'+ str(user_id) +'/company/business_file/'+filename
+
+def handle_uploaded_file_service_logo(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/logo/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
+    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+        return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
+
+def handle_uploaded_file_business_back(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/back/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/business_file/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/business_file')
+    with open('media/uploads/user/'+ str(user_id) +'/company/business_file/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+        return 'media/uploads/user/'+ str(user_id) +'/company/business_file/'+filename
+
+
+
+# --------------------------------------------- 중복 정리 시작 ----------------------------------------------------------
+
+# --------------------------------------------- 중복 정리 완료 ----------------------------------------------------------
+
+
+
+
+
+#------ (스타트업 정보 저장 완료!)--------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 사. 공고중인 지원사업을 스타트업 유저가 1. 보고 2. 관심담기, 3. 지원하기
+#       <목표>
+#       1. 공고중인 사업(i. 매니저 공고문 작성 완료 및 승인 요청, ii. 기관관리자 승인, iii. '오늘 날짜'가 시작일자와 같거나 이후인 경우, "공고중"으로 변경)
+#       2. 관심담기(로그인한 유저만 관심담기가 가능하며, 기관관리자, 매니저는 alert 창이 나타난다)
+#       3. 공고중인 지원사업의 상세 페이지의 지원하기 버튼을 통해 지원할수 있다.
+#----------------------------------------------------------------------------------------------------------------------
+
+import urllib.parse
+#------------- (스타트업) (전체) 지원사업의 카드뷰----------------------------------------------------------------------
+#-------------(스타트업) 열람할 지원사업/공고문 카드뷰를 볼 때 : 지원사업 홈
+@csrf_exempt
+def vue_home_support_business(request):
+    tag_list = urllib.parse.unquote(request.GET.get('q')).split(",")
+    result={}
+    print(tag_list)
+    result["data"]=[]
+    data=[]
+
+    for support_business in SupportBusiness.objects.all().exclude(Q(support_business_status=1)|(Q(support_business_status=2)|(Q(support_business_status=6)))):
+        obj = {}
+        obj["tag"] = []
+        obj["support_business_name"] = support_business.support_business_name
+        obj["id"] = support_business.id
+        obj["support_business_poster"] = support_business.support_business_poster
+        obj["is_favored"] = is_in_favor_list("support_business", support_business.id , request.GET.get("gca_id"))
+
+        obj["support_business_apply_end_ymdt"] = (support_business.support_business_apply_end_ymdt)
+        obj["support_business_short_desc"] = support_business.support_business_short_desc
+        obj["favorite"] =  len(support_business.additionaluserinfo_set.all())
+        obj["comp"]=""
+
+        print(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)))
+        try:
+            print(str(round(len( Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(  support_business.support_business_recruit_size), 1)) )
+        except:
+            pass
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+            obj["comp"] = number + " : 1"
+
+        else:
+            obj["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+
+
+        obj["selected_support_business_filter_list"]=[]
+        print(obj["selected_support_business_filter_list"])
+        for s in support_business.selected_support_business_filter_list.all():
+            obj["selected_support_business_filter_list"].append(s.filter_name)
+        obj["rec"]=0
+
+        for f in support_business.selected_support_business_filter_list.all():
+            obj["tag"].append(f.filter_name)
+            if f.filter_name in tag_list:
+                obj["rec"]= obj["rec"]+1
+
+
+        # if random.randrange(0,10)%2==0:
+        #     obj["img"] = img_list[random.randrange(0,9)]
+
+        result["data"].append(copy.deepcopy(obj))
+    try:
+        if gca_check_session(request) == True:
+            user_id = request.GET.get("gca_id")
+            user_startup = Startup.objects.get(user = AdditionalUserInfo.objects.get(id=user_id).user)
+            result["usr_filter"] = []
+            for f in user_startup.selected_company_filter_list.all():
+                result["usr_filter"].append(f.filter_name)
+            print(result['usr_filter'])
+    except:
+        pass
+    return JsonResponse(result)
+
+
+
+
+
+#-------------(스타트업) '이런 지원사업은 어떠세요?' 항목에 열람할 카드뷰를 볼 때 : 지원사업 상세페이지 하단
+@csrf_exempt
+def similar_support_business(request):
+    result={}
+    result["data"]=[]
+    print(request.GET.get('q'))
+
+    origin_support_business = SupportBusiness.objects.all().get(id=request.GET.get('q'))
+
+    for support_business in SupportBusiness.objects.all().filter(Q(support_business_status=3)|Q(support_business_status=4)).filter(support_business_apply_start_ymd__lte=datetime.datetime.now()).exclude(id=request.GET.get('q')):
+        obj = {}
+        obj["tag"] = []
+        obj["support_business_name"] = support_business.support_business_name
+        obj["support_business_apply_end_ymdt"] = (support_business.support_business_apply_end_ymdt)
+        obj["support_business_apply_start_ymd"] = (support_business.support_business_apply_start_ymd)
+        obj["support_business_short_desc"] = support_business.support_business_short_desc
+        obj["support_business_poster"] = support_business.support_business_poster
+        obj["comp"]=""
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number ="0"
+            obj["comp"] = number + " : 1"
+
+        else:
+            obj["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+
+        obj["favorite"] = str(len(AdditionalUserInfo.objects.filter(favorite=support_business)))
+        obj["is_favored"] = is_in_favor_list("support_business", support_business.id, request.GET.get("gca_id"))
+
+        obj["id"] = support_business.id
+        obj["sim"]=0
+        obj["selected_support_business_filter_list"]=[]
+        for f in support_business.selected_support_business_filter_list.all():
+            obj["selected_support_business_filter_list"].append(f.filter_name)
+            if f in origin_support_business.selected_support_business_filter_list.all():
+                obj["sim"]= obj["sim"]+1
+
+        # if random.randrange(0,10)%2==0:
+        #     obj["img"] = img_list[random.randrange(0,9)]
+        result["data"].append(copy.deepcopy(obj))
+        sorted(result["data"], key=lambda c:c["sim"])
+    return JsonResponse(result)
+
+
+
+# ------[ 중복 그룹 3 ]----def 2개 중복-----------------------------------------------------------------------------------
+# get_support_business_detail 으로 함수 통일
+# --------[공고문 상세 정보 페이지]-----------------------------------------------------------------------------
+
+@csrf_exempt
+def get_support_business_detail(request):
+    id = request.GET.get("id")
+    support_business = SupportBusiness.objects.all().get(id=id)
+    result = {}
+    result["support_business_name"] = support_business.support_business_name
+    result["mng_name"] = support_business.support_business_author.mng_name
+    result["mng_email"] = support_business.support_business_author.user.username
+    result["mng_tel"] = support_business.support_business_author.mng_tel
+    result["mng_id"] = support_business.support_business_author.id
+    result["support_business_id"] = support_business.id
+    result["is_favored"] = is_in_favor_list("support_business", support_business.id , request.GET.get("gca_id"))
+
+    result["kikwan"] = support_business.support_business_author.mng_kikwan
+
+    result["support_business_name_sub"] = support_business.support_business_name_sub
+
+    result["support_business_subject"] = support_business.support_business_subject
+    result["support_business_detail"] = support_business.support_business_detail
+    result["support_business_poster"] = support_business.support_business_poster
+    result["support_business_poster_data_url"] = support_business.support_business_poster_data_url
+
+    result["support_business_status"] = support_business.support_business_status
+
+
+    result["support_business_short_desc"] = support_business.support_business_short_desc
+    result["support_business_name_tag"] = support_business.support_business_name_tag
+    result["base_tag"] = []
+    result["special_tag"] = []
+    result["tag"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        result["tag"].append(t.filter_name)
+        if t.cat_0 == "기본장르":
+            result["base_tag"].append(t.filter_name)
+        if t.cat_0 == "영역":
+            result["special_tag"].append(t.filter_name)
+    result["support_business_supply_content"] = support_business.support_business_supply_content
+    result["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+    result["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+    result["support_business_object"] = support_business.support_business_object
+    result["support_business_recruit_size"] = support_business.support_business_recruit_size
+    result["support_business_prefer"] = support_business.support_business_prefer
+    result["support_business_constraint"] = support_business.support_business_constraint
+    result["support_business_prefer_chk"] = support_business.support_business_prefer_chk
+    result["support_business_constraint_chk"] = support_business.support_business_constraint_chk
+    result["support_business_pro_0_choose"] = support_business.support_business_pro_0_choose
+    result["support_business_pro_0_start_ymd"] = support_business.support_business_pro_0_start_ymd
+    result["support_business_pro_0_end_ymd"] = support_business.support_business_pro_0_end_ymd
+    result["support_business_pro_0_open_ymd"] = support_business.support_business_pro_0_open_ymd
+    result["support_business_pro_0_criterion"] = support_business.support_business_pro_0_criterion
+    result["favorite"] = len(support_business.additionaluserinfo_set.all())
+    result["comp"]=""
+    if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+        number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+        if(number =="0.0" ):
+            number = "0"
+        result["comp"] =  number + " : 1"
+
+    else:
+        result["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+
+    result["support_business_etc_file_title_mng"] = support_business.support_business_etc_file_title_mng
+    result["support_business_pro_1_choose"] = support_business.support_business_pro_1_choose
+    result["support_business_pro_1_start_ymd"] = support_business.support_business_pro_1_start_ymd
+    result["support_business_pro_1_end_ymd"] = support_business.support_business_pro_1_end_ymd
+    result["support_business_pro_1_open_ymd"] = support_business.support_business_pro_1_open_ymd
+    result["support_business_pro_1_criterion"] = support_business.support_business_pro_1_criterion
+
+    result["support_business_pro_2_choose"] = support_business.support_business_pro_2_choose
+    result["support_business_pro_2_start_ymd"] = support_business.support_business_pro_2_start_ymd
+    result["support_business_pro_2_end_ymd"] = support_business.support_business_pro_2_end_ymd
+    result["support_business_pro_2_open_ymd"] = support_business.support_business_pro_2_open_ymd
+    result["support_business_pro_2_criterion"] = support_business.support_business_pro_2_criterion
+
+    result["support_business_ceremony_start_ymd"] = support_business.support_business_ceremony_start_ymd
+    result["support_business_ceremony_end_ymd"] = support_business.support_business_ceremony_end_ymd
+
+
+    result["support_business_meta"] = support_business.support_business_meta
+    result["support_business_faq"] = support_business.support_business_faq
+    result["support_business_additional_faq"] = support_business.support_business_additional_faq
+    result["support_business_meta"] = support_business.support_business_meta
+    result["support_business_meta_0"] = support_business.support_business_meta_0
+
+    result["mng_support_business_step_6_etc_input_chk"]  = support_business.mng_support_business_step_6_etc_input_chk
+    result["support_business_ceremony_chk" ] = support_business.support_business_ceremony_chk
+    result["support_business_faq_chk" ] = support_business.support_business_faq_chk
+    result["support_business_additional_faq_chk" ] = support_business.support_business_additional_faq_chk
+    result["support_business_meta"] = support_business.support_business_meta
+
+    result["mng_support_business_step_3_etc_input_mojipjogun"] = support_business.mng_support_business_step_3_etc_input_mojipjogun
+    result["mng_support_business_step_3_etc_input_mojipgenre"] = support_business.mng_support_business_step_3_etc_input_mojipgenre
+    result["mng_support_business_step_6_etc_input"] = support_business.mng_support_business_step_6_etc_input
+    result["support_business_etc_file_title_mng"] = support_business.support_business_etc_file_title_mng
+
+    result["support_business_appliance_form"] = support_business.support_business_appliance_form
+
+    result["object_tag"]=[]
+    result["top_support_tag"]=[]
+    try:
+
+        if support_business.support_business_status == "4":  # 작성중인 공고문
+            result["status"] = "모집종료"
+        if support_business.support_business_status == "1":  # 작성중인 공고문
+            result["status"] = "작성중"
+        if support_business.support_business_status == "2":  # 승인대기중인 공고문
+            result["status"] = "승인대기"
+        if support_business.support_business_status == "3":
+            result["status"] = "공고중"
+        if support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+            result["status"] = "모집종료"
+        if support_business.support_business_status == "5":  # 공고 종료 된 공고문
+            result["status"] = "공고종료"
+        if support_business.support_business_status == "6":  # 블라인드 공고문
+            result["status"] = "블라인드"
+
+
+
+
+
+
+    except:
+        result["status"] = "작성중"
+
+
+    result["selected_support_business_filter_list"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        result["selected_support_business_filter_list"].append(t.filter_name)
+
+    result["local_tag"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_1 == "소재지":
+            result["local_tag"].append(t.filter_name)
+
+    result["kind_tag"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_1 == "기업형태":
+            result["kind_tag"].append(t.filter_name)
+
+    result["year_tag"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_1 == "업력":
+            result["year_tag"].append(t.filter_name)
+
+    result["step_tag"] = []
+    for t in support_business.selected_support_business_filter_list.all():
+        if t.cat_1 == "기업단계":
+            result["step_tag"].append(t.filter_name)
+
+
+    for t in  support_business.selected_support_business_filter_list.all():
+        if t.cat_0 == "지원형태":
+            result["top_support_tag"].append(t.filter_name)
+        else:
+            result["object_tag"].append(t.filter_name)
+
+    result["genre_filter"]=[]
+    for t in  SupportBusinessFilter.objects.all():
+        if t.cat_0 == "기본장르":
+            result["genre_filter"].append(t.filter_name)
+
+    result["conditions_location_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "소재지":
+            result["conditions_location_filter"].append(t.filter_name)
+
+    result["area_creation_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "창작":
+            result["area_creation_filter"].append(t.filter_name)
+
+    result["area_it_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "IT 관련":
+            result["area_it_filter"].append(t.filter_name)
+    result["area_manufacture_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "제조/융합 관련":
+            result["area_manufacture_filter"].append(t.filter_name)
+    result["area_founded_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "창업":
+            result["area_founded_filter"].append(t.filter_name)
+
+    
+    result["area_newbusiness_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "신규사업":
+            result["area_newbusiness_filter"].append(t.filter_name)
+
+    result["area_etc_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기타" and t.cat_0=="영역":
+            result["area_etc_filter"].append(t.filter_name)
+
+
+    result["conditions_comtype_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기업형태":
+            result["conditions_comtype_filter"].append(t.filter_name)
+    result["conditions_record_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "업력":
+            result["conditions_record_filter"].append(t.filter_name)
+    result["conditions_stage_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기업단계":
+            result["conditions_stage_filter"].append(t.filter_name)
+    result["type_cash_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "자금지원":
+            result["type_cash_filter"].append(t.filter_name)
+    result["type_invest_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "엑셀러레이팅 투자연계":
+            result["type_invest_filter"].append(t.filter_name)
+    result["type_edu_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "교육":
+            result["type_edu_filter"].append(t.filter_name)
+    result["type_market_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "판로":
+            result["type_market_filter"].append(t.filter_name)
+    result["type_network_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "네트워킹":
+            result["type_network_filter"].append(t.filter_name)
+    result["type_etc_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기타지원":
+            result["type_etc_filter"].append(t.filter_name)
+    result["type_space_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "공간지원":
+            result["type_space_filter"].append(t.filter_name)
+    result["type_pitching_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "피칭":
+            result["type_pitching_filter"].append(t.filter_name)
+
+    return JsonResponse(result, safe=False)
 
 
 @csrf_exempt
-def vue_get_startup_detail_manager_base(request):
-    print(request.GET.get("id"))
-    # st= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    st = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    result = {}
+def vue_get_filter(request):
+    result={}
 
-    result["back_img"] = st.back_img
-    result["logo"] = st.logo
-    result["homepage"] = st.website
-    result["youtube"] = st.youtube
-    result["category"] = st.category
-    result["insta"] = st.insta
-    result["facebook"] = st.facebook
-    result["found_date"]= str(st.established_date).split("T")[0]
-    result["select_tag"]= ""
-    result["tel"] =st.user.additionaluserinfo.tel
-    result["startup_id"] = st.id
-    result["name"] = st.name
-    result["repre_name"] = st.user.additionaluserinfo.name
-    result["tag_string"] = st.tag_string
-    result["location"] = st.address_0
-    result["location2"] = st.address_detail_0
-    result["short_desc"] = st.short_desc
-    result["intro_text"] = st.intro_text
-    result["information"] = {}
-    result["information"]["id"] = st.id
-    result["information"]["tag"] = []
-    for t in st.tag.all():
-        if t.name != "" and t.name != None:
-            result["information"]["tag"].append(t.name)
-    result['information']["homepage"] = st.website
-    result['information']["email"] = st.user.username
-    result["location"] = st.address_0
-    try:
-        result["business_file"] = st.business_file.split("/")[-1]
-    except:
-        result["business_file"]=""
-    result["business_file_path"] = st.business_file
-    if result["business_file"] == "":
-        result["business_file"] = "파일을 업로드 하세요."
-        result["business_file_path"] = ""
-    result["service"] = []
-    result["tag"] = []
+    result["genre_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_0 == "기본장르":
+            result["genre_filter"].append(t.filter_name)
 
-    for f in st.filter.all():
-        result["tag"].append(f.name)
+    result["conditions_location_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "소재지":
+            result["conditions_location_filter"].append(t.filter_name)
 
-    result["history"] = []
-    for history in st.history_set.all():
-        obj = {}
-        obj["year"] = history.year
-        obj["month"] = history.month
-        obj["content"] = history.content
-        obj["id"] = history.id
-        result["history"].append(copy.deepcopy(obj))
+    result["area_creation_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "창작":
+            result["area_creation_filter"].append(t.filter_name)
+
+    result["area_it_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "IT 관련":
+            result["area_it_filter"].append(t.filter_name)
+    result["area_manufacture_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "제조/융합 관련":
+            result["area_manufacture_filter"].append(t.filter_name)
+    result["area_founded_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "창업":
+            result["area_founded_filter"].append(t.filter_name)
+
+    result["area_newbusiness_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "신규사업":
+            result["area_newbusiness_filter"].append(t.filter_name)
+
+    result["area_etc_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기타" and t.cat_0 == "영역":
+            result["area_etc_filter"].append(t.filter_name)
+
+    result["conditions_comtype_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기업형태":
+            result["conditions_comtype_filter"].append(t.filter_name)
+    result["conditions_record_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "업력":
+            result["conditions_record_filter"].append(t.filter_name)
+    result["conditions_stage_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기업단계":
+            result["conditions_stage_filter"].append(t.filter_name)
+    result["type_cash_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "자금지원":
+            result["type_cash_filter"].append(t.filter_name)
+    result["type_invest_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "엑셀러레이팅 투자연계":
+            result["type_invest_filter"].append(t.filter_name)
+    result["type_edu_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "교육":
+            result["type_edu_filter"].append(t.filter_name)
+    result["type_market_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "판로":
+            result["type_market_filter"].append(t.filter_name)
+    result["type_network_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "네트워킹":
+            result["type_network_filter"].append(t.filter_name)
+    result["type_etc_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "기타지원":
+            result["type_etc_filter"].append(t.filter_name)
+    result["type_space_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "공간지원":
+            result["type_space_filter"].append(t.filter_name)
+    result["type_pitching_filter"] = []
+    for t in SupportBusinessFilter.objects.all():
+        if t.cat_1 == "피칭":
+            result["type_pitching_filter"].append(t.filter_name)
+    return JsonResponse(result, safe=False)
+
+
+#------ (스타트업) 내기업관리 페이지
+# --------[서비스/프로덕트 삭제,  ]-------
+@csrf_exempt
+def vue_remove_service_product(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    startup = Startup.objects.get(user_id = AdditionalUserInfo.objects.get(id=request.POST.get("id")).user.id)
+    Service.objects.all().filter(startup=startup).filter(id=request.POST.get("service_id")).delete()
+    return  JsonResponse({"result":"ok"})
+from django.core.serializers import serialize
+from django.forms.models import model_to_dict
+
+
+# ------[ 중복 그룹 4]----def 2개 중복-----------------------------------------------------------------------------------
+#-----[1/2]----
+# --------[뉴스 삭제 하기]-------
+@csrf_exempt
+def vue_del_startup_news(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    Activity.objects.get(id=rjd["id"]).delete()
+    return JsonResponse({"result":"ok"})
 
 
 
-    print("end")
+
+# ------------ (스타트업) 지원서 작성 페이지에 들어갔을 때 '지원사업 제목'만 가져오는 함수 : 스타트업 지원하기
+@csrf_exempt
+def vue_get_support_business_name(request):
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
+    temp = {}
+    temp["support_business_name"] = support_business.support_business_name
+    temp["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+    temp["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+    temp["support_business_pro_0_open_ymd"] = support_business.support_business_pro_0_open_ymd
+
+    temp["comp"]=""
+
+
+    if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+        number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+        if number == "0.0":
+            number ="0"
+        temp["comp"] = number + " : 1"
+
+    else:
+        temp["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+    return JsonResponse(temp, safe=False)
+
+
+
+
+
+#---- 지원사업 지원시 정보 불러오기는 다음 프로세스에 있음
+
+# --------- 좋아요---------------------------------------------------------------------------------------------------
+#------------(스타트업) 유저가 '지원사업' 하트를 눌렀을 때, 관심지원사업 리스트에 토글 : 관심지원사업 리스트
+
+# --------[관심사업  토글 ]-------
+
+
+
+# ------------(스타트업) 유저가 '지원사업' 하트를 눌렀을 때, 관심 지원 사업 리스트에 토글 : 관심 기업 리스트
+# --------[관심 기업 토글 ]-------
+
+
+
+
+@csrf_exempt
+def toggle_from_favorite_log(request):
+    user_id = request.GET.get("gca_id")
+    user  = AdditionalUserInfo.objects.get(id=user_id)
+    result=""
+    if request.GET.get("target")=="support_business":
+        support_business = SupportBusiness.objects.get(id=request.GET.get(id))
+        if len(FavoriteLog.objects.filter(support_business=support_business).filter(user=user))>0:
+            FavoriteLog.objects.filter(support_business=support_business).filter(user=user).delete()
+            result="remove"
+        else:
+            fav_log = FavoriteLog()
+            fav_log.support_business = support_business
+            fav_log.user = user
+            fav_log.save()
+            result="save"
+    if request.GET.get("target") == "startup":
+        startup = Startup.objects.get(id=request.GET.get(id))
+        if len(FavoriteLog.objects.filter(startup=startup).filter(user=user)) > 0:
+            FavoriteLog.objects.filter(startup=startup).filter(user=user).delete()
+            result="remove"
+        else:
+            fav_log = FavoriteLog()
+            fav_log.startup = startup
+            fav_log.user = user
+            fav_log.save()
+            result ="save"
+    if request.GET.get("target") == "clip":
+        clip = Clip.objects.get(id=request.GET.get(id))
+        if len(FavoriteLog.objects.filter(clip=clip).filter(user=user)) > 0:
+            FavoriteLog.objects.filter(clip=clip).filter(user=user).delete()
+            result="remove"
+        else:
+            fav_log = FavoriteLog()
+            fav_log.clip = clip
+            fav_log.user = user
+            fav_log.save()
+            result="save"
+    if request.GET.get("target") == "course":
+        course = Course.objects.get(id=request.GET.get(id))
+        if len(FavoriteLog.objects.filter(course=course).filter(user=user)) > 0:
+            FavoriteLog.objects.filter(course=course).filter(user=user).delete()
+            result="remove"
+        else:
+            fav_log = FavoriteLog()
+            fav_log.course = course
+            fav_log.user = user
+            fav_log.save()
+            result="save"
+    if request.GET.get("target") == "path":
+        path = Path.objects.get(id=request.GET.get(id))
+        if len(FavoriteLog.objects.filter(path=path).filter(user=user)) > 0:
+            FavoriteLog.objects.filter(path=path).filter(user=user).delete()
+            result="delete"
+        else:
+            fav_log = FavoriteLog()
+            fav_log.path = path
+            fav_log.user = user
+            fav_log.save()
+            result="remove"
+    return  JsonResponse({"result":result})
+
+@csrf_exempt
+def get_usr_favored_data(request):
+
+    ad = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+    # 해당 유저의 관심 지원사업
+    fav_support_business = FavoriteLog.objects.all().filter(user=ad).exclude(support_business=None)
+    favorite_support_business=[]
+    for fav in fav_support_business:
+        favorite_support_business.append(fav.support_business_id)
+    # 해당 유저의 관심 스타트업
+    fav_startup = FavoriteLog.objects.all().filter(user=ad).exclude(startup=None)
+    favorite_startup = []
+    for fav in fav_startup:
+        favorite_startup.append(fav.startup_id)
+    #해당 유저의 관심 강좌
+    fav_clip = FavoriteLog.objects.all().filter(user=ad).exclude(clip=None)
+    favorite_clip = []
+    for fav in fav_clip:
+        favorite_clip.append(fav.clip_id)
+    #해당 유저의 관심 코스
+    fav_course = FavoriteLog.objects.all().filter(user=ad).exclude(course=None)
+    favorite_course = []
+    for fav in fav_course:
+        favorite_course.append(fav.course_id)
+    #해당 유저의 관심 패스
+    fav_path = FavoriteLog.objects.all().filter(user=ad).exclude(path=None)
+    favorite_path = []
+    for fav in fav_path:
+        favorite_path.append(fav.path_id)
+    result={}
+    result["favorite_support_business"] = copy.deepcopy(favorite_support_business)
+    result["favorite_startup"] = copy.deepcopy(favorite_startup)
+    result["favorite_clip"] = copy.deepcopy(favorite_clip)
+    result["favorite_course"] = copy.deepcopy(favorite_course)
+    result["favorite_path"] = copy.deepcopy(favorite_path)
     return JsonResponse(result)
+
+
+
+
+# ------------(스타트업) 유저가 본인이 하트 누른'관심 기업'을 관심 기업 리스트에 데이터 가져오기 : 관심 기업 리스트
+# --------[관심 기업 리스트 가져오기]-------
+@csrf_exempt
+def vue_my_favorite_set(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    user_id = request.POST.get("id")
+    return JsonResponse(list(AdditionalUserInfo.objects.get(id= request.GET.get("gca_id")).favorite_startup.all().values("id")), safe=False)
+
+
+
+
+
+#-------------- (스타트업) '스타트업 소식'에 좋아요 눌렀을 때 동작
 
 @csrf_exempt
 def vue_set_activity_like(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
     id = request.POST.get("id")
     target = request.POST.get("k")
     ta = ActivityLike.objects.get_or_create(user=AdditionalUserInfo.objects.get(id=id), activity=Activity.objects.get(id=target))
+    return JsonResponse({"result":"ok"})
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 아. 스타트업 유저가 공고중인 지원사업에 지원시 원소스 파일에서 (프로필_마이페이지+스타트업 상세페이지 + 비공개 정보) 따와진 정보가 채워지기
+#    // 지원서 db 와는 별개임
+#       <목표>
+#       기본적으로 '기업페이지 관리'에 있는 내용중 해당되는 내용이 있으면 불러와진다.
+#       "마이페이지>기업소개텝>기업정보 테이블 > 관련태그" 에서 불러와진다.
+#       기업페이지의 필터에서 불러와진다.
+#       변경시, 기업페이지 필터도 변경된다.
+#       매출액, 수출액, 투자 유치내역 - 기업페이지의 매출액 인풋 창에서 불러와짐
+#       첨부서류 : 지적 재산권의 경우, 추가하기 버튼을 통해 입력창을 추가하거나, 우측x 표시로 삭제가능
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+#//------------ (스타트업) 유저가 지원서 작성 시, 기업정보 불러오기 : 채워넣을 공간에 정보를 채워넣기_스타트업이 기업페이지관리에 등록한 정보
+# --------[0 . 지원서 정보 등록 최초 지원서 db에 생성 기능 : 지원하기 클릭시 ]------------------------------------------
+# # --------[맨처음 지원하기 눌렀을때, 최초 지원서 생성 기능]-----------------------------------------------------------
+### !!!! todo 지원서 db에 생성하는 시점은 '지원하기' 버튼 클릭시 (현재는 첫번째 프로세스에서 두번째 프로세스 넘어갈때로 추정 > 아직 코드 못찾음
+# @csrf_exempt
+# def vue_set_application(request):
+#     print(request.body)
+#     rjd=json.loads(request.body.decode('utf-8'))
+#     print(rjd)
+#     print(",".join(rjd["meta"]))
+#     id= rjd["id"]
+#
+#     support_business = SupportBusiness.objects.get(id=id)
+#     support_business.meta = ",".join(rjd["meta"])
+#     print(support_business.meta)
+#     support_business.status=2
+#     support_business.confirm_count = support_business.confirm_count+1;
+#     support_business.save()
+#     return JsonResponse({"result":"ok"})
+#
+# def handle_uploaded_file_poster(file, filename):
+#     print('media/uploads/poster/')
+#     if not os.path.exists('media/uploads/poster/'):
+#         os.makedirs('media/uploads/poster')
+#     with open('media/uploads/poster/' + filename, 'wb+') as destination:
+#         for chunk in file.chunks():
+#             destination.write(chunk)
+#             return 'media/uploads/poster/'+filename
+
+
+
+
+# --------[1 . 지원서 정보 등록 > 스타트업 정보 업데이트 ]--------------------------------------------------------------
+# ------------(스타트업) 지원서에 첫번째 페이지 작성한 것을 기준으로 스타트업 정보를 업데이트
+@csrf_exempt
+def vue_update_startup_with_application_1(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    app = Appliance.objects.get(id=rjd["id"])
+    app.company_name = rjd["company_name"]
+
+    for k in app.selected_company_filter_list.all():
+        if k.cat_1 =="기업형태":
+            k.delete()
+    for kind in SupportBusinessFilter.objects.all():
+        if kind.cat_1 == "기업 형태" and rjd["company_kind"] == kind.filter_name :
+            app.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=rjd["company_kind"]))
+    app.company_kind = rjd["company_kind"]
+
+
+    try:
+        app.established_date = rjd["established_date"].split("T")[0]
+        # startup.established_date =  rjd["established_date"].split("T")[0]
+    except Exception as e:
+        print(e)
+        print("================================")
+        pass
+    # startup.address_0 = rjd["address_0"]
+    # startup.address_1 = rjd["address_1"]
+    # startup.repre_name = rjd["repre_name"]
+    # startup.repre_tel = rjd["repre_tel"]
+    # startup.repre_name = rjd["repre_name"]
+    # startup.repre_tel = rjd["repre_tel"]
+    # startup.repre_email = rjd["repre_email"]
+    # startup.save()
+
+    app.address_0 = rjd["address_0"]
+    app.address_1 = rjd["address_1"]
+    app.repre_name = rjd["repre_name"]
+    app.repre_tel = rjd["repre_tel"]
+    app.repre_email = rjd["repre_email"]
+    app.mark_name = rjd["mark_name"]
+    app.mark_tel = rjd["mark_tel"]
+    app.mark_email = rjd["mark_email"]
+    app.save()
+
 
     return JsonResponse({"result":"ok"})
 
 
+# --------[2. 지원서 정보 등록 > 스타트업 정보 업데이트 ]-----------------------------------------------------------------------------
+# ------------(스타트업) 지원서에 두번째 페이지 작성한 것을 기준으로 스타트업 정보를 업데이트
 @csrf_exempt
-def vue_get_grant_detail(request):
-    sp = SupportBusiness.objects.get(id=request.GET.get("id"))
-    ap = len(Appliance.objects.all().filter(sb=sp))
-    if sp.recruit_size == 0 or sp.recruit_size == None or sp.recruit_size =="":
-        comp="없음"
+def vue_update_startup_with_application_2(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    app = Appliance.objects.get(id=rjd["id"])
+    print(rjd)
+    for r in app.selected_company_filter_list.all():
+        if r.cat_0 == "기본장르" or r.cat_0 =="영역":
+            app.selected_company_filter_list.remove(r)
+
+
+
+    for t in rjd["base_filter"]:
+        try:
+            app.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=t))
+        except Exception as e:
+            print(e)
+            pass
+
+
+    for t in rjd["special_filter"]:
+
+        try:
+            app.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=t))
+        except Exception as e:
+            print(e)
+            pass
+
+    app.company_keyword = rjd["company_keyword"]
+    app.save()
+
+
+    for ap_service in app.applianceservice_set.all():
+        ap_service.delete()
+
+    print(app.applianceservice_set.all())
+    for service in rjd["service"]:
+        try:
+            if service["id"]:
+                tr = ApplianceService.objects.get(id=service["id"])
+            else:
+                tr = ApplianceService()
+        except:
+            tr = ApplianceService()
+        tr.service_name = service["service_name"]
+        tr.service_intro = service["service_intro"]
+        tr.startup = app.startup
+        tr.appliance = app
+        tr.save()
+    print(app.applianceservice_set.all())
+
+    return JsonResponse({"result":"ok"})
+
+
+
+
+#(지금업무중)
+# --------[3. 지원서 정보 등록 > 스타트업 정보 업데이트 ]-----------------------------------------------------------------------------
+# ------------(스타트업) 지원서에 세번째 페이지 작성한 것을 기준으로 스타트업 정보를 업데이트
+@csrf_exempt
+def vue_update_startup_with_application_3(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    app = Appliance.objects.get(id=rjd["id"])
+    app.company_youtube = rjd["company_youtube"]
+    app.company_instagram = rjd["company_instagram"]
+    app.company_facebook = rjd["company_facebook"]
+    app.company_website = rjd["company_website"]
+    app.company_total_employee = rjd["company_total_employee"]
+    app.company_hold_employee = rjd["company_hold_employee"]
+    app.company_assurance_employee = rjd["company_assurance_employee"]
+    app.revenue_before_0 = rjd["revenue_before_0"]
+    app.revenue_before_1 = rjd["revenue_before_1"]
+    app.revenue_before_2 = rjd["revenue_before_2"]
+
+    app.export_before_0 = rjd["export_before_0"]
+    app.export_before_1 = rjd["export_before_1"]
+    app.export_before_2 = rjd["export_before_2"]
+    app.export_before_nation_0 = rjd["export_before_nation_0"]
+    app.export_before_nation_1 = rjd["export_before_nation_1"]
+    app.export_before_nation_2 = rjd["export_before_nation_2"]
+
+    ApplianceInvest.objects.filter(applicance=app).delete()
+    for inv in rjd["invest"]:
+        iv = ApplianceInvest()
+        iv.applicance = app
+        iv.company_invest_agency = inv["company_invest_agency"]
+        iv.company_invest_size = inv["company_invest_size"]
+        iv.company_invest_year = inv["company_invest_year"]
+        iv.save()
+    app.save()
+
+
+    return JsonResponse({"result":"success"})
+
+
+
+# --------[4. 지원서 정보 등록 > 스타트업 정보 업데이트 ]-----------------------------------------------------------------------------
+# ------------(스타트업) 지원서에 네번째 페이지 작성한 것을 기준으로 스타트업 정보를 업데이트
+@csrf_exempt
+def vue_update_startup_with_application_4(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    print("=====")
+    print(rjd["company_history"])
+    print("=======")
+    print(rjd["company_intro"])
+    app = Appliance.objects.get(id=rjd["id"])
+    app.company_intro = rjd["company_intro"]
+    app.save()
+    ApplianceHistory.objects.all().filter(appliance=app).delete()
+    print("***************")
+    print(rjd["company_history"])
+    for h in rjd["company_history"]:
+        print("루프 몇번 도니")
+        print(h)
+        history = ApplianceHistory()
+        history.appliance = app
+        history.company_history_year = h["company_history_year"]
+        history.company_history_content = h["company_history_content"]
+        history.save()
+
+
+    return JsonResponse({"result":"ok"})
+
+
+
+
+def decode_base64(data):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data += b'='* (4 - missing_padding)
+    return base64.decodebytes(data)
+
+@csrf_exempt
+def vue_update_startup_with_application_6(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    app = Appliance.objects.get(id=rjd["id"])
+    startup = Startup.objects.get(id=rjd["st_id"])
+
+    try:
+        if request.FILES["attached_ir_file"]:
+            # startup.attached_ir_file = handle_uploaded_file_right(request.FILES["attached_ir_file"], str(request.FILES["attached_ir_file"]), startup.id)
+            # startup.save()
+            app.attached_ir_file = handle_uploaded_file_right(request.FILES["attached_ir_file"], str(request.FILES["attached_ir_file"]), startup.id)
+            app.save()
+    except Exception as e:
+         print(e)
+    try:
+        if request.FILES["attached_cert_file"]:
+            # startup.attached_cert_file = handle_uploaded_file_right(request.FILES["attached_cert_file"], str(request.FILES["attached_cert_file"]), startup.id)
+            # startup.save()
+            app.attached_cert_file = handle_uploaded_file_right(request.FILES["attached_cert_file"], str(request.FILES["attached_cert_file"]), startup.id)
+            app.save()
+    except Exception as e:
+         print(e)
+
+    try:
+        if request.FILES["attached_tax_file"]:
+            # startup.attached_tax_file = handle_uploaded_file_right(request.FILES["attached_tax_file"],
+            #                                                         str(request.FILES["attached_tax_file"]),
+            #                                                         startup.id)
+            # startup.save()
+            app.attached_tax_file = handle_uploaded_file_right(request.FILES["attached_tax_file"],
+                                                                str(request.FILES["attached_tax_file"]), startup.id)
+            app.save()
+    except Exception as e:
+        print(e)
+
+    try:
+        if request.FILES["attached_fund_file"]:
+            # startup.attached_fund_file = handle_uploaded_file_right(request.FILES["attached_fund_file"],
+            #                                                         str(request.FILES["attached_fund_file"]),
+            #                                                         startup.id)
+            # startup.save()
+            app.attached_fund_file = handle_uploaded_file_right(request.FILES["attached_fund_file"],
+                                                                str(request.FILES["attached_fund_file"]), startup.id)
+            app.save()
+    except Exception as e:
+        print(e)
+
+    try:
+        if request.FILES["attached_ppt_file"]:
+            # startup.attached_ppt_file = handle_uploaded_file_right(request.FILES["attached_ppt_file"],
+            #                                                         str(request.FILES["attached_ppt_file"]),
+            #                                                         startup.id)
+            # startup.save()
+            app.attached_ppt_file = handle_uploaded_file_right(request.FILES["attached_ppt_file"],
+                                                                str(request.FILES["attached_ppt_file"]), startup.id)
+            app.save()
+    except Exception as e:
+        print(e)
+
+    try:
+        if request.FILES["attached_etc_file"]:
+            # startup.attached_etc_file = handle_uploaded_file_right(request.FILES["attached_etc_file"],
+            #                                                         str(request.FILES["attached_etc_file"]),
+            #                                                         startup.id)
+            # startup.save()
+            app.attached_etc_file = handle_uploaded_file_right(request.FILES["attached_etc_file"],
+                                                                str(request.FILES["attached_etc_file"]), startup.id)
+            app.save()
+    except Exception as e:
+        print(e)
+
+    try:
+        if request.FILES["attached_ip_file"]:
+            # startup.attached_ip_file = handle_uploaded_file_right(request.FILES["attached_ip_file"],
+            #                                                         str(request.FILES["attached_ip_file"]),
+            #                                                         startup.id)
+            # startup.save()
+            app.attached_ip_file = handle_uploaded_file_right(request.FILES["attached_ip_file"],
+                                                                str(request.FILES["attached_ip_file"]), startup.id)
+            app.save()
+    except Exception as e:
+        print(e)
+
+    return JsonResponse({"result":"ok"})
+
+
+
+#--- 여러 파일 업로드 창 만들기, 지재권 여러파일 등록하기
+def handle_uploaded_file_right(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/service_product/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/service_product/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/service_product')
+    with open('media/uploads/user/'+ str(user_id) +'/company/service_product/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+        return 'media/uploads/user/'+ str(user_id) +'/company/service_product/'+filename
+
+
+# --------(스타트업) 지원서 불러오기 : 지원서 작성완료 후/제출하기 누르기 전, 미리보기----------------------------------
+# --------[스타트업 지원서 불러오기 기능]-----------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_application(request):
+    startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
+    app, created = Appliance.objects.get_or_create(startup=startup, support_business=support_business)
+    result={}
+    result["id"] = app.id
+    result["st_id"]= startup.id
+    result["support_business_id"] = support_business.id
+    result["support_business_appliance_form"] = support_business.support_business_appliance_form
+    result["support_business_meta"] = support_business.support_business_meta
+
+    result["address_0"] = startup.address_0 if app.address_0 == "" else app.address_0
+    result["address_1"] = startup.address_1 if app.address_1 == "" else app.address_1
+
+    result["company_name"] = startup.company_name
+
+    result["established_date"] = startup.established_date  if app.established_date == "" or  app.established_date  == None else  app.established_date
+    result["repre_name"] = startup.repre_name if app.repre_name == "" or  app.repre_name  == None else  app.repre_name
+    result["repre_tel"] = startup.repre_tel if app.repre_tel == "" or app.repre_tel == None else app.repre_tel
+    result["repre_email"] = startup.user.username
+
+    result["mark_name"] = startup.mark_name if app.mark_name =="" or app.mark_name == None else app.mark_name
+    result["mark_email"] = startup.mark_email if app.mark_email =="" or  app.mark_email == None else app.mark_email
+    result["mark_tel"] = startup.mark_tel if app.mark_tel =="" or app.mark_tel == None else app.mark_tel
+    result["company_website"] = startup.company_website if app.company_website == "" or app.company_website == None else app.company_website
+
+    result["company_youtube"] = startup.company_youtube if app.company_youtube=="" or app.company_youtube==None else app.company_youtube
+    result["company_instagram"] = startup.company_instagram if app.company_instagram ==None or app.company_instagram =="" else app.company_instagram
+    result["company_facebook"] = startup.company_facebook if app.company_facebook=="" or app.company_facebook==None else app.company_facebook
+    result["company_kind"] = startup.company_kind if app.company_kind=="" or app.company_kind==None else app.company_kind
+
+    result["company_keyword"] = startup.company_keyword  if app.company_keyword=="" or app.company_keyword==None else app.company_keyword
+    print(startup.company_keyword)
+    print(result["company_keyword"])
+
+    result["attached_ir_file"] = startup.attached_ir_file  if app.attached_ir_file =="" or app.attached_ir_file==None else app.attached_ir_file
+    result["attached_cert_file"] = startup.attached_cert_file  if app.attached_cert_file =="" or app.attached_cert_file==None else  app.attached_cert_file
+    result["attached_tax_file"] = startup.attached_tax_file  if app.attached_tax_file =="" or app.attached_tax_file==None else  app.attached_tax_file
+    result["attached_fund_file"] = startup.attached_fund_file  if app.attached_fund_file =="" or app.attached_fund_file==None else  app.attached_fund_file
+    result["attached_ppt_file"] = startup.attached_ppt_file  if app.attached_ppt_file =="" or app.attached_ppt_file==None else  app.attached_ppt_file
+    result["attached_etc_file"] = startup.attached_etc_file  if app.attached_etc_file =="" or app.attached_etc_file==None else  app.attached_etc_file
+    result["attached_ip_file"] = startup.attached_ip_file  if app.attached_ip_file =="" or app.attached_ip_file==None else  app.attached_ip_file
+
+
+    result["company_total_employee"] = 0 if app.company_total_employee ==None or app.company_total_employee =="" else app.company_total_employee
+    result["company_hold_employee"] = 0 if app.company_hold_employee == None or  app.company_hold_employee == "" else app.company_hold_employee
+    result["company_assurance_employee"] = 0 if app.company_assurance_employee == None or app.company_assurance_employee == "" else  app.company_assurance_employee
+
+    result["revenue_before_0"] = startup.revenue_before_0 if app.revenue_before_0 == "None" or app.revenue_before_0=="" else app.revenue_before_0
+    result[
+        "revenue_before_1"] = startup.revenue_before_1 if app.revenue_before_1 == "None" or app.revenue_before_1 == "" else app.revenue_before_1
+    result[
+        "revenue_before_2"] = startup.revenue_before_2 if app.revenue_before_2 == "None" or app.revenue_before_2 == "" else app.revenue_before_2
+
+    result[
+        "revenue_before_year_0"] = 2017
+    result[
+        "revenue_before_year_1"] = 2016
+    result[
+        "revenue_before_year_2"] = 2015
+
+    result[
+        "export_before_0"] = startup.export_before_0 if app.export_before_0 == "None" or app.export_before_0 == "" else app.export_before_0
+    result[
+        "export_before_1"] = startup.export_before_1 if app.export_before_1 == "None" or app.export_before_1 == "" else app.export_before_1
+    result[
+        "export_before_2"] = startup.export_before_2 if app.export_before_2 == "None" or app.export_before_2 == "" else app.export_before_2
+
+
+
+    result[
+        "export_before_year_0"] = 2017
+    result[
+        "export_before_year_1"] = 2016
+    result[
+        "export_before_year_2"] = 2015
+
+
+
+
+    result[
+        "export_before_nation_0"] = startup.export_before_nation_0 if app.export_before_nation_0 == "None" or app.export_before_nation_0 == "" else app.export_before_nation_0
+    result[
+        "export_before_nation_1"] = startup.export_before_nation_1 if app.export_before_nation_1 == "None" or app.export_before_nation_1 == "" else app.export_before_nation_1
+    result[
+        "export_before_nation_2"] = startup.export_before_nation_2 if app.export_before_nation_2 == "None" or app.export_before_nation_2 == "" else app.export_before_nation_2
+
+    result["company_intro"] = startup.company_intro if app.company_intro==None or app.company_intro=="" else app.company_intro
+    result["company_history"] = []
+    if len(app.appliancehistory_set.all()) == 0 :
+        for t in startup.history_set.all():
+            result["company_history"].append({
+                "company_history_year": t.company_history_year,
+                "company_history_content": t.company_history_content,
+                "id": t.id,
+            })
     else:
-        print(sp.recruit_size)
-        comp =  str(round(int(ap)/int(sp.recruit_size),2))+":1"
+        for t in app.appliancehistory_set.all():
+            result["company_history"].append({
+                "company_history_year": t.company_history_year,
+                "company_history_content": t.company_history_content,
+                "id": t.id,
+            })
 
-    view = len(HitLog.objects.all().filter(sb=sp))
-    inte = len(sp.additionaluserinfo_set.all())
 
-    return JsonResponse({"result": serialize('json',[sp,]),"comp":comp , "view":view,"int":inte,"ap":ap })
+    result["invest"] = []
+    print(app.applianceinvest_set)
+    if len(app.applianceinvest_set.all()) ==0:
+        for inv in startup.companyinvest_set.all():
+            result["invest"].append({
+                "company_invest_year":inv.company_invest_year,
+                "company_invest_size": inv.company_invest_size,
+                "company_invest_agency": inv.company_invest_agency,
+            })
+    else:
+        for inv in app.applianceinvest_set.all():
+            result["invest"].append({
+                "company_invest_year": inv.company_invest_year,
+                "company_invest_size": inv.company_invest_size,
+                "company_invest_agency": inv.company_invest_agency,
+            })
 
+    result["tag"]=[]
+    # for f in app.filter.all():
+    #     result["tag"].append(f.filter_name)
+    #
+    # result["company_intro"] = startup.company_intro
+    result["base_filter"] = []
+    result["special_filter"] = []
+
+    area_filter=[]
+    for t in app.selected_company_filter_list.all():
+        if t.cat_0 == "기본장르" or t.cat_0=="영역":
+            area_filter.append(t.filter_name)
+    if len(area_filter) == 0:
+        for t in startup.selected_company_filter_list.all():
+            if t.cat_0 =="기본장르":
+                result["base_filter"].append(t.filter_name)
+            elif t.cat_0 =="영역":
+                result["special_filter"].append(t.filter_name)
+    else:
+        for t in app.selected_company_filter_list.all():
+            if t.cat_0 == "기본장르":
+                result["base_filter"].append(t.filter_name)
+            elif t.cat_0 == "영역":
+                result["special_filter"].append(t.filter_name)
+
+
+    result["service"] = []
+
+    if len(app.applianceservice_set.all()) ==0 :
+        for s in startup.service_set.all():
+            result["service"].append({"service_name":s.service_name,"service_intro":s.service_intro ,"id":s.id})
+    else:
+        for s in app.applianceservice_set.all():
+            result["service"].append({"service_name": s.service_name, "service_intro": s.service_intro, "id": s.id})
+
+    return JsonResponse(result, )
+
+
+# --------(스타트업) 작성완료한 지원서 제출하기-------------------------------------------------------------------------
+# --------[스타트업 지원서 제출하기]-----------------------------------------------------------------------------
+@csrf_exempt
+def vue_submit_application(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    print(request.GET)
+    id = request.GET.get("id")
+    gr = request.GET.get("support_business")
+    support_business = SupportBusiness.objects.get(id=gr)
+    startup = AdditionalUserInfo.objects.get(id=id).user.startup
+    app = Appliance.objects.get(support_business=support_business, startup=startup)
+    filter_list = []
+    for a_filter in app.selected_company_filter_list.all():
+        filter_list.append( SupportBusinessFilter.objects.get(id=a_filter.id).filter_name )
+    app.raw_filter_list = ",".join(filter_list)
+    app.is_submit = True
+    app.appliance_update_at_ymdt = timezone.now()
+    app.save()
+    support_business_application = SupportBusinessApplicant()
+    support_business_application.applicant_support_business = support_business
+    support_business_application.applicant_usr = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+    support_business_application.save()
+    for filter in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).user.startup.selected_company_filter_list.all():
+        try:
+            support_business_application.applicant_usr_filter( FilterForStatics.objects.get(filter_name=filter.filter_name) )
+        except:
+            pass
+
+    # tds, flag = LineGraphTable.objects.get_or_create(linegraph_date=datetime.datetime.today())
+    # tds.linegraph_applicant = tds.linegraph_applicant + 1
+    # tds.save()
+
+
+
+
+
+    return JsonResponse({"result":"success"})
+@csrf_exempt
+def vue_submit_support_business(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    support_business = SupportBusiness.objects.get(id=request.POST.get("id"))
+    support_business.support_business_appliance_form = request.POST.get("meta")
+
+    support_business.support_business_status=2
+    support_business.save();
+    return JsonResponse({"result":"ok"})
+
+# --------(스타트업) "작성중인 지원서/ 지원완료/공고종료" : 지원사업 관리 페이지
+# --------[스타트업 지원서 불러오기 ]-------
+@csrf_exempt
+def get_startup_application(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    print("???")
+    ad_user = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    user = ad_user.user
+    startup = Startup.objects.get(user_id=user.id)
+    result={}
+
+
+    #작성중인 지원서
+    result["writing"]=[]
+    print(timezone.now())
+    for ap in Appliance.objects.all().filter(startup=startup).filter(is_submit=False):
+        print(ap.support_business.support_business_apply_end_ymdt)
+        try:
+
+            if ap.support_business.support_business_apply_end_ymdt > timezone.now():
+                temp = {}
+                temp["support_business_name"] = ap.support_business.support_business_name
+                temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
+                temp["support_business_id"] = ap.support_business.id
+                temp["support_business_poster"] = ap.support_business.support_business_poster
+                temp["support_business_apply_start_ymd"] = ap.support_business.support_business_apply_start_ymd
+                temp["support_business_apply_end_ymdt"] = ap.support_business.support_business_apply_end_ymdt
+                if ap.support_business.support_business_recruit_size == "" or  ap.support_business.support_business_recruit_size== "0" :
+                    temp["comp"] =  str(len(Appliance.objects.all().filter(support_business=favorite_list).filter(is_submit=True))) +" : 1"
+                else:
+                    #temp["comp"] = len(Appliance.objects.all().filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
+                    number = str(round( (len(Appliance.objects.all().filter(support_business=favorite_list).filter(is_submit=True)))/favorite_list.support_business_recruit_size ,1 ) )
+                    if number == "0.0":
+                        number ="0"
+                    temp["comp"] = numbere + " : 1"
+
+
+                temp["date"] = str(ap.support_business.support_business_pro_0_end_ymd).split(" ")[0]
+                temp["start"] = str(ap.support_business.support_business_apply_start_ymd).split(" ")[0]
+                temp["id"] = ap.id
+                result["writing"].append(copy.deepcopy(temp))
+                # 지원완료 지원서
+        except:
+            pass
+    result["comp"] = []
+    for ap in Appliance.objects.all().filter(startup=startup).filter(is_submit=True):
+        temp = {}
+        temp["support_business_name"] = ap.support_business.support_business_name
+        temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
+        if ap.support_business.support_business_recruit_size == "" or ap.support_business.support_business_recruit_size == "0":
+            temp["comp"] = str(
+                len(Appliance.objects.all().filter(support_business=ap.startup).filter(is_submit=True))) + " : 1"
+        else:
+            # temp["comp"] = len(Appliance.objects.all().filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
+            number = str( round((len(Appliance.objects.all().filter(support_business=ap.support_business).filter(
+                is_submit=True))) / int(ap.support_business.support_business_recruit_size), 1) )
+            if number == "0.0":
+                number ="0"
+            temp["comp"] = number + " : 1"
+        temp["date"] = str(ap.support_business.support_business_pro_0_end_ymd).split(" ")[0]
+        temp["start"] = str(ap.support_business.support_business_pro_0_start_ymd).split(" ")[0]
+        temp["support_business_apply_start_ymd"] = ap.support_business.support_business_apply_start_ymd
+        temp["support_business_poster"] = ap.support_business.support_business_poster
+        temp["support_business_apply_end_ymdt"] = ap.support_business.support_business_apply_end_ymdt
+        temp["id"] = ap.id
+        temp["support_business_id"]=ap.support_business.id
+        result["comp"].append(copy.deepcopy(temp))
+    return JsonResponse(result)
+
+
+
+
+# # 해당 지원사업에 좋아요를 누른모든 스타트업 유저 목록을 반환한다.
+# def vue_get_favorite_to_support_business(request):
+#     support_business = SupportBusiness.objects.get(id=request.POST.get("id"))
+#     user = AdditionalUserInfo.objects.all().filter(favorite)
+#TODO: 스타트업 정보 입력 업무 후에 진행할것.
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 자. 매니저가 모집기간이  종료되면 공고 상태 변경 '공고중 > 모집마감'
+#       <목표>
+#       1. 공고문의 상태가 변경(공고중>모집마감)
+#       2. 대시보드에서 알람이 뜬다
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 차. 매니저: 선정자 선택시 공고 상태 변경 '모집마감 > 공고종료'
+#       <목표>
+#       1. 선정자 선택이 가능하다.
+#       2. '선정자를 선택'하면 공고 상태가 변경된다. '모집마감 > 공고 종료'
+#----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+#------ (매니저) 지원사업 관리페이지 : 스타트업 리스트가 나타나게 해주는 함수 / 선정 대상자 리스트업
+@csrf_exempt
+def vue_get_support_business_appliance(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
+    ap = Appliance.objects.all().filter(support_business=support_business).filter(is_submit=True)
+    k=1
+    result = []
+    for a in ap :
+        temp={}
+        temp["index"] = k
+        k=k+1
+        temp["company_name"] = a.company_name
+        temp["company_kind"] = a.company_kind
+        temp["id"] = a.id
+        temp["repre_name"] = a.repre_name
+        temp["repre_email"] = a.repre_email
+
+        temp["repre_tel"] = a.repre_tel
+        temp["appliance_update_at_ymdt"] = a.appliance_update_at_ymdt
+        temp["down_path"] = a.id
+        result.append(copy.deepcopy(temp))
+        print(temp)
+    print(result)
+    return JsonResponse(result,safe=False)
+
+# --------(매니저) 선정자 선택 함수
+@csrf_exempt
+def vue_set_awarded(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    support_business_id = request.GET.get("support_business_id")
+    ap_id_list = request.GET.get("ap_id").split(",")
+    for ap in ap_id_list:
+        r_ap = Appliance.objects.get(id=ap)
+        win,save = Award.objects.get_or_create(support_business_id=support_business_id, startup=r_ap.startup)
+        win.save()
+        support_business_award = SupportBusinessAwarded()
+        support_business_award.awarded_support_business_id = support_business_id
+        support_business_award.awarded_usr = r_ap.startup.user.additionaluserinfo
+        for filter in r_ap.startup.user.startup.selected_company_filter_list.all():
+            try:
+                support_business_award.awarded_usr_filter.add(FilterForStatics.objects.get(filter_name=filter.filter_name))
+            except:
+                pass
+    support_business = SupportBusiness.objects.get(id= support_business_id)
+    support_business.support_business_status="5"
+    support_business.save()
+    vue_get_alarm_startup(support_business.selected_support_business_filter_list.all(), "지원사업 선정자가 선정되었습니다.", id)
+
+
+
+
+
+
+
+    return JsonResponse({"result":"success"})
+
+# --------(매니저) 선정자 선택후 공고 상태 변경 '모집마감(4) > 공고 종료(5)'
+@csrf_exempt
+def support_business_end(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    id = json.loads(request.POST.get("json_data"))["id"]
+    support_business = SupportBusiness.objects.get(id=id)
+    support_business.status = 5
+    support_business.save();
+
+
+# ------[ 중복 그룹 5 ]----def 3개 중복-----------------------------------------------------------------------------------
+#------------<분류다시할것> (매니저) 유저가 제출한 지원서+파일 -> zipfile로 만들어주고 다운해줌, 현재 지원서는 작동안함: 매니저/기관관리자 지원사업관리 페이지
+#-------- (선생님) 파일 다운로드, 엑셀 다운로드 이런 양식으로 해라------------------------------------------------------
+@csrf_exempt
+def downloadit(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    response = HttpResponse(request.POST.get("data"), content_type='application/force-download')
+    response['Content-Disposition'] = 'attachment; filename="{}"'.format(request.POST.get("filename"))
+    return response
+#-------------------------------------------------
+#-----[1/3]----
+@csrf_exempt
+def appliance_all_download(request, support_business):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    ap_list = Appliance.objects.filter(support_business_id=support_business)
+    zip_file_name = "%s.zip" % (
+        str(ap_list[0].support_business.apply_end).split("-")[
+            0] + "_" + ap_list[0].support_business.title)
+    s = io.BytesIO()
+    zf = ZipFile(s, "w")
+    for ap in ap_list[4:5]:
+        zip_subdir = "applicance"
+        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].support_business_id) + "/" + str(ap.id)
+        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
+        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
+        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
+            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
+            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
+            time.sleep(1)
+        if ap.business_file != "":
+            fdir, fname = os.path.split(ap.business_file.path)
+            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
+            zf.write(ap.business_file.path, zip_path)
+        if ap.attached_fund_file != "":
+            fdir, fname = os.path.split(ap.attached_fund_file.path)
+            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
+            zf.write(ap.attached_fund_file.path, zip_path)
+        if ap.attached_etc_file != "":
+            fdir, fname = os.path.split(ap.attached_etc_file.path)
+            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
+            zf.write(ap.attached_etc_file.path, zip_path)
+        if ap.ir_file != "":
+            fdir, fname = os.path.split(ap.ir_file.path)
+            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
+            zf.write(ap.ir_file.path, zip_path)
+        if ap.attached_ppt_file != "":
+            fdir, fname = os.path.split(ap.attached_ppt_file.path)
+            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
+            zf.write(ap.attached_ppt_file.path, zip_path)
+        if ap.attached_tax_file != "":
+            fdir, fname = os.path.split(ap.attached_tax_file.path)
+            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
+            zf.write(ap.attached_tax_file.path, zip_path)
+    f = io.BytesIO()
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("지원자 리스트")
+    sheet.write(0, 0, "순서")
+    sheet.write(0, 1, "기업명")
+    sheet.write(0, 2, "업종")
+    sheet.write(0, 3, "대표자명")
+    sheet.write(0, 4, "사업자 등록번호")
+    sheet.write(0, 5, "이메일")
+    sheet.write(0, 6, "대표 전화번호")
+    sheet.write(0, 7, "필터")
+    k = 1
+    for a in ap_list:
+        sheet.write(k, 0, k)
+        sheet.write(k, 1, a.startup.company_name)
+        sheet.write(k, 2, a.startup.company_kind)
+        sheet.write(k, 3, a.startup.repre_name)
+        sheet.write(k, 4, Appliance.objects.all().filter(support_business_id=support_business).filter(startup_id=a.startup.id))
+        sheet.write(k, 5, a.startup.repre_email)
+        sheet.write(k, 6, a.startup.repre_tel)
+        filter_list = a.startup.filter.all()
+        f_arr = []
+        for fil in filter_list:
+            f_arr.append(fil.filter_name)
+        sheet.write(k, 7, ",".join(f_arr))
+        k = k + 1
+    book.save(f)
+    out_content = f.getvalue()
+    zf.writestr("전체 리스트.xls", f.getvalue())
+
+    zf.close()
+
+    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_file_name, safe='')
+    return resp
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 카. 통계 그래프 만들기!
+# 하기(1, 2번 정보) 정보들중
+#       A 섹션 통계 그래프 만들기,
+#           1. 클릭수, 관심담기, 지원자수, 카운팅해서,
+#
+#       B 섹션 그래프 만들기(파이그래프)
+#           2. 기업의 정보를 태그 기준으로 추출/ 정리후 카운팅해서
+#----------------------------------------------------------------------------------------------------------------------
+
+# --------(통계) (기관관리자) 기관회원 조회 > 소속회원 보기
+# --------[기관관리자 - 매니저에 따른 지원사업 가져오기 ]-------
 
 @csrf_exempt
-def vue_get_manager_list(request):
+def vue_get_mng_list(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
     id = request.POST.get("id")
-    managers = AdditionalUserInfo.objects.get(id=id).additionaluserinfo_set.all()
+    mngs = AdditionalUserInfo.objects.get(id=id).additionaluserinfo_set.all()
     m_list= []
-    for m in managers:
+    for m in mngs:
         temp={}
         temp["id"] = m.id
-        temp["name"] = m.name
-        temp["grant"] =[]
-        for s in SupportBusiness.objects.all().filter(user=m):
+        temp["mng_name"] = m.mng_name
+        temp["support_business"] =[]
+        for s in SupportBusiness.objects.all().filter(support_business_author=m):
             ttem={}
-            ttem["title"] = s.title
+            ttem["support_business_name"] = s.support_business_name
             ttem["id"] = s.id
-            temp["grant"].append(copy.deepcopy(ttem))
-
+            temp["support_business"].append(copy.deepcopy(ttem))
         m_list.append(copy.deepcopy(temp))
     return JsonResponse(m_list, safe = False)
 
+
+
+
+# ------[ 중복 그룹 6 ]----def 3개 중복-----------------------------------------------------------------------------------
+# --------(통계) 전체 지원사업 통계
+# 통계 홈화면에서 맨처음에 드롭다운으로 원하는 '지원사업' 통계를 선택해서 보여주는 함수
+#-----중복 [1/3]----
+# --------[전체 통계, 매니저, 기관관리자.]-----------------------------------------------------------------------------
+
+
+#---- (중복 2/3) 약간 (중복)
+# --------(리스트) (매니저) 해당 매니저의 전체 지원사업 통계를 계산해주는 함수
+# 전체 지원사업 통계에서 아무것도 선택하지 않았을 때, 전체라고 가정하고 통계를 보여주는 화면 // 현재 홈화면임
+# --------[매니저 통계 페이지, 상세 지원사업 통계 데이터 추출 기관 관리자, 매니저 지원사업 통계 페이지에서 호출  ]------
+# def view_last_cron_stat_txt():
+#     file_content2="/tmp/cron_stat.txt"
+#     return file_content2
+#
+# def cron_stat():
+#     result=""
+#     #for all id
+#
+#            url1="localhost:890/get_static_info/id="+id
+#            #url2=
+#            #url3=
+#
+#     return HttpResponse(result)
 @csrf_exempt
-def vue_get_grant_ttl(request):
-    sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
-    temp={}
-    temp["title"] = sb.title
-    temp["start"] = sb.apply_start
-    temp["end"] = sb.apply_end
-    temp["pro_0_open"]= sb.pro_0_end
-    if sb.recruit_size =="" or  sb.recruit_size == None or  sb.recruit_size ==0:
-        temp["comp"] = "없음"
-    else:
+def get_static_info_from_stattable(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
 
-        temp["comp"] = str(round(len(Appliance.objects.all().filter(sb=sb))/int(sb.recruit_size),2) ) +":1"
+    my_id = request.GET.get("stat_user_id")
+    my_stat_page= request.GET.get("stat_page")
+
+    st = StatTable.objects.all().filter(stat_user_id=my_id).filter(stat_page=my_stat_page).order_by("-stat_timestamp")[0]
+
+    result = st.stat_json
+    return HttpResponse(result)
+
+def date_range(start_date, end_date):
+    for ordinal in range(start_date.toordinal(), end_date.toordinal()):
+        yield datetime.date.fromordinal(ordinal)
 
 
-    return  JsonResponse(temp, safe=False)
+
+
+import requests
+def cron_stat(request):
+
+    for add in  AdditionalUserInfo.objects.all().filter(auth="MNG"):
+        url="http://13.209.21.165:890/get_static_info/?id="+add.id
+    return JsonResponse({"result":"true"})
+
+def filter_categorizing(filter_list):
+    comtype_filter=[]
+    location_filter=[]
+    genre_filter=[]
+    area_filter=[]
+    local
+    for filter in filter_list:
+        if filter.cat_1 == "기업형태":
+            comtype_filter.append(filter.filter_name)
+            kind = filter.filter_name
+        if filter.cat_1 == "소재지":
+            location_filter.append(filter.filter_name)
+        if filter.cat_0 == "기본장르":
+            genre_filter.append(filter.filter_name)
+        if filter.cat_0 == "영역":
+            area_filter.append(filter.filter_name)
+
 
 
 @csrf_exempt
-def toggle_int_clip(request):
-    clip = Clip.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    if clip in ad.interest_clip.all():
-        ad.interest_clip.remove(clip)
-    else:
-        ad.interest_clip.add(clip)
-    return JsonResponse({"result":"ok"})
+def get_support_business_static(request):
+    result={}
+    support_business_id = request.GET.get("support_business_id")
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    support_business_author_id = request.GET.get("support_business_author")
+    result["support_business_min_date"] =  str(SupportBusiness.objects.get(id=support_business_id).support_business_update_at_ymdt).split(" ")[0]
+    # 지원사업의 승인된 날짜부터 기산한다.
+
+    #  (특정)매니저가 올린 (특정)지원사업의 해당 지원사업의 방문 데이터
+    support_business_detail_hit_date_ymd=[]
+    support_business_detail_hit=[]
+    for date_dict in  HitLog.objects.all().filter(support_business_id=support_business_id).values("date").order_by("-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_date_ymd :
+            support_business_detail_hit_date_ymd.append(date_dict["date"])
+    for date in  support_business_detail_hit_date_ymd:
+        support_business_detail_hit.append(
+            {
+                "date":date, "number":len(HitLog.objects.all().filter(support_business_id= support_business_id).filter(date=date))
+            }
+        )
+    result["support_business_detail_hit"] = support_business_detail_hit
+
+    startup_list = []
+    for hit_startup in HitLog.objects.all().filter(support_business=support_business).values("user").distinct():
+
+        try:
+            startup_list.append( Startup.objects.get(user= AdditionalUserInfo.objects.get(id=hit_startup["user"]).user))
+        except:
+            pass
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter =[]
+    hit_area_filter = []
+    result["hit_startup_list"]=[]
+    k=1
+    for startup in startup_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 =="기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 =="소재지":
+                hit_location_filter.append(filter.filter_name)
+            if filter.cat_0 =="기본장르":
+                hit_genre_filter.append(filter.filter_name)
+            if filter.cat_0 =="영역":
+                hit_area_filter.append(filter.filter_name)
+        result["hit_startup_list"].append({
+            "startup_id":startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": ",".join(hit_comtype_filter[:1]),
+            "local": ",".join(hit_location_filter[:1]),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+
+    result["hit_comtype_filter"] = (organize(hit_comtype_filter))
+    result["hit_location_filter"] = (organize(hit_location_filter))
+    result["hit_genre_filter"] = (organize(hit_genre_filter))
+    result["hit_area_filter"] = (organize(hit_area_filter))
+
+
+
+
+
+    # 매니저의 해당 지원사업의 좋아요 데이터 : [공고문 id /날짜 / 숫자 ] list1
+    support_business_detail_favorite_date_ymd = []
+    favored_support_business=[]
+    for date_dict in FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).filter(favored_timestamp__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0])\
+            .values("favored_timestamp").order_by("-favored_timestamp").distinct():
+        if date_dict["favored_timestamp"] not in support_business_detail_favorite_date_ymd:
+            support_business_detail_favorite_date_ymd.append(date_dict["favored_timestamp"])
+    for date in support_business_detail_favorite_date_ymd:
+        favored_support_business.append(
+            {
+                "date": date,
+                "number": len(FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).filter(favored_timestamp=date))
+            }
+        )
+    result["favored_support_business"] = favored_support_business
+
+
+# =======[매니저 my 지원사업 좋아요 누른 스타트업의 id, 필터 추출]====== : 완료  list2
+    startup_list = []
+    for favored_startup in FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).values("favored_usr").distinct():
+        print(favored_startup)
+        startup_list.append( Startup.objects.get(user= AdditionalUserInfo.objects.get(id=favored_startup["favored_usr"]).user))
+    favored_comtype_filter = []
+    favored_location_filter = []
+    favored_genre_filter =[]
+    favored_area_filter = []
+    result["favored_startup_list"]=[]
+    k=1
+    # 작업중
+    for startup in startup_list:
+        filter_list = startup.selected_company_filter_list.all()
+        company_kind = ""
+        local = []
+        for filter in filter_list:
+            if filter.cat_1 =="기업형태":
+                favored_comtype_filter.append(filter.filter_name)
+                company_kind = filter.filter_name
+            if filter.cat_1 =="소재지":
+                favored_location_filter.append(filter.filter_name)
+                local.append(filter.filter_name)
+            if filter.cat_0 =="기본장르":
+                favored_genre_filter.append(filter.filter_name)
+            if filter.cat_0 =="영역":
+                favored_area_filter.append(filter.filter_name)
+        result["favored_startup_list"].append({
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    result["favored_comtype_filter"] = (organize(favored_comtype_filter))
+    result["favored_location_filter"] = (organize(favored_location_filter))
+    result["favored_genre_filter"] = (organize(favored_genre_filter))
+    result["favored_area_filter"] = (organize(favored_area_filter))
+
+
+
+    # 매니저의 해당 지원사업의 지원  데이터
+    support_business_appliance_date_ymd = []
+    support_business_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business=support_business).filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]) \
+            .dates("appliance_update_at_ymdt","day").values("appliance_update_at_ymdt").order_by("-appliance_update_at_ymdt").distinct():
+        if date_dict["appliance_update_at_ymdt"] not in support_business_appliance_date_ymd:
+            support_business_appliance_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+    for date in support_business_appliance_date_ymd:
+        support_business_appliance.append(
+            {
+                "date": date,
+                "number": len(Appliance.objects.all().filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+            }
+        )
+    result["support_business_appliance"] = support_business_appliance
+
+    startup_list = []
+    for applied_startup in Appliance.objects.all().filter(support_business=support_business).values("startup").distinct():
+        print(applied_startup)
+        startup_list.append(Startup.objects.get(id=applied_startup["startup"]))
+    applied_comtype_filter = []
+    applied_location_filter = []
+    applied_genre_filter = []
+    applied_area_filter = []
+    result["applied_startup_list"] = []
+    k = 1
+    for startup in startup_list:
+        print(startup)
+        filter_list = startup.selected_company_filter_list.all()
+        company_kind =""
+        local=[]
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                applied_comtype_filter.append(filter.filter_name)
+                company_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                applied_location_filter.append(filter.filter_name)
+                local.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                applied_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                applied_area_filter.append(filter.filter_name)
+        result["applied_startup_list"].append({
+            "app_id":Appliance.objects.get(support_business=support_business, startup=startup).id,
+                "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+
+    result["applied_comtype_filter"] = (organize(applied_comtype_filter))
+    result["applied_location_filter"] = (organize(applied_location_filter))
+    result["applied_genre_filter"] = (organize(applied_genre_filter))
+    result["applied_area_filter"] = (organize(applied_area_filter))
+
+
+
+    #  매니저가 작성한 모든 지원사업의 방문 데이터
+    #  매니저가 작성한 모든 지원사업
+    support_business_mng_arr = SupportBusiness.objects.all().filter(support_business_author_id=support_business_author_id)
+
+    support_business_detail_hit_avg_date_ymd = []
+    support_business_detail_mng_sum_hit = []
+    support_business_detail_mng_avg_hit = []
+    for date_dict in HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter( date__gte= str(support_business.support_business_update_at_ymdt).split(" ")[0] ).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_avg_date_ymd:
+            support_business_detail_hit_avg_date_ymd.append(date_dict["date"])
+    for date in support_business_detail_hit_avg_date_ymd:
+        support_business_detail_mng_sum_hit.append(
+            {
+                "date": date,
+                "number": len(HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date))
+            }
+        )
+        support_business_detail_mng_avg_hit.append(
+            {
+                "date": date,
+                "number": round(len(HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date)) /
+                                len(SupportBusiness.objects.all().filter(support_business_author_id=support_business_author_id).exclude(Q(support_business_status="1") | Q(support_business_status="2")).filter(support_business_update_at_ymdt__lte=date))
+                                ,1)
+            }
+        )
+    result["support_business_detail_mng_sum_hit"] = support_business_detail_mng_sum_hit
+    result["support_business_detail_mng_avg_hit"] = support_business_detail_mng_avg_hit
+
+
+
+    # 매니저가 작성한 모든 지원사업에 좋아요를 누른 데이터
+    support_business_favorite_date_ymd = []
+    support_business_mng_sum_favorite = []
+    support_business_mng_avg_favorite = []
+    for date_dict in FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(
+            date__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["date"])
+    for date in support_business_favorite_date_ymd:
+        support_business_mng_sum_favorite.append(
+            {
+                "date": date,
+                "number": len(
+                    FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date))
+            }
+        )
+        support_business_mng_avg_favorite.append(
+            {
+                "date": date,
+                "number": round(
+                    len(FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id=support_business_author_id).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")).filter(
+                        support_business_update_at_ymdt__lte=date))
+                    , 1)
+            }
+        )
+    result["support_business_mng_sum_favorite"] = support_business_mng_sum_favorite
+    result["support_business_mng_avg_favorite"] = support_business_mng_avg_favorite
+
+
+
+
+    # 매니저가 작성한 모든 지원사업의 지원자 데이터
+    support_business_favorite_date_ymd = []
+    support_business_mng_sum_appliance = []
+    support_business_mng_avg_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business__in=support_business_mng_arr).dates("appliance_update_at_ymdt","day").filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("appliance_update_at_ymdt").order_by(
+            "-appliance_update_at_ymdt").distinct():
+
+        if date_dict["appliance_update_at_ymdt"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+
+    for date in support_business_favorite_date_ymd:
+        print(  Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date))
+        support_business_mng_sum_appliance.append(
+            {
+                "date": date,
+                "number": len(
+                    Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date))
+            }
+        )
+        print()
+        support_business_mng_avg_appliance.append(
+            {
+                "date": date,
+                "number": round(
+                    len(Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id=support_business_author_id).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+        )
+    result["support_business_mng_sum_appliance"] = support_business_mng_sum_appliance
+    result["support_business_mng_avg_appliance"] = support_business_mng_avg_appliance
+
+
+
+
+
+
+
+    #  기관에서  작성한 모든 지원사업의 방문 데이터
+    #  매니저가 작성한 모든 지원사업
+    ad = AdditionalUserInfo.objects.get(id=support_business_author_id).mng_boss.additionaluserinfo_set.all()
+    author_list=[]
+    for a in ad:
+        author_list.append(a.id)
+    support_business_kikwan_arr = SupportBusiness.objects.all().filter(support_business_author_id__in=author_list)
+
+
+    support_business_detail_hit_date_ymd = []
+    support_business_detail_kikwan_sum_hit = []
+    support_business_detail_kikwan_avg_hit = []
+    for date_dict in HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter( date__gte= str(support_business.support_business_update_at_ymdt).split(" ")[0] ).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_date_ymd:
+            support_business_detail_hit_date_ymd.append(date_dict["date"])
+    for date in support_business_detail_hit_date_ymd:
+        support_business_detail_kikwan_sum_hit.append(
+            {
+                "date": date,
+                "number": len(HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+            }
+        )
+        support_business_detail_kikwan_avg_hit.append(
+            {
+                "date": date,
+                "number": round(len(HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
+                                len(SupportBusiness.objects.all().filter(support_business_author_id__in=author_list).exclude(Q(support_business_status="1") | Q(support_business_status="2")))
+                                ,1)
+            }
+        )
+    result["support_business_detail_kikwan_sum_hit"] = support_business_detail_kikwan_sum_hit
+    result["support_business_detail_kikwan_avg_hit"] = support_business_detail_kikwan_avg_hit
+
+
+
+    # 기관에서 작성한 모든 지원사업에 좋아요를 누른 데이터
+    support_business_favorite_date_ymd = []
+    support_business_kikwan_sum_favorite = []
+    support_business_kikwan_avg_favorite = []
+    for date_dict in FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(
+            date__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["date"])
+    for date in support_business_favorite_date_ymd:
+        support_business_kikwan_sum_favorite.append(
+            {
+                "date": date,
+                "number": len(
+                    FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+            }
+        )
+        support_business_kikwan_avg_favorite.append(
+            {
+                "date": date,
+                "number": round(
+                    len(FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id__in=author_list).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")).filter(
+                        support_business_update_at_ymdt__lte=date))
+                    , 1)
+            }
+        )
+    result["support_business_kikwan_sum_favorite"] = support_business_kikwan_sum_favorite
+    result["support_business_kikwan_avg_favorite"] = support_business_kikwan_avg_favorite
+
+
+
+
+    # 기관에서 작성한 모든 지원사업의 지원자 데이터
+    support_business_favorite_date_ymd = []
+    support_business_kikwan_sum_appliance = []
+    support_business_kikwan_avg_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).dates("appliance_update_at_ymdt","day").filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("appliance_update_at_ymdt").order_by(
+            "-appliance_update_at_ymdt").distinct():
+
+        if date_dict["appliance_update_at_ymdt"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+    for date in support_business_favorite_date_ymd:
+        print("넣기전")
+        print(  Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date))
+        support_business_kikwan_sum_appliance.append(
+            {
+                "date": date,
+                "number": len(
+                    Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date))
+            }
+        )
+        print()
+        support_business_kikwan_avg_appliance.append(
+            {
+                "date": date,
+                "number": round(
+                    len(Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id__in=author_list).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+        )
+    result["support_business_kikwan_sum_appliance"] = support_business_mng_sum_appliance
+    result["support_business_kikwan_avg_appliance"] = support_business_mng_avg_appliance
+
+
+
+    # 선정자 추출
+    aw_comtype_filter = []
+    aw_location_filter = []
+    aw_genre_filter = []
+    aw_area_filter = []
+    aw_startup_list = []
+    result["aw_startup_list"] = []
+    k = 0
+    award = Award.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+    for aw in award:
+        filter = Startup.objects.get(id=aw["startup"]).selected_company_filter_list.all()
+        company_kind=""
+        local=[]
+        for f in filter:
+            if filter.cat_1 == "기업형태":
+                aw_comtype_filter.append(filter.filter_name)
+                company_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                aw_location_filter.append(filter.filter_name)
+                local.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                aw_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                aw_area_filter.append(filter.filter_name)
+
+        startup = Startup.objects.get(id=aw["startup"])
+        result["aw_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+
+    result["aw_comtype_filter"] = (organize(aw_comtype_filter))
+    result["aw_location_filter"] = (organize(aw_location_filter))
+    result["aw_genre_filter"] = (organize(aw_genre_filter))
+    result["aw_area_filter"] = (organize(aw_area_filter))
+
+    support_business = SupportBusiness.objects.all().filter(support_business_author_id=request.GET.get("id"))
+    q_objects = Q()
+    startup_list = []
+    for s in support_business:
+        q_objects = q_objects | Q(support_business_id=s.id)
+    ap = Appliance.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+    for a in ap:
+        startup_list.append(a["startup"])
+    support_business_detail_hit = HitLog.objects.all().filter(
+        support_business_id=request.GET.get("support_business_id")).values("user").distinct()
+    for h in support_business_detail_hit:
+        print(h)
+        try:
+            if len(Startup.objects.all().filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
+                startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
+        except:
+            pass
+    award = Award.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+    for aw in award:
+        startup_list.append(aw["startup"])
+
+
+    result["all_startup_list"] = []
+
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    k = 1
+    for id in set(startup_list):
+        filter_list = Startup.objects.get(id=id).selected_company_filter_list.all()
+        startup = Startup.objects.get(id=id)
+        company_kind = ""
+        local = []
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+                company_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+                local.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+
+        result["all_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    result["all_comtype_filter"] = organize(all_comtype_filter)
+    result["all_location_filter"] = organize(all_location_filter)
+    result["all_genre_filter"] = organize(all_genre_filter)
+    result["all_area_filter"] = organize(all_area_filter)
+
+
+
+
+    st = StatTable()
+    st.stat_user_id = request.GET.get("stat_user_id")
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business_id"))
+    if support_business.support_business_status != 5 and support_business.support_business_author_id  == request.GET.get("id"):
+        st.stat_name = "my_support_business_ing"
+    elif support_business.support_business_status == 5 and support_business.support_business_author_id  == request.GET.get("id"):
+        st.stat_name = "my_support_business_end"
+    elif support_business.support_business_status != 5 and support_business.support_business_author_id != request.GET.get("id"):
+        st.stat_name = "other_support_business_ing"
+    elif support_business.support_business_status == 5 and support_business.support_business_author_id  != request.GET.get("id"):
+        st.stat_name = "other_support_business_end"
+
+
+
+    result_json = JsonResponse(result)
+    st.stat_json  =result_json.content
+    st.save()
+
+    return result_json
+
 
 
 
 
 @csrf_exempt
-def toggle_int_path(request):
-    clip = Path.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    if clip in ad.interest_path.all():
-        ad.interest_path.remove(clip)
-    else:
-        ad.interest_path.add(clip)
-    return JsonResponse({"result":"ok"})
+def show_from_stattable(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    my_stat_id = request.GET.get("id")
+    my_stat_page =request.GET.get("page")
+
+    st = StatTable.objects.all().filter(stat_user_id=my_stat_id).filter(stat_name=my_stat_page).order_by("-stat_timestamp")[0]
+    
+    
+    
+    # if  my_stat_page=="2":
+    #     st = StatTable.objects.all().filter(stat_user_id=my_id).filter(stat_name="my_support_business_end").order_by("-stat_timestamp")[0]
+    # if  my_stat_page=="3":
+    #     st = StatTable.objects.all().exclude(stat_user_id=my_id).filter(stat_name="other_support_business_ing").order_by("-stat_timestamp")[0]
+    # if  my_stat_page=="4":
+    #     st = StatTable.objects.all().exclude(stat_user_id=my_id).filter(stat_name="other_support_business_end").order_by("-stat_timestamp")[0]
+    #TODO: STAT 페이지 참고
+
+    result = st.stat_json
+    return HttpResponse(result)
+
+
+
+@csrf_exempt
+def vue_get_support_business_select_name_by_kikwan_1(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    support_business_list = []
+    for sp in QuaterTableSupportBusiness.objects.all().filter( Q(support_business_status="3") ):
+        support_business_list.append({
+            "name":sp.qt_support_business.support_business_name,
+            "support_business_id":sp.qt_support_business.id
+        })
+    return JsonResponse(support_business_list, safe=False)
+
+
+@csrf_exempt
+def vue_get_support_business_select_name_by_kikwan_2(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    support_business_list=[]
+    for sp in QuaterTableSupportBusiness.objects.all().filter( Q(qt_support_business_status="5") | Q(qt_support_business_status="4") ):
+        support_business_list.append({
+            "name":sp.qt_support_business.support_business_name,
+            "support_business_id":sp.qt_support_business.id,
+            "support_business_status":sp.qt_support_business.support_business_status
+            })
+
+    return JsonResponse(support_business_list, safe=False)
+
+
+#--- (중복 3/3)
+# --------(통계) (매니저) 통계 홈화면에서 드롭다운으로 지원사업을 선택하면, 해당 지원사업 통계를 계산해주는 함수
+# --------[8.통계 페이지,지원사업 통계 데이터 추출  기능 // 기관관리자, 매니저: 통계 페이지에서 호출됨]-----------------
+# // todo 통계 정보를 매번 계산하는 현재 방법 > 미리 계산해두고 정보를 json 파일로 가지고 있어서 보여주는 것으로 짜기(at least 매 2시간마다 실행/5분단위여도 좋음)
+
+#--- 통계 정리 : 사업별통계 > 진행중 사업: auth = "mng"/ / my "gca_id = support_business_author.id"// ing = satatus = "3"
+@csrf_exempt
+def vue_get_support_business_select_name_1(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+
+    mng = AdditionalUserInfo.objects.all().get(id=request.GET.get("gca_id"))
+    support_business_list = []
+    for sp in QuaterTableSupportBusiness.objects.all().filter(qt_support_business_author__auth="MNG").filter(qt_support_business_author=mng).filter(qt_support_business_status="3"):
+        support_business_list.append({
+            "author": sp.qt_support_business.support_business_author.mng_name,
+            "name":sp.qt_support_business.support_business_name,
+            "support_business_id":sp.qt_support_business.id,
+            "support_business_status": sp.qt_support_business.support_business_status
+        })
+    return JsonResponse(support_business_list, safe=False)
+
+
+#--- 통계 정리 : 사업별통계 > 진행중 사업: auth = "mng"/ / my "gca_id = support_business_author.id"// end = satatus = "4"|"5"
+@csrf_exempt
+def vue_get_support_business_select_name_2(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    mng = AdditionalUserInfo.objects.all().get(id=request.GET.get("gca_id"))
+    support_business_list = []
+    for sp in QuaterTableSupportBusiness.objects.all().filter(qt_support_business_author__auth="MNG").filter(qt_support_business_author=mng).filter(Q(qt_support_business_status="4")|Q(qt_support_business_status="5")):
+        print(sp.support_business_name)
+        support_business_list.append({
+            "author": sp.qt_support_business.support_business_author.mng_name,
+            "name":sp.qt_support_business.support_business_name,
+            "support_business_id":sp.qt_support_business.id,
+            "support_business_status": sp.qt_support_business.support_business_status
+            })
+
+    return JsonResponse(support_business_list, safe=False)
+
+#--- 통계 정리 : 사업별통계 > 진행중 사업: auth = "mng"/ / my "gca_id  != support_business_author.id"// ing = satatus = "3"
+@csrf_exempt
+def vue_get_support_business_select_name_3(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    mng = AdditionalUserInfo.objects.all().get(id=request.GET.get("gca_id"))
+    support_business_list = []
+    for sp in QuaterTableSupportBusiness.objects.all().exclude(qt_support_business_author=mng).filter(qt_support_business_author__auth="MNG").filter( Q(qt_support_business_status="3")):
+        support_business_list.append({
+            "name":sp.qt_support_business.support_business_name,
+            "author": sp.qt_support_business.support_business_author.mng_name,
+            "support_business_id":sp.qt_support_business.id,
+            "support_business_status": sp.qt_support_business.support_business_status
+        })
+    return JsonResponse(support_business_list, safe=False)
+
+
+#--- 통계 정리 : 사업별통계 > 진행중 사업: auth = "mng"/ / my "gca_id  != support_business_author.id"// end = satatus = "4"|"5"
+@csrf_exempt
+def vue_get_support_business_select_name_4(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    support_business_list = []
+    mng = AdditionalUserInfo.objects.all().get(id=request.GET.get("gca_id"))
+    for sp in QuaterTableSupportBusiness.objects.all().exclude(qt_support_business_author = mng).filter(qt_support_business_author__auth="MNG").filter( Q(qt_support_business_status="5") | Q(qt_support_business_status="4")):
+        support_business_list.append({
+            "name":sp.qt_support_business.support_business_name,
+            "author": sp.qt_support_business.support_business_author.mng_name,
+            "support_business_id":sp.qt_support_business.id,
+            "support_business_status": sp.qt_support_business.support_business_status
+        })
+
+    return JsonResponse(support_business_list, safe=False)
+
 
 
 
 
 @csrf_exempt
-def toggle_int_course(request):
-    clip = Course.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    if clip in ad.interest_course.all():
-        ad.interest_course.remove(clip)
-    else:
-        ad.interest_course.add(clip)
-    return JsonResponse({"result":"ok"})
+def excel_down_statics(request):
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=statics_list.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+    list = request.GET.get("startup_list").split(",")
+    startup_list=[]
+    for list_item in list:
+        startup_list.append(Startup.objects.get(id=list_item))
+    index=0;
+    for  startup  in startup_list:
+        ws.write(index, 0 ,index+1)
+        ws.write(index, 1, startup.repre_email)
+        ws.write(index, 2, startup.company_name)
+        company_kind=""
+        local=[]
+        for filter in startup.selected_company_filter_list.all():
+            if filter.cat_1=="기업형태":
+                company_kind = filter.filter_name
+            if filter.cat_1=="소재지":
+                local.append(filter.filter_name)
+        ap=Appliance.objects.all().filter(startup=startup).order_by("-id").first()
 
+        ws.write(index, 3, company_kind)
+        ws.write(index, 4  , ",".join(local) )
+        ws.write(index, 5, startup.company_hold_employee)
+        ws.write(index, 6, startup.repre_tel)
+        ws.write(index, 7, str(ap.appliance_update_at_ymdt).split("T")[0])
+        index=index+1
+    wb.save(response)
+    return response
+
+
+#--------------------------------------------- 중복 정리 시작 ----------------------------------------------------------
+
+#--------------------------------------------- 중복 정리 완료 ----------------------------------------------------------
+
+
+
+
+
+# --------(통계) (매니저) (백단) 태그리스트를 숫자로 반환 > 태그가 몇개씩 있는지 세고, 파이그래프 생성
+def organize(arr):
+    result_list=[]
+    for k, v in itertools.groupby(sorted(arr)):
+        obj={}
+        result = list(v)
+        obj[result[0]] = len(result)
+        result_list.append(copy.deepcopy(obj))
+    return result_list
+
+
+
+# --------(통계) 유저 통계 페이지, 경기지역모아보기 등
+# --------[유저 통계 페이지, 유저 값 계산 ]-------
+@csrf_exempt
+def vue_static_usr(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    #총기업수
+    total_startup = len(Startup.objects.all())
+    #총 개인회원수
+    total_usr = len(AdditionalUserInfo.objects.all().exclude(auth=5).exclude(auth=4))
+    #기업회원 1개당 평균 사업 참가수
+    avg_apply_num_per_startup = round(len(Appliance.objects.all())/total_startup,2)
+    #기업 회원 한개당 평균 사업 선정수
+    avg_award_num_per_startup = round(len(Award.objects.all())/total_startup,2)
+
+
+    ## 최종 선정기업
+    # 총 기업회원수
+    total_awarded_startup = len(Award.objects.all().values('startup_id').distinct())
+    #기업회원 1개당 평균 사업 참가수
+    k=0;
+    apply_num_arr =[]
+    for startup in Award.objects.all().values('startup_id').distinct():
+        #k = k + len(Award.objects.all().filter(startup_id=startup["startup_id"]))
+        apply_num_arr.append(len(Award.objects.all().filter(startup_id=startup["startup_id"])))
+    avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
+
+    avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
+
+
+    #경기지역 모아보기
+    total_startup_gg = (Startup.objects.all().filter(  selected_company_filter_list__filter_name__contains="경기"))
+    k=0;
+    startup_list = []
+    for startup in (Startup.objects.all().filter( selected_company_filter_list__filter_name__contains="경기")):
+        k = k + len(Award.objects.all().filter(startup=startup))
+        startup_list.append(startup.id)
+        startup_list.append(startup.id)
+    apply_num_startup_gg_arr=[]
+
+    #경기 지역 회사가 모든 사업에 참가한 횟수
+    total_appliance_gg = Appliance.objects.all().filter(startup__in=total_startup_gg)
+
+     # 모든 사업의 선정자수
+    total_award_num = Award.objects.all()
+
+    # 경기 기업회원 1개당 평균 사업 참가수
+    avg_apply_num_per_startup_gg = round(len(total_appliance_gg)/len(total_startup_gg),2)
+    # 경기 기업 회원 1개당 평균 사업 선정수
+    avg_award_num_per_awarded_gg = round(len(total_award_num)/len(total_startup_gg),2)
+
+
+
+
+
+    result={}
+    result["total_startup"]= total_startup
+    result["total_usr"]=total_usr
+    result["avg_apply_num_per_startup"]=avg_apply_num_per_startup
+    result["avg_award_num_per_startup"]=avg_award_num_per_startup
+
+    result["total_awarded_startup"] = (total_awarded_startup)
+    result["avg_apply_num_per_awarded"] = avg_apply_num_per_awarded
+    result["avg_award_num_per_awarded"] = avg_award_num_per_awarded
+
+    result["total_startup_gg"]= len(total_startup_gg)
+    result["avg_apply_num_per_startup_gg"]= avg_apply_num_per_startup_gg
+    result["avg_award_num_per_awarded_gg"] =avg_award_num_per_awarded_gg
+
+    return JsonResponse(result)
+
+
+
+#------- (통계)
+@csrf_exempt
+def vue_get_short_title(request):
+    support_business_name = SupportBusiness.objects.get(id=request.GET.get("id")).support_business_name
+    return JsonResponse({"support_business_name":support_business_name})
+
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------------------------------------------------
+# 파. 참여기업 리스트 만들기
+# 종료된 공고 그래프 하단, 참여한 기업이 리스트 형태로 나타나야 함
+#----------------------------------------------------------------------------------------------------------------------
+
+# --------(리스트) (매니저) (기관관리자) 유저관리> 사업참여기업 탭
+# --------[선정자 리스트 조회 ]-----------------------------------------------------------------------------
+# todo :  선정여부 Y/N 분기문 만들어서 한번에 관리하는 함수로 거듭나자!
+
+@csrf_exempt
+def vue_get_awarded(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    support_business_id=request.GET.get("support_business_id")
+    win_list = Award.objects.filter(support_business_id=support_business_id)
+    winner=[]
+    k=1
+
+    for a_w in win_list:
+        ap , created = Appliance.objects.get_or_create(support_business_id=support_business_id, startup =a_w.startup )
+        print(ap)
+        winner.append({
+           "index":k, "company_name":a_w.startup.company_name, "repre_name" : a_w.startup.repre_name,"company_kind":a_w.startup.company_kind, "user_id":a_w.startup.user.username,
+            "repre_tel": a_w.startup.repre_tel,  "repre_email": a_w.startup.repre_email, "appliance_update_at_ymdt": str(ap.appliance_update_at_ymdt).split("T")[0]
+        })
+        k=k+1
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    # support_business.support_business_status = 5
+    # support_business.save()
+
+    return JsonResponse(winner,safe=False)
+
+
+
+@csrf_exempt
+def opr_vue_get_awarded(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    support_business_id=request.GET.get("support_business_id")
+    win_list = Award.objects.filter(support_business_id=support_business_id)
+    winner=[]
+    k=1
+
+    for a_w in win_list:
+        ap , created = Appliance.objects.get_or_create(support_business_id=support_business_id, startup =a_w.startup )
+        print(ap)
+        winner.append({
+            "id":a_w.startup.id,
+           "opr_index":k, "opr_company_name":a_w.startup.company_name, "opr_repre_name" : a_w.startup.repre_name,"opr_company_kind":a_w.startup.company_kind, "opr_user_id":a_w.startup.user.username,
+            "opr_repre_tel": a_w.startup.repre_tel,  "opr_repre_email": a_w.startup.repre_email, "opr_appliance_update_at_ymdt": str(ap.appliance_update_at_ymdt).split("T")[0]
+        })
+        k=k+1
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    # support_business.support_business_status = 5
+    # support_business.save()
+
+    return JsonResponse(winner,safe=False)
+
+
+
+
+
+
+
+
+
+
+
+# --------(홈화면) / (스타트업) (매니저) (기관관리자) : 스타트업 홈화면
+# --------[스타트업 홈화면]---------------------------------------------------------------------------------------------
+@csrf_exempt
+def vue_get_startup_list(request):
+    startup = Startup.objects.all()
+    result = []
+    for s in startup:
+        temp_obj={}
+        temp_obj["company_name"] = s.company_name
+        temp_obj["logo"] = s.logo
+        temp_obj["company_short_desc"] = s.company_short_desc
+        temp_obj["is_favored"] = is_in_favor_list( "startup",s.id, request.GET.get("gca_id"))
+
+        temp_obj["filter"] = []
+
+        temp_obj["id"]=s.id
+        for t in s.selected_company_filter_list.all():
+            if t.filter_name != "" and t.filter_name != None:
+                temp_obj["filter"].append(t.filter_name)
+
+        result.append(copy.deepcopy(temp_obj))
+
+    return  JsonResponse(list(result), safe=False)
+
+
+# --------(스타트업) (매니저) (기관관리자) : 스타트업 상세 정보페이지
+# --------[스타트업 상세 정보페이지 ]-----------------------------------------------------------------------------------
+
+
+
+
+
+# --------(리스트) (매니저) (기관관리자) : 유저 회원 관리 페이지--------------------------------------------------------
+# --------[유저 회원 관리,  스타트업 계정 정보 가져오기  ]--------------------------------------------------------------
+@csrf_exempt
+def vue_get_startup_account(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    startup= Startup.objects.all()
+    result = {}
+    k=1
+    startup_set=[]
+    for s in startup :
+        temp={}
+        temp["index"]=k
+        k=k+1
+        temp["company_name"] = s.company_name
+        temp["id"] = s.user.username
+
+        temp["repre_name"] = s.user.startup.repre_name
+        temp["repre_tel"] = s.user.additionaluserinfo.repre_tel
+
+        temp["repre_email"] = s.repre_email if s.user.additionaluserinfo.repre_email !="" else  s.user.username
+        tag_list=[]
+        for t in s.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        temp["tag"] = tag_list
+        try:
+            if "경기" in s.address_0:
+                local = "경기"
+            elif "서울" in s.address_0:
+                local = "서울"
+            elif "인천" in s.address_0:
+                local = "인천"
+            else :
+                local = "기타"
+        except:
+            local="기타"
+        temp["local"] = local
+        temp["employ_num"] = s.company_total_employee
+        temp["apply_num"] = len(Appliance.objects.all().filter(startup=s))
+        temp["award_num"] = len(Award.objects.all().filter(startup=s))
+        temp["join"] = s.user.date_joined
+        temp["tag"]=[]
+        for t in s.selected_company_filter_list.all():
+            temp["tag"].append(t.filter_name)
+        startup_set.append(copy.deepcopy(temp))
+    result["startup"] = startup_set
+    user_ad = AdditionalUserInfo.objects.all().exclude(auth=4).exclude(auth=5)
+    p=1
+    user_set = []
+    p=1
+    for u in user_ad:
+        try:
+            user={}
+            #user["index"]=p
+            p=p+1
+            print(u.user)
+            user["id"] = u.user.username
+            user["repre_name"] = Startup.objects.get(user=u.user).repre_name
+            user["repre_tel"] =  Startup.objects.get(user=u.user).repre_tel
+            user["joined"] = u.user.date_joined
+            user_set.append(copy.deepcopy(user))
+
+        except:
+            pass
+        result["usr_set"] = user_set
+
+    ## 사업 참여 기업
+    aw_startup_set = Appliance.objects.all().values("startup").distinct()
+    k=1
+    ap_set = []
+    for s in aw_startup_set:
+
+        aw_st={}
+        print(s)
+        startup = Startup.objects.get(id=s["startup"])
+        aw_st["index"] = k
+        k=k+1
+        aw_st["company_name"] = startup.company_name
+        aw_st["repre_name"] = startup.repre_name
+        aw_st["repre_tel"] = startup.repre_tel
+        tag_list = []
+        for t in startup.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        aw_st["tag"] = tag_list
+        try:
+            if "경기" in startup.address_0:
+                local = "경기"
+            elif "서울" in startup.address_0:
+                local = "서울"
+            elif "인천" in startup.address_0:
+                local = "인천"
+            else:
+                local = "기타"
+        except:
+            local="기타"
+        aw_st["local"] = local
+
+
+        aw_st["support_business_name"] = Appliance.objects.all().filter(startup=startup).last().support_business.support_business_name
+        if len(Award.objects.all().filter(support_business=Appliance.objects.all().filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+            aw_st["awarded"] = "탈락"
+        else:
+            aw_st["awarded"] = "선정"
+        aw_st["end_date"] = str(Appliance.objects.all().filter(startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+        ap_set.append(copy.deepcopy(aw_st))
+    result["ap_set"] = ap_set
+    return JsonResponse(result)
+
+@csrf_exempt
+def opr_vue_get_startup_account(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    startup= Startup.objects.all()
+    result = {}
+    k=1
+    startup_set=[]
+    for s in startup :
+        temp={}
+        temp["opr_index"]=k
+        k=k+1
+        temp["opr_company_name"] = s.company_name
+        temp["opr_id"] = s.user.username
+        temp["opr_startup_id"] = s.id
+
+        temp["opr_repre_name"] = s.user.startup.repre_name
+        temp["opr_repre_tel"] = s.user.additionaluserinfo.repre_tel
+
+        temp["opr_repre_email"] = s.repre_email if s.user.additionaluserinfo.repre_email !="" else  s.user.username
+        tag_list=[]
+        for t in s.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        temp["opr_tag"] = tag_list
+        try:
+            if "경기" in s.address_0:
+                local = "경기"
+            elif "서울" in s.address_0:
+                local = "서울"
+            elif "인천" in s.address_0:
+                local = "인천"
+            else :
+                local = "기타"
+        except:
+            local="기타"
+        temp["opr_local"] = local
+        temp["opr_employ_num"] = s.company_total_employee
+        temp["opr_apply_num"] = len(Appliance.objects.all().filter(startup=s))
+        temp["opr_award_num"] = len(Award.objects.all().filter(startup=s))
+        temp["opr_join"] = s.user.date_joined
+        temp["opr_tag"]=[]
+        for t in s.selected_company_filter_list.all():
+            temp["opr_tag"].append(t.filter_name)
+        startup_set.append(copy.deepcopy(temp))
+    result["opr_startup"] = startup_set
+    user_ad = AdditionalUserInfo.objects.all().exclude(auth=4).exclude(auth=5)
+
+    user_set = []
+    p=1
+    for u in user_ad:
+        try:
+            user = {}
+            user["opr_id"] = u.user.username
+            user["opr_repre_name"] = Startup.objects.get(user=u.user).repre_name
+            user["opr_repre_tel"] = Startup.objects.get(user=u.user).repre_tel
+            user["opr_joined"] = u.user.date_joined
+
+            user["opr_index"]=p
+            p=p+1
+            print(u.user)
+
+
+            user_set.append(copy.deepcopy(user))
+
+        except Exception as e:
+            print(e)
+            pass
+        result["opr_usr_set"] = user_set
+
+    ## 사업 참여 기업
+    aw_startup_set = Appliance.objects.all().values("startup").distinct()
+    k=1
+    ap_set = []
+    for s in aw_startup_set:
+
+        aw_st={}
+        print(s)
+        startup = Startup.objects.get(id=s["startup"])
+        aw_st["opr_index"] = k
+        k=k+1
+        aw_st["opr_company_name"] = startup.company_name
+        aw_st["opr_repre_name"] = startup.repre_name
+        aw_st["opr_startup_id"] = startup.id
+        aw_st["opr_repre_tel"] = startup.repre_tel
+        tag_list = []
+        for t in startup.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        aw_st["opr_tag"] = tag_list
+        try:
+            if "경기" in startup.address_0:
+                local = "경기"
+            elif "서울" in startup.address_0:
+                local = "서울"
+            elif "인천" in startup.address_0:
+                local = "인천"
+            else:
+                local = "기타"
+        except:
+            local="기타"
+        aw_st["opr_local"] = local
+
+
+        aw_st["opr_support_business_name"] = Appliance.objects.all().filter(startup=startup).last().support_business.support_business_name
+        if len(Award.objects.all().filter(support_business=Appliance.objects.all().filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+            aw_st["opr_awarded"] = "N"
+        else:
+            aw_st["opr_awarded"] = "Y"
+        aw_st["opr_end_date"] = str(Appliance.objects.all().filter(startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+        ap_set.append(copy.deepcopy(aw_st))
+    result["opr_ap_set"] = ap_set
+    return JsonResponse(result)
+
+
+
+@csrf_exempt
+def get_favorite_support_business_list(request):
+
+    ad = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+
+
+    result={}
+    result["support_business_set"] = []
+    for support_business in ad.favorite.all():
+
+        team={}
+        team["support_business_name"] = support_business.support_business_name
+        team["is_favored"] = True
+
+
+        team["support_business_name"] = support_business.support_business_name
+        team["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        team["support_business_short_desc"] = support_business.support_business_short_desc
+        team["selected_support_business_filter_list"]=[]
+        for f in support_business.selected_support_business_filter_list.all():
+            team["selected_support_business_filter_list"].append(f.filter_name)
+        team["support_business_poster"]= support_business.support_business_poster
+        team["id"] = support_business.id
+
+        result["support_business_set"].append(copy.deepcopy(team))
+
+
+    return JsonResponse(result)
+
+
+
+
+
+#------[ 중복 그룹 7 ]----def 2개 중복------------------------------------------------------------------------------------
+# # 메인 홈화면, 지원서 3개씩 랜덤하게 보여주는 경우 사용
+# # --------[]-------
+@csrf_exempt
+def get_home_info(request):
+    gr = SupportBusiness.objects.all().filter(  Q(support_business_status=3)|Q(support_business_status=4)|Q(support_business_status=5)).filter(support_business_apply_start_ymd__lte=datetime.datetime.now()).order_by("?")[:6]
+    result={}
+    result["support_business_set"] = []
+    for g in gr:
+        team={}
+        team["support_business_name"] = g.support_business_name
+        team["support_business_apply_end_ymdt"] = g.support_business_apply_end_ymdt
+        team["support_business_short_desc"] = g.support_business_short_desc
+        team["selected_support_business_filter_list"]=[]
+        for f in g.selected_support_business_filter_list.all():
+            team["selected_support_business_filter_list"].append(f.filter_name)
+        team["support_business_poster"]= g.support_business_poster
+        try:
+            team["is_favored"] = is_in_favor_list("support_business",g.id, request.GET.get("gca_id"))
+        except Exception as e :
+            print(e)
+            team["is_favored"] = ""
+        team["id"] = g.id
+        result["support_business_set"].append(copy.deepcopy(team))
+    return JsonResponse(result)
+
+#---- (중복)
+# --------[스타트업 리스트 샘플 페이지]-------
+
+
+#------[ 중복 그룹 ]----------------------------------------------------------------------------------------------------
+
+
+
+
+
+def handle_uploaded_file_movie(file, filename, user_id):
+    print('media/uploads/user/'+ str(user_id) +'/company/movie/')
+    if not os.path.exists('media/uploads/user/'+ str(user_id) +'/company/movie/'):
+        os.makedirs('media/uploads/user/' + str(user_id) + '/company/movie')
+    with open('media/uploads/user/'+ str(user_id) +'/company/movie/' + filename, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+    return 'media/uploads/user/'+ str(user_id) +'/company/movie/'+filename
+
+
+@csrf_exempt
+def toggle_favorite_support_business(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    user_id = request.GET.get("gca_id")
+    usr = AdditionalUserInfo.objects.get(id=user_id)
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business_id"))
+    print(support_business.id)
+    if support_business in usr.favorite.all() :
+        usr.favorite.remove(support_business)
+        FavoriteLog.objects.all().filter(user_id=user_id).filter(support_business_id=support_business.id).delete()
+        result="remove"
+    else:
+        usr.favorite.add(support_business)
+        FavoriteLog(user_id=user_id, support_business_id=support_business.id , date= timezone.now()).save()
+        result="add"
+
+    return JsonResponse({"result":result})
+
+
+
+
+# 토글 모드로 바꾸고 , 좋아요 기록 행 삭제 하는기능 구현,
+@csrf_exempt
+def toggle_favorite_path(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    user_id = request.GET.get("gca_id")
+    usr = AdditionalUserInfo.objects.get(id=user_id)
+    path = Path.objects.get(id=request.GET.get("path_id"))
+
+    if path in usr.favorite_path.all() :
+        usr.favorite_path.remove(path)
+        FavoriteLog.objects.all().filter(user_id=user_id).filter( path_id=path.id).delete()
+        result="remove"
+    else:
+        usr.favorite_path.add(path)
+        FavoriteLog(user_id=user_id, path_id=path.id , date= timezone.now()).save()
+        result="add"
+
+    return JsonResponse({"result":result})
+
+@csrf_exempt
+def toggle_favorite_course(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    user_id = request.GET.get("gca_id")
+    usr = AdditionalUserInfo.objects.get(id=user_id)
+    course = Course.objects.get(id=request.GET.get("course_id"))
+
+    if course in usr.favorite_course.all() :
+        usr.favorite_course.remove(course)
+        FavoriteLog.objects.all().filter(user_id=user_id).filter( course_id=course.id).delete()
+        result="remove"
+    else:
+        usr.favorite_course.add(course)
+        FavoriteLog(user_id=user_id, course_id=course.id , date= timezone.now()).save()
+        result="add"
+
+    return JsonResponse({"result":result})
+
+@csrf_exempt
+def toggle_favorite_clip(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    user_id = request.GET.get("gca_id")
+    usr = AdditionalUserInfo.objects.get(id=user_id)
+    clip = Clip.objects.get(id=request.GET.get("clip_id"))
+
+    if clip in usr.favorite_clip.all() :
+        usr.favorite_clip.remove(clip)
+        FavoriteLog.objects.all().filter(user_id=user_id).filter( clip_id=clip.id).delete()
+        result="remove"
+    else:
+        usr.favorite_clip.add(clip)
+        FavoriteLog(user_id=user_id, clip_id=clip.id , date= timezone.now()).save()
+        result="add"
+
+    return JsonResponse({"result":result})
 
 
 @csrf_exempt
@@ -8015,33 +5518,76 @@ def vue_hit_clip_log(request):
     print(request.body)
     print(request.POST)
     clip = Clip.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    HitClipLog.objects.get_or_create(clip=clip, user=ad)
+    try:
+        ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    except:
+        ad=""
+    HitClipLog.objects.get_or_create(hit_clip=clip, hit_clip_user=ad)
+    return JsonResponse({"result": "ok"})
 
 @csrf_exempt
-def vue_watch_clip_history(request):
-    clip = Clip.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    WatchClipHistory.objects.create(clip=clip, user=ad)
+def vue_watch_history(request):
+    WatchHistory(
+        watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")), watch_course_id=request.POST.get("course_id"),
+        watch_path_id=request.POST.get("path_id"), watch_clip_id=request.POST.get("clip_id")
+    ).save()
+    return JsonResponse({"result":"ok"})
+@csrf_exempt
+def vue_channel_process_check(request):
+    print(request.POST)
+    if request.POST.get("path_id"):
+        origin_length = int(Path.objects.get(id=request.POST.get("path_id")).path_total_play)
+        view_num = len(WatchHistory.objects.all().filter(watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")))\
+            .filter(watch_path_id=request.POST.get("path_id")))*6
+        per = view_num*100 / origin_length
+        return  JsonResponse({"result":per})
+    if request.POST.get("course_id"):
+        origin_length = int(Course.objects.get(id=request.POST.get("course_id")).course_total_play)
+        view_num = len(
+            WatchHistory.objects.all().filter(watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
+            .filter(watch_course_id=request.POST.get("course_id"))) * 6
+        per = view_num * 100 / origin_length
+        return JsonResponse({"result": per})
+    if request.POST.get("clip_id"):
+        origin_length = int(Clip.objects.get(id=request.POST.get("clip_id")).clip_play)
+        view_num = len(
+            WatchHistory.objects.all().filter(watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
+            .filter(watch_clip_id=request.POST.get("clip_id"))) * 6
+        per = view_num * 100 / origin_length
+        return JsonResponse({"result": per})
 
+@csrf_exempt
+def vue_hit_clip_log(request):
+    print(request)
+    print(request.body)
+    print(request.POST)
+    clip = Clip.objects.get(id=request.POST.get("val"))
+    try:
+        ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    except:
+        ad=""
+    HitClipLog.objects.get_or_create(hit_clip=clip, hit_clip_user=ad)
+    return JsonResponse({"result": "ok"})
 
 @csrf_exempt
 def vue_hit_course_log(request):
     clip = Clip.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    course = Course.objects.get(id=request.POST.get("course"))
-    HitCourseLog.objects.get_or_create(clip=clip, user=ad, course= course)
-    WatchCourseHistory.objects.get_or_create(clip=clip, user=ad, course=course)
+    try:
+        ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    except:
+        ad=""
+    course = Course.objects.get(id=request.POST.get("course_id"))
+    HitCourseLog.objects.get_or_create(hit_course_clip=clip, hit_course_user=ad, hit_course= course)
     return  JsonResponse({"result":"ok"})
 
 @csrf_exempt
 def vue_watch_course_history(request):
-    clip = Clip.objects.get(id=request.POST.get("val"))
+    clip = Clip.clip_objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     course = Course.objects.get(id=request.POST.get("course"))
     WatchCourseHistory.objects.create(clip=clip, user=ad, course=course)
     WatchClipHistory.objects.create(clip=clip, user=ad, )
-    time = clip.play
+    time = clip.clip_play
     num = len(WatchCourseHistory.objects.all().filter(clip=clip))*6
     if 100 * num / time > 98 :
         return JsonResponse({"result": "com"})
@@ -8051,16 +5597,19 @@ def vue_watch_course_history(request):
 def vue_hit_path_log(request):
     print("--")
     clip = Clip.objects.get(id=request.POST.get("val"))
-    ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    try:
+        ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
+    except:
+        ad=""
     course = Course.objects.get(id=request.POST.get("course"))
     path = Path.objects.get(id=request.POST.get("path"))
-    HitPathLog.objects.get_or_create(clip=clip, user=ad, course= course,path=path)
+    HitPathLog.objects.get_or_create(hit_path_clip=clip, hit_path_user=ad, hit_path_course= course,hit_path=path)
 
 
 @csrf_exempt
 def vue_watch_path_history(request):
     print("hello")
-    clip = Clip.objects.get(id=request.POST.get("val"))
+    clip = clip.clip_objects.get(id=request.POST.get("val"))
     ad = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     course = Course.objects.get(id=request.POST.get("course"))
     path = Path.objects.get(id=request.POST.get("path"))
@@ -8077,36 +5626,36 @@ def vue_get_ing_lecture(request):
     result["path_list"] = []
     for p in HitPathLog.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.path.title
+        t["clip_title"]=p.path.title
         t["id"]=p.path.id
         t["created"] = p.path.created_at
-        t["user"] = p.path.user.name
+        t["user"] = p.path.user.repre_name
         t["play"] = p.path.total_play
-        t["thumb"] = p.path.thumb
+        t["clip_thumb"] = p.path.clip_thumb
         t["entry_point"] = "/path/view/"+str(p.path.id) + "/" + str(p.course.id) + "/" + str(p.clip.id)
 
         result["path_list"].append(copy.deepcopy(t))
     result["course_list"] =[] # = HitCourseLog.objects.filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id").values()[:3]
     for p in HitCourseLog.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.course.title
+        t["clip_title"]=p.course.title
         t["id"]=p.course.id
         t["created"] = p.course.created_at
-        t["user"] = p.course.user.name
+        t["user"] = p.course.user.repre_name
         t["play"] = p.course.total_play
-        t["thumb"] = p.course.thumb
+        t["clip_thumb"] = p.course.clip_thumb
         t["entry_point"] = "/course/view/"+str(p.course.id) + "/"+str(p.clip.id)
         result["course_list"].append(copy.deepcopy(t))
 
     result["clip_list"] =[] # = HitClipLog.objects.filter(user=AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id").values()[:3]
     for p in HitClipLog.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.clip.title
+        t["clip_title"]=p.clip.clip_title
         t["id"]=p.clip.id
-        t["created"] = p.clip.created_at
-        t["user"] = p.clip.user.name
-        t["play"] = p.clip.play
-        t["thumb"] = p.clip.thumb
+        t["created"] = p.clip.clip_created_at
+        t["user"] = p.clip.user.repre_name
+        t["play"] = p.clip.clip_play
+        t["clip_thumb"] = p.clip.clip_clip_thumb
 
         result["clip_list"].append(copy.deepcopy(t))
 
@@ -8115,747 +5664,4298 @@ def vue_get_ing_lecture(request):
 
 
 
+
 @csrf_exempt
-def vue_get_manager_lecture(request):
+def vue_get_favorite_channel(request):
+    result={}
+    result["clip_list"] = []
+    result["course_list"]=[]
+    result["path_list"] = []
+
+    for p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_path.all():
+        t={}
+        t["path_title"]=p.path_title
+        t["id"]=p.id
+        t["is_favored"] = is_in_favor_list("path",p.id,request.GET.get("gca_id"))
+        t["path_created_at"] = p.path_created_at
+
+        try:
+            t["path_user"] = p.path_user.user.startup.repre_name
+        except:
+            t["path_user"] = p.path_user.mng_name
+        t["path_total_play"] = p.path_total_play
+        t["path_thumb"] = p.path_thumb
+        t["path_entry_point"] = "/channel/path/view/"+str(p.id) + "/" + str(p.path_course.all().first().id) + "/" + str(p.path_course.all().first().course_clips.all().first().id)
+        result["path_list"].append(copy.deepcopy(t))
+
+    for p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_course.all():
+        t={}
+        t["course_title"]=p.course_title
+        t["id"]=p.id
+        t["is_favored"] = is_in_favor_list("course", p.id, request.GET.get("gca_id"))
+        t["course_created_at"] = p.course_created_at
+        try:
+            t["course_user"] = p.course_user.user.startup.repre_name
+        except:
+            t["course_user"] = p.course_user.mng_name
+
+        t["course_total_play"] = p.course_total_play
+        t["course_thumb"] = p.course_thumb
+        try:
+            t["course_entry_point"] = "/channel/course/view/"+str(p.id) + "/" + str(p.course_clips.all().first().id)
+        except:
+            pass
+        result["course_list"].append(copy.deepcopy(t))
+
+    for p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_clip.all():
+        t={}
+        t["clip_title"]=p.clip_title
+        t["id"]=p.id
+        t["is_favored"] = is_in_favor_list("clip", p.id, request.GET.get("gca_id"))
+        t["clip_created_at"] = p.clip_created_at
+
+        try:
+            t["clip_user"] = p.clip_user.user.startup.repre_name
+        except:
+            t["clip_user"] = p.clip_user.mng_name
+        t["clip_play"] = p.clip_play
+        t["clip_thumb"] = p.clip_thumb
+        try:
+            t["clip_entry_point"] = "/channel/clip/view/"+str(p.id)
+        except:
+            pass
+        result["clip_list"].append(copy.deepcopy(t))
+    print(result)
+
+
+    return JsonResponse(result, safe=False)
+
+
+
+
+@csrf_exempt
+def vue_get_author_lecture(request):
     result={}
     result["path_list"] = []
-    for p in Path.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
+    for p in Path.objects.all().filter(path_user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.title
+        t["path_title"]=p.path_title
         t["id"]=p.id
-        t["created"] = p.created_at
-        t["user"] = p.user.name
-        t["play"] = p.total_play
-        t["thumb"] = p.thumb
+        t["path_created_at"] = p.path_created_at
+        try:
+            t["path_user"] = p.path_user.user.startup.repre_name
+        except:
+            t["path_user"] = p.path_user.mng_name
+        t["path_total_play"] = p.path_total_play
+
+        t["path_thumb"] = p.path_thumb
         #t["entry_point"] = "/path/view/"+str(p.id) + "/" + str(p.course.all().first().id) + "/" + str(p.course.all().first().clips.all().first().id)
         t["entry_point"]=""
-        for c in p.course.all():
-            for clip in c.clips.all():
+        for c in p.path_course.all():
+            for clip in c.course_clips.all():
                 if(c.id and clip.id):
                     t["entry_point"] = "/path/view/"+str(p.id) + "/" + str(c.id) + "/" + str(clip.id)
         result["path_list"].append(copy.deepcopy(t))
     result["course_list"] =[] # = HitCourseLog.objects.filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id").values()[:3]
-    for p in Course.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
+    for p in Course.objects.all().filter(course_user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.title
+        t["course_title"]=p.course_title
         t["id"]=p.id
-        t["created"] = p.created_at
-        t["user"] = p.user.name
-        t["play"] = p.total_play
-        t["thumb"] = p.thumb
+        t["course_created_at"] = p.course_created_at
         try:
-            t["entry_point"] = "/course/view/"+str(p.id) + "/"+str(p.clips.first().id)
+            t["course_user"] = p.course_user.user.startup.repre_name
+        except:
+            t["course_user"] = p.course_user.mng_name
+
+
+        t["course_total_play"] = p.course_total_play
+        t["course_thumb"] = p.course_thumb
+        try:
+            t["entry_point"] = "/course/view/"+str(p.id) + "/"+str(p.course_clips.first().id)
         except:
             t["entry_point"] = ""
         result["course_list"].append(copy.deepcopy(t))
 
     result["clip_list"] =[] # = HitClipLog.objects.filter(user=AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id").values()[:3]
-    for p in Clip.objects.all().filter(user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
+    for p in Clip.objects.all().filter(clip_user= AdditionalUserInfo.objects.get(id=request.GET.get("id"))).order_by("-id"):
         t={}
-        t["title"]=p.title
+        t["clip_title"]=p.clip_title
         t["id"]=p.id
-        t["created"] = p.created_at
-        t["user"] = p.user.name
-        t["play"] = p.play
-        t["thumb"] = p.thumb
+        t["clip_created_at"] = p.clip_created_at
+        try:
+            t["clip_user"] = p.clip_user.user.startup.repre_name
+        except:
+            t["clip_user"] = p.clip_user.user.additionaluserinfo.mng_name
+        t["clip_play"] = p.clip_play
+        t["clip_thumb"] = p.clip_thumb
 
         result["clip_list"].append(copy.deepcopy(t))
-
-
 
     return JsonResponse({'results':result })
 
 
+@csrf_exempt
+def generate_thumbnail(in_filename, out_filename, time, width):
+    try:
+        (
+            ffmpeg
+            .input(in_filename, ss=time)
+            .filter('scale', width, -1)
+            .output(out_filename, vframes=1)
+            .overwrite_output()
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+    except ffmpeg.Error as e:
+        print(e.stderr.decode(), file=sys.stderr)
+        sys.exit(1)
+import subprocess
+@csrf_exempt
+def getLength(filename):
+
+    result = subprocess.Popen(["ffprobe", filename],stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    #print(result.stdout.readlines())
+    for x in result.stdout.readlines():
+        xs= x.decode('utf-8')
+        xi= xs.find("Duration")
+        if xi>0:
+             xl= xs[xi+10:xi+10+11].split(":")
+             sec= int(xl[0])*3600 + int(xl[1])*60 + int(xl[2].split(".")[0])
+             return sec
+    return 0
+
+
 
 @csrf_exempt
-def vue_toggle_fav_clip(request):
-    ad = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    cl = Clip.objects.get(id=request.GET.get("clip_id"))
-    if cl in ad.interest_clip.all():
-        ad.interest_clip.remove(cl)
-    else:
-        ad.interest_clip.add(cl)
-        fv = FavClipLog()
-        fv.user = ad
-        fv.Clip = cl
-        fv.save()
+def vue_upload_clip(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    clip = Clip()
+    clip.clip_user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
+    clip.save()
+    print ("step 00")
+    if request.FILES.get("clip_file"):
+        if  request.FILES.get("clip_file").name:
+            print("step 1")
+            path = handle_uploaded_file_movie(request.FILES['clip_file'], str(request.FILES['clip_file']),
+                                                      rjd["user_id"])
+            print("step 2")
+            clip.mov_address = path
+            print("path")
+            #generate_thumbnail(path, "thumnail.png", 0,"128")
+            print(getLength(path))
+    clip.clip_thumb = "https://img.youtube.com/vi/"+rjd["youtube_id"]+"/0.jpg"
+    clip.clip_title =rjd["clip_title"]
+    for t in rjd["filter_p"]:
+        clip.clip_filter.add(EduFilter.objects.get(name=t.replace("#  ","")))
+        print(t)
+    clip.clip_play = int(rjd["time"])
+    print(rjd["time"])
+    clip.clip_youtube = rjd["youtube_id"]
+    clip.clip_info =  rjd["clip_info"]
+    clip.clip_object = rjd["clip_object"]
+    clip.save()
+    return JsonResponse({"result":"ok"})
 
-@csrf_exempt
-def vue_toggle_fav_course(request):
-    ad = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    cl = Course.objects.get(id=request.GET.get("course_id"))
-    if cl in ad.interest_course.all():
-        ad.interest_course.remove(cl)
-    else:
-        ad.interest_course.add(cl)
-        fv = FavCourseLog()
-        fv.user = ad
-        fv.Course = cl
-        fv.save()
 
 
-@csrf_exempt
-def vue_toggle_fav_path(request):
-    ad = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    cl = Path.objects.get(id=request.GET.get("course_id"))
-    if cl in ad.interest_path.all():
-        ad.interest_path.remove(cl)
-    else:
-        ad.interest_path.add(cl)
-        fv = FavPathLog()
-        fv.user = ad
-        fv.Path = cl
-        fv.save()
+
+#채널 통계 소스
+# @csrf_exempt
+# def vue_get_channel_statics_path(request):
+#     if gca_check_session(request)== False:
+#         return HttpResponse("{}")
+#     path = Path.objects.get(id=request.GET.get("path_id"))
+#     favorite_date_list = Favoritelog.objects.all().filter(favorite_path=path).order_by("favorite_date").values("favorite_date").distinct()
+#     result={}
+#     result["favorite_static"]=[]
+#     for fd in favorite_date_list:
+#         temp={}
+#         temp["favorite_date"] = fd["favorite_date"]
+#         temp["number"] = len(Favoritelog.objects.filter(favorite_path=path).filter(favorite_date = fd["favorite_date"]))
+#         result["favorite_static"].append(copy.deepcopy(temp))
+#
+#     watch_time = WatchPathHistory.objects.all().filter(watch_path_path=path).order_by("watch_path_date").values("watch_path_date").distinct()
+#     result["watch_static"]=[]
+#     for i in watch_time:
+#         temp={}
+#         temp["watch_path_date"] = i["watch_path_date"]
+#         temp["number"]= len(WatchPathHistory.objects.all().filter(watch_path_path=path).filter(date=i["watch_path_date"]))*6
+#         result["watch_static"].append(copy.deepcopy(temp))
+#
+#     local_list=[]
+#     for f in path.additionaluserinfo_set.all():
+#         for t in f.user.startup.selected_company_filter_list.all():
+#             if t.cat_1=="소재지":
+#                 local_list.append(t.filter_name)
+#     company_kind_list=[]
+#     for f in path.additionaluserinfo_set.all():
+#         for t in f.user.startup.selected_company_filter_list.all():
+#             if t.cat_0=="기본장르" :
+#                 company_kind_list.append(t.filter_name)
+#     em_list=[]
+#     for f in path.additionaluserinfo_set.all():
+#         for t in f.user.startup.selected_company_filter_list.all():
+#             if t.cat_0=="구성원"  :
+#                 company_kind_list.append(t.filter_name)
+#     field_list = []
+#     for f in path.additionaluserinfo_set.all():
+#         for t in f.user.startup.selected_company_filter_list.all():
+#             if t.cat_0 == "영역":
+#                 field_list.append(t.filter_name)
+#     user_list=[]
+#     for u in path.additionaluserinfo_set.all():
+#         if u not in user_list:
+#             user_list.append(u)
+#     for u in Favoritelog.objects.all().filter(favorite_path=path):
+#         if u.user not in user_list:
+#             user_list.append(u.user)
+#     for u in HitPathLog.objects.all().filter(hit_path=path):
+#         if u.user not in user_list:
+#             user_list.append(u.user)
+#     for u in WatchPathHistory.objects.all().filter(watch_path_path=path):
+#         if u.user not in user_list:
+#             user_list.append(u.user)
+#     result_user=[]
+#     for u in user_list:
+#         temp={}
+#         temp["repre_name"]= u.user.startup.repre_name
+#         result_user.append(copy.deepcopy(temp))
+#
+#
+#     return JsonResponse({"line":result, "path_company_kind_tag":organize(company_kind_list), "path_local_tag":organize(local_list),
+#                          "path_em_tag": organize(em_list), "path_field_tag":organize(field_list), "user":result_user })
 
 
 @csrf_exempt
 def vue_get_channel_statics_path(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
     path = Path.objects.get(id=request.GET.get("path_id"))
-    fav_date_list = FavPathLog.objects.all().filter(Path=path).order_by("date").values("date").distinct()
-    result={}
-    result["fav_static"]=[]
-    for fd in fav_date_list:
-        temp={}
+    hit_date_list = HitPathLog.objects.all().filter(hit_path=path).values("hit_path_date").distinct()
+    result = {}
+    result["hit_static"] = []
+    for hd in hit_date_list:
+        temp = {}
+        temp["date"] = hd["hit_path_date"]
+        temp["hit_num"] = len(HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"]))
+        result["hit_static"].append(copy.deepcopy(temp))
+    favorite_date_list = FavoriteLog.objects.all().filter(path=path).values("date").distinct()
+    result["favorite_static"] = []
+    for fd in favorite_date_list:
+        temp = {}
         temp["date"] = fd["date"]
-        temp["number"] = len(FavPathLog.objects.filter(Path=path).filter(date = fd["date"]))
-        result["fav_static"].append(copy.deepcopy(temp))
+        temp["favorite_num"] = len(FavoriteLog.objects.filter(path=path).filter(date=fd["date"]))
+        result["favorite_static"].append(copy.deepcopy(temp))
+    registered_date_list = RegisteredChannel.objects.all().filter(path=path).values("date").distinct()
+    result["registered_static"] = []
+    for fd in registered_date_list:
+        temp = {}
+        temp["date"] = fd["date"]
+        temp["registered_num"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
+        result["registered_static"].append(copy.deepcopy(temp))
+        # 전체
+    # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
-    watch_time = WatchPathHistory.objects.all().filter(Path=path).order_by("date").values("date").distinct()
-    result["watch_static"]=[]
-    for i in watch_time:
-        temp={}
-        temp["date"] = i["date"]
-        temp["number"]= len(WatchPathHistory.objects.all().filter(Path=path).filter(date=i["date"]))*6
-        result["watch_static"].append(copy.deepcopy(temp))
+    all_user_list = []
+    hit_user_list = []
+    favorite_usr_list = []
+    registered_usr_list = []
 
-    local_list=[]
-    for f in path.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_1=="소재지":
-                local_list.append(t.name)
-    kind_list=[]
-    for f in path.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="기본장르" :
-                kind_list.append(t.name)
-    em_list=[]
-    for f in path.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="구성원"  :
-                kind_list.append(t.name)
-    field_list = []
-    for f in path.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0 == "영역":
-                field_list.append(t.name)
-    user_list=[]
-    for u in path.additionaluserinfo_set.all():
-        if u not in user_list:
-            user_list.append(u)
-    for u in FavPathLog.objects.all().filter(Path=path):
-        if u.user not in user_list:
-            user_list.append(u.user)
-    for u in HitPathLog.objects.all().filter(path=path):
-        if u.user not in user_list:
-            user_list.append(u.user)
-    for u in WatchPathHistory.objects.all().filter(Path=path):
-        if u.user not in user_list:
-            user_list.append(u.user)
-    result_user=[]
-    for u in user_list:
-        temp={}
-        temp["name"]= u.name
-        result_user.append(copy.deepcopy(temp))
+    for hit_row in HitPathLog.objects.all().filter(hit_path=path):
+        try:
+            hit_user_list.append(hit_row.hit_path_user.user.startup)
+        except:
+            pass
+    for fav_row in FavoriteLog.objects.all().filter(path=path):
+        try:
+            favorite_usr_list.append(fav_row.user.user.startup)
+        except:
+            pass
+    for reg_row in RegisteredChannel.objects.all().filter(path=path):
+        try:
+            registered_usr_list.append(reg_row.channel_user.user.startup)
+        except:
+            pass
+    all_usr_list = list(set(hit_user_list + favorite_usr_list + registered_usr_list))
+    result["all_usr_num"] = len(all_user_list)
+    result["hit_usr_num"] = len(hit_user_list)
+    result["favorite_usr_num"] = len(favorite_usr_list)
+    result["registered_usr_num"] = len(registered_usr_list)
+    # 전체
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    result["all_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in all_usr_list:
 
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
 
-    return JsonResponse({"line":result, "path_kind_tag":organize(kind_list), "path_local_tag":organize(local_list),
-                         "path_em_tag": organize(em_list), "path_field_tag":organize(field_list), "user":result_user })
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+        result["all_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    # 방문자
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+    result["hit_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+        result["hit_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+        # 등록자
+    reg_comtype_filter = []
+    reg_location_filter = []
+    reg_genre_filter = []
+    reg_area_filter = []
+    result["reg_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in registered_usr_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                reg_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                reg_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                reg_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                reg_area_filter.append(filter.filter_name)
+
+        result["reg_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+        # 좋아요
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    result["fav_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+        result["fav_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    return JsonResponse({"data": result, })
 
 
 @csrf_exempt
 def vue_get_channel_statics_course(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
     course = Course.objects.get(id=request.GET.get("course_id"))
-    fav_date_list = FavCourseLog.objects.all().filter(Course=course).values("date").distinct()
-    result={}
-    result["fav_static"]=[]
-    for fd in fav_date_list:
-        temp={}
+    hit_date_list = HitCourseLog.objects.all().filter(hit_course=course).values("hit_course_date").distinct()
+    result = {}
+    result["hit_static"] = []
+    for hd in hit_date_list:
+        temp = {}
+        temp["date"] = hd["hit_course_date"]
+        temp["hit_num"] = len(HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"]))
+        result["hit_static"].append(copy.deepcopy(temp))
+    favorite_date_list = FavoriteLog.objects.all().filter(course=course).values("date").distinct()
+    result["favorite_static"] = []
+    for fd in favorite_date_list:
+        temp = {}
         temp["date"] = fd["date"]
-        print(len(FavCourseLog.objects.filter(Course=course).filter(date = fd["date"])))
-        temp["number"] = len(FavCourseLog.objects.filter(Course=course).filter(date = fd["date"]))
-        result["fav_static"].append(copy.deepcopy(temp))
+        temp["favorite_num"] = len(FavoriteLog.objects.filter(course=course).filter(date=fd["date"]))
+        result["favorite_static"].append(copy.deepcopy(temp))
+    registered_date_list = RegisteredChannel.objects.all().filter(course=course).values("date").distinct()
+    result["registered_static"] = []
+    for fd in registered_date_list:
+        temp = {}
+        temp["date"] = fd["date"]
+        temp["registered_num"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
+        result["registered_static"].append(copy.deepcopy(temp))
+        # 전체
+    # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
-    watch_time = WatchCourseHistory.objects.all().filter(course=course).values("date").distinct()
-    result["watch_static"]=[]
-    for i in watch_time:
-        temp={}
-        temp["date"] = i["date"]
-        temp["number"]= len(WatchCourseHistory.objects.all().filter(course=course).filter(date=i["date"]))*6
-        result["watch_static"].append(copy.deepcopy(temp))
+    all_user_list = []
+    hit_user_list = []
+    favorite_usr_list = []
+    registered_usr_list = []
 
-    local_list=[]
-    for f in course.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_1=="소재지":
-                local_list.append(t.name)
-    kind_list=[]
-    for f in course.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="기본장르" :
-                kind_list.append(t.name)
-    em_list=[]
-    for f in course.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="구성원"  :
-                kind_list.append(t.name)
-    field_list = []
-    for f in course.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0 == "영역":
-                field_list.append(t.name)
+    for hit_row in HitCourseLog.objects.all().filter(hit_course=course):
+        try:
+            hit_user_list.append(hit_row.hit_course_user.user.startup)
+        except:
+            pass
+    for fav_row in FavoriteLog.objects.all().filter(course=course):
+        try:
+            favorite_usr_list.append(fav_row.user.user.startup)
+        except:
+            pass
+    for reg_row in RegisteredChannel.objects.all().filter(course=course):
+        try:
+            registered_usr_list.append(reg_row.channel_user.user.startup)
+        except:
+            pass
+    all_user_list = list(set(hit_user_list + favorite_usr_list + registered_usr_list))
+    result["all_usr_num"] = len(all_user_list)
+    result["hit_usr_num"] = len(hit_user_list)
+    result["favorite_usr_num"] = len(favorite_usr_list)
+    result["registered_usr_num"] = len(registered_usr_list)
+    # 전체
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    result["all_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in all_user_list:
 
-    return JsonResponse({"line":result, "path_kind_tag":organize(kind_list), "path_local_tag":organize(local_list),
-                         "path_em_tag": organize(em_list), "path_field_tag":organize(field_list),  })
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+        result["all_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    # 방문자
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+    result["hit_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+        result["hit_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+        # 등록자
+    reg_comtype_filter = []
+    reg_location_filter = []
+    reg_genre_filter = []
+    reg_area_filter = []
+    result["reg_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in registered_usr_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                reg_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                reg_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                reg_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                reg_area_filter.append(filter.filter_name)
+
+        result["reg_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+        # 좋아요
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    result["fav_startup_list"] = []
+    k = 1
+    com_kind = ""
+    local = ""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+                local = filter.filter_name
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+        result["fav_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    return JsonResponse({"data": result, })
 
 
 @csrf_exempt
 def vue_get_channel_statics_clip(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
     clip = Clip.objects.get(id=request.GET.get("clip_id"))
-    fav_date_list = FavClipLog.objects.all().filter(Clip=clip).values("date").distinct()
-    result={}
-    result["fav_static"]=[]
-    for fd in fav_date_list:
+    hit_date_list  =  HitClipLog.objects.all().filter(hit_clip=clip).values("hit_clip_date").distinct()
+    result = {}
+    result["hit_static"] = []
+    for hd in hit_date_list:
+        temp={}
+        temp["date"] = hd["hit_clip_date"]
+        temp["hit_num"] = len(HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"]))
+        result["hit_static"].append(copy.deepcopy(temp))
+    favorite_date_list = FavoriteLog.objects.all().filter(clip=clip).values("date").distinct()
+    result["favorite_static"]=[]
+    for fd in favorite_date_list:
         temp={}
         temp["date"] = fd["date"]
-        temp["fav_num"] = len(FavClipLog.objects.filter(Clip=clip).filter(date = fd["date"]))
-        result["fav_static"].append(copy.deepcopy(temp))
+        temp["favorite_num"] = len(FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"]))
+        result["favorite_static"].append(copy.deepcopy(temp))
+    registered_date_list = RegisteredChannel.objects.all().filter(clip=clip).values("date").distinct()
+    result["registered_static"] = []
+    for fd in registered_date_list:
+        temp = {}
+        temp["date"] = fd["date"]
+        temp["registered_num"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
+        result["registered_static"].append(copy.deepcopy(temp))
+# 전체
+    # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
-    watch_time = WatchClipHistory.objects.all().filter(clip=clip).values("date").distinct()
-    result["watch_static"]=[]
-    for i in watch_time:
-        temp={}
-        temp["date"] = i["date"]
+    all_user_list=[]
+    hit_user_list = []
+    favorite_usr_list=[]
+    registered_usr_list=[]
 
-        temp["number"]= len(WatchClipHistory.objects.all().filter(clip=clip).filter(date=i["date"]))*6
-        result["watch_static"].append(copy.deepcopy(temp))
-
-    local_list=[]
-    for f in clip.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_1=="소재지":
-                local_list.append(t.name)
-    kind_list=[]
-    for f in clip.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="기본장르" :
-                kind_list.append(t.name)
-    em_list=[]
-    for f in clip.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0=="구성원"  :
-                kind_list.append(t.name)
-    field_list = []
-    for f in clip.additionaluserinfo_set.all():
-        for t in f.user.startup.filter.all():
-            if t.cat_0 == "영역":
-                field_list.append(t.name)
-
-    return JsonResponse({"line":result, "path_kind_tag":organize(kind_list), "path_local_tag":organize(local_list),
-                         "path_em_tag": organize(em_list), "path_field_tag":organize(field_list),  })
-
-
-
-
-
-
-
-def appliance_all_download(request, sb):
-    ap_list = Appliance.objects.filter(sb_id=sb)
-    zip_filename = "%s.zip" % (
-        str(ap_list[0].sb.apply_end).split("-")[
-            0] + "_" + ap_list[0].sb.title)
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for ap in ap_list[4:5]:
-        zip_subdir = "applicance"
-        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
-        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
-            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-            time.sleep(1)
-        if ap.business_file != "":
-            fdir, fname = os.path.split(ap.business_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
-            zf.write(ap.business_file.path, zip_path)
-        if ap.fund_file != "":
-            fdir, fname = os.path.split(ap.fund_file.path)
-            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-            zf.write(ap.fund_file.path, zip_path)
-        if ap.etc_file != "":
-            fdir, fname = os.path.split(ap.etc_file.path)
-            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
-            zf.write(ap.etc_file.path, zip_path)
-        if ap.ir_file != "":
-            fdir, fname = os.path.split(ap.ir_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-            zf.write(ap.ir_file.path, zip_path)
-        if ap.ppt_file != "":
-            fdir, fname = os.path.split(ap.ppt_file.path)
-            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-            zf.write(ap.ppt_file.path, zip_path)
-        if ap.tax_file != "":
-            fdir, fname = os.path.split(ap.tax_file.path)
-            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-            zf.write(ap.tax_file.path, zip_path)
-    f = io.BytesIO()
-    book = xlwt.Workbook()
-    sheet = book.add_sheet("지원자 리스트")
-    sheet.write(0, 0, "순서")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "업종")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "사업자 등록번호")
-    sheet.write(0, 5, "이메일")
-    sheet.write(0, 6, "대표 전화번호")
-    sheet.write(0, 7, "필터")
+    for hit_row  in HitClipLog.objects.all().filter(hit_clip=clip ):
+        try:
+            hit_user_list.append( hit_row.hit_clip_user.user.startup)
+        except:
+            pass
+    for fav_row in FavoriteLog.objects.all().filter(clip=clip):
+        try:
+            favorite_usr_list.append(fav_row.user.user.startup)
+        except:
+            pass
+    for reg_row  in RegisteredChannel.objects.all().filter(clip=clip):
+        try:
+            registered_usr_list.append(reg_row.channel_user.user.startup )
+        except:
+            pass
+    all_user_list =  list(set( hit_user_list + favorite_usr_list + registered_usr_list ) )
+    result["all_usr_num"] = len(all_user_list)
+    result["hit_usr_num"] = len(hit_user_list)
+    result["favorite_usr_num"] = len(favorite_usr_list)
+    result["registered_usr_num"] = len(registered_usr_list)
+    # 전체
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    result["all_startup_list"] = []
     k = 1
-    for a in ap_list:
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, a.startup.name)
-        sheet.write(k, 2, a.startup.category)
-        sheet.write(k, 3, a.startup.user.additionaluserinfo.name)
-        sheet.write(k, 4, Appliance.objects.all().filter(sb_id=sb).filter(startup_id=a.startup.id)[0].business_number)
-        sheet.write(k, 5, a.startup.user.username)
-        sheet.write(k, 6, a.startup.user.additionaluserinfo.tel)
-        filter_list = a.startup.filter.all()
-        f_arr = []
-        for fil in filter_list:
-            f_arr.append(fil.name)
-        sheet.write(k, 7, ",".join(f_arr))
+    com_kind=""
+    local=""
+    for startup in all_user_list:
+
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+                local=filter.filter_name
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+        result["all_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
         k = k + 1
-    book.save(f)
-    out_content = f.getvalue()
-    zf.writestr("전체 리스트.xls", f.getvalue())
+    # 방문자
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+    result["hit_startup_list"] = []
+    k = 1
+    com_kind=""
+    local=""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+                local=filter.filter_name
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
 
-    zf.close()
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+        result["hit_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+# 등록자
+    reg_comtype_filter = []
+    reg_location_filter = []
+    reg_genre_filter = []
+    reg_area_filter = []
+    result["reg_startup_list"] = []
+    k = 1
+    com_kind=""
+    local=""
+    for startup in registered_usr_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                reg_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                reg_location_filter.append(filter.filter_name)
+                local=filter.filter_name
+            if filter.cat_0 == "기본장르":
+                reg_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                reg_area_filter.append(filter.filter_name)
 
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
+        result["reg_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+# 좋아요
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    result["fav_startup_list"] = []
+    k = 1
+    com_kind=""
+    local=""
+    for startup in hit_user_list:
+        filter_list = startup.selected_company_filter_list.all()
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+                com_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+                local=filter.filter_name
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+        result["fav_startup_list"].append({
+            "startup_id": startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": com_kind,
+            "local": local,
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    return JsonResponse({"data":result,})
 
 
-import zipfile
-def getfiles(request):
-    # Files (local path) to put in the .zip
-    # FIXME: Change this (get paths from DB etc)
-    filenames = ["/home/ubuntu/google.pdf"]
 
-    # Folder name in ZIP archive which contains the above files
-    # E.g [thearchive.zip]/somefiles/file2.txt
-    # FIXME: Set this to something better
-    zip_subdir = "somefiles"
-    zip_filename = "%s.zip" % zip_subdir
 
-    # Open StringIO to grab in-memory ZIP contents
-    s =  io.BytesIO()
 
-    # The zip compressor
-    zf = zipfile.ZipFile(s, "w")
 
-    for fpath in filenames:
-        # Calculate path for file in zip
-        fdir, fname = os.path.split(fpath)
-        zip_path = os.path.join(zip_subdir, fname)
 
-        # Add file, at correct path
-        zf.write(fpath, zip_path)
 
-    # Must close zip for all contents to be written
-    zf.close()
 
-    # Grab ZIP file from in-memory, make response with correct MIME-type
-    resp = HttpResponse(s.getvalue(), mimetype="application/x-zip-compressed")
-    # ..and correct content-disposition
-    resp['Content-Disposition'] = 'attachment; filename=%s' % zip_filename
 
-    return resp
+@csrf_exempt
+def vue_get_statics_by_channel(request):
+    path = Path.objects.all()
+    result = {}
 
-def vue_get_clip_all(request):
-    result = []
-    for c in Clip.objects.all():
+    result["simple_path"]=[]
+    for p in Path.objects.all():
+        result["simple_path"].append({
+            "name":p.path_title, "id":p.id,
+        })
+    result["simple_course"] = []
+    for p in Course.objects.all():
+        result["simple_course"].append({
+            "name": p.title, "id": p.id,
+        })
+    result["simple_clip"] = []
+    for p in clip.clip_objects.all():
+        result["simple_clip"].append({
+            "name": p.title, "id": p.id,
+        })
+
+
+
+
+    result["path"]=[]
+    for p in path:
+        temp_path={}
+        temp_path["clip_title"] = p.title
+        temp_path["id"] = p.id
+        temp_path["course"] = []
+        for c in p.course.all():
+            temp_course = {}
+            temp_course["id"] = c.id
+
+            temp_course["clip_title"] = c.title
+            temp_course["clip"] = []
+            for clip in c.clips.all():
+                print("why")
+                temp_clip = {}
+                temp_clip["clip_title"] = clip.clip_title
+                temp_clip["id"] = clip.id
+
+                temp_course["clip"].append(copy.deepcopy(temp_clip))
+            temp_path["course"].append(copy.deepcopy(temp_course))
+        result["path"].append( copy.deepcopy(temp_path))
+    return  JsonResponse(result)
+
+
+#------------------------ 중복일 가능성 있음
+# --------[강의 샘플 듣기]-------
+
+
+
+# --------[코스  샘플 듣기]-------
+
+
+
+
+# --------[패스스 샘플 듣기]------
+
+
+
+#-----------------------재 중복일 수 있음
+# --------[모든 샘플 듣기]-------
+# todo :
+
+
+# --------[[코스 샘플 듣기]-------
+
+
+# -------[[모든 패스리스트 가지고 오기]]----------
+
+
+@csrf_exempt
+def vue_get_lec_tag(request):
+    result={}
+    result["tag"]=[]
+    for filter in EduFilter.objects.all():
         temp={}
-        temp["id"] = c.id
-        temp["user"]=c.user.name
-        temp["img"]=c.thumb
-        temp["title"]=c.title
-        temp["dur"]=c.play
-        temp["date"]=c.created_at
-        temp["sub"] = c.info
-        temp["tag"] =[]
-        for t in c.filter.all():
-            temp["tag"].append(t.name)
-        result.append(copy.deepcopy(temp))
-    return JsonResponse(result, safe=False)
+        temp["id"] = filter.id
+        temp["name"] = filter.name
+        result["tag"].append(copy.deepcopy(temp))
+    return JsonResponse(result)
 
+@csrf_exempt
+def vue_get_clip_uploaded(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
 
-def vue_get_course_all(request):
-    result = []
-    for c in Course.objects.all():
+    clip_list = Clip.objects.filter(clip_user_id = request.GET.get("gca_id"))
+    print(clip_list)
+    result={}
+    result["clip"]=[]
+    for c in clip_list:
         temp={}
-        temp["id"] = c.id
+        temp["clip_title"] = c.clip_title
+        temp["clip_created_at"] = c.clip_created_at
         try:
-            temp["entry_point"] = "/course/view/"+ str(c.id)+"/" + str(c.clips.all().first().id)
+            temp["clip_user"] = c.clip_user.user.startup.repre_name
         except:
-            temp["entry_point"]=""
-        temp["user"]=c.user.name
-        temp["img"]=c.thumb
-        temp["title"]=c.title
-        temp["dur"]=c.total_play
-        temp["date"]=c.created_at
-        temp["sub"] = c.info
-        temp["tag"] =[]
-        for t in c.filter.all():
-            temp["tag"].append(t.name)
-        result.append(copy.deepcopy(temp))
-    return JsonResponse(result, safe=False)
+            temp["clip_user"] = c.clip_user.mng_name
+        temp["clip_play"] = c.clip_play
+        temp["clip_author"] = c.clip_user.id
+        temp["clip_thumb"] = c.clip_thumb
+        temp["id"] = c.id
+        result["clip"].append(copy.deepcopy(temp))
+
+    return JsonResponse(result)
+
+
+@csrf_exempt
+def vue_modify_clip(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    clip = Clip.objects.get(id=rjd["clip_id"])
+
+    print("step 00")
+    if request.FILES.get("clip_file"):
+        if request.FILES.get("clip_file").name:
+            print("step 1")
+            path = handle_uploaded_file_movie(request.FILES['clip_file'], str(request.FILES['clip_file']),
+                                              rjd["user_id"])
+            print("step 2")
+            clip.mov_address = path
+            print("path")
+            # generate_thumbnail(path, "thumnail.png", 0,"128")
+            print(getLength(path))
+    clip.clip_thumb = "https://img.youtube.com/vi/" + rjd["youtube_id"] + "/0.jpg"
+    clip.clip_title = rjd["clip_title"]
+    for t in rjd["filter_p"]:
+        clip.clip_filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
+        print(t)
+    clip.clip_play = int(rjd["time"])
+    print(rjd["time"])
+    clip.clip_youtube = rjd["youtube_id"]
+    clip.clip_info = rjd["clip_info"]
+    clip.clip_object = rjd["clip_object"]
+    clip.save()
+    return JsonResponse({"result": "ok"})
 
 
 
-def vue_get_path_all(request):
-    result = []
-    for c in Path.objects.all():
+
+
+
+
+
+
+
+
+
+@csrf_exempt
+def vue_upload_course(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    course = Course()
+    course.course_user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
+    course.save()
+    if request.FILES.get("file_1"):
+        if  request.FILES.get("file_1").name:
+            path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
+                                              rjd["user_id"])
+            course.course_thumb = path
+    course.course_title = rjd["course_title"]
+    for t in rjd["course_tag"]:
+        course.course_filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
+    time=0
+    for t in rjd["course_clips"]:
+        course.course_clips.add(Clip.objects.get(id=t["id"]))
+        time= time + t["clip_play"]
+    course.course_info = rjd["course_info"]
+    course.course_object = rjd["course_object"]
+    course.course_total_play = time
+    course.course_rec_dur = rjd["course_rec_dur"]
+    course.save()
+    return JsonResponse({"result": "ok"})
+
+@csrf_exempt
+def vue_modify_course(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    course = Course.objects.get(id=rjd["course_id"])
+    course.course_user = AdditionalUserInfo.objects.get(id=rjd["user_id"])
+    course.save()
+    if request.FILES.get("file_1"):
+        if  request.FILES.get("file_1").name:
+            path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
+                                              rjd["user_id"])
+            course.course_thumb = path
+    course.course_title = rjd["course_title"]
+    course.course_filter.clear()
+    for t in rjd["course_tag"]:
+        course.course_filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
+    time=0
+    course.course_clips.clear()
+    for t in rjd["course_clips"]:
+        course.course_clips.add(Clip.objects.get(id=t["clip_id"]))
+        time= time + t["clip_play"]
+    course.course_info = rjd["course_info"]
+    course.course_object = rjd["course_object"]
+    course.course_total_play = time
+    course.course_rec_dur = rjd["course_rec_dur"]
+    course.save()
+    return JsonResponse({"result": "ok"})
+
+
+
+
+
+
+
+
+
+
+@csrf_exempt
+def vue_get_course_uploaded(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    course_list = Course.objects.all().filter(course_user_id = request.GET.get("gca_id"))
+    result={}
+    result["course_set"]=[]
+    for c in course_list:
         temp={}
         temp["id"] = c.id
+        temp["course_created_at"] = c.course_created_at
+        temp["course_title"] = c.course_title
+        temp["filter"] = []
+        print(c.course_clips.all().first())
         try:
-            temp["entry_point"] = "/path/view/"+ str(c.id)+"/"+ str(c.course.all().first().id) + "/"+ str(c.course.all().first().clips.all().first().id)
+            temp["entry_point"]= "/course/view/"+str(c.id)+"/"+str(c.course_clips.all().first().id)
         except:
-            temp["entry_point"]=""
-        temp["user"]=c.user.name
-        temp["img"]=c.thumb
-        temp["title"]=c.title
-        temp["dur"]=c.total_play
-        temp["date"]=c.created_at
-        temp["sub"] = c.info
-        temp["tag"] =[]
-        for t in c.filter.all():
-            temp["tag"].append(t.name)
-        result.append(copy.deepcopy(temp))
-    return JsonResponse(result, safe=False)
+            temp["entry_point"] = ""
+        for f in c.course_filter.all():
+            print(f.name)
+            temp["filter"].append(f.name)
+        temp["course_rec_dur"] = c.course_rec_dur
+        temp["course_info"] = c.course_info
+        try:
+            temp["user"] =  c.course_user.user.startup.repre_name
+        except:
+            temp["user"] = c.course_user.mng_name
+        temp["course_total_play"] = c.course_total_play
+        temp["course_clips"] = []
+        for clip in c.course_clips.all():
+            ttem={}
+            ttem["clip_title"]= clip.clip_title
+            ttem["clip_created_at"] = clip.clip_created_at
+            ttem["clip_play"] = clip.clip_play
+            ttem["int"] = len(clip.additionaluserinfo_set.all())
+            temp["course_clips"].append(copy.deepcopy(ttem))
+        result["course_set"].append(copy.deepcopy(temp))
+    return JsonResponse(result)
+
+
 
 @csrf_exempt
-def vue_set_service_show(request):
-    service_id= request.POST.get("id")
-    ser = Service.objects.get(id= service_id)
-    ser.show = request.POST.get("show")
-    ser.save()
-    return JsonResponse({"result":"ok"})
+def vue_upload_path(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    path = Path()
+    path.path_user = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+    path.save()
+    if request.FILES.get("file_1"):
+        print(request.FILES)
+        if request.FILES.get("file_1").name:
+            img_path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
+                                              rjd["user_id"])
+            path.path_thumb = img_path
+    path.path_title = rjd["path_title"]
+
+    for t in rjd["path_filter"]:
+        print(t)
+        path.path_filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
+
+    try:
+        time=0
+        for t in rjd["path_course"]:
+            path.path_course.add(Course.objects.get(id=t["id"]))
+            time = time + t["course_total_play"]
+    except Exception as e:
+        print(e)
+        pass
+    path.path_total_play = time
+    path.path_info = rjd["path_info"]
+    path.path_rec_dur = rjd["path_rec_dur"]
+    path.path_object = rjd["path_object"]
+    path.save()
+    return JsonResponse({"result": "ok"})
 
 
 @csrf_exempt
-def vue_submit_application(request):
-    id = request.GET.get("id")
-    gr = request.GET.get("gr")
-    sb = SupportBusiness.objects.get(id=gr)
-    st = AdditionalUserInfo.objects.get(id=id).user.startup
-    app = Appliance(sb=sb, startup=st)
-    app.is_submit=True
+def vue_modify_path(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    rjd = json.loads(request.POST.get("json_data"))
+    print(rjd)
+    path = Path.objects.get(id= rjd["path_id"])
+    path.path_user = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+    path.save()
+    if request.FILES.get("file_1"):
+        print(request.FILES)
+        if request.FILES.get("file_1").name:
+            img_path = handle_uploaded_file_movie(request.FILES['file_1'], str(request.FILES['file_1']),
+                                              rjd["user_id"])
+            path.path_thumb = img_path
+    path.path_title = rjd["path_title"]
+    for t in rjd["path_filter"]:
+        print(t)
+        path.path_filter.add(EduFilter.objects.get(name=t.replace("#  ", "")))
+
+    try:
+        time=0
+        for t in rjd["path_course"]:
+            path.path_course.add(Course.objects.get(id=t["id"]))
+            time = time + t["course_total_play"]
+    except Exception as e:
+        print(e)
+        pass
+    path.path_total_play = time
+    path.path_info = rjd["path_info"]
+    path.path_rec_dur = rjd["path_rec_dur"]
+    path.path_object = rjd["path_object"]
+    path.save()
+    return JsonResponse({"result": "ok"})
+
 
 @csrf_exempt
-def vue_download_zip_file(request):
-    pass
+def vue_get_clip(request):
+    result={}
+    print(request.POST)
+    clip= Clip.objects.get(id=request.POST.get("id"))
+    result["ip"]=  urllib.request.urlopen('https://api.ipify.org/').read().decode()
+    if request.POST.get("user"):
+        print(AdditionalUserInfo.objects.get(id= request.POST.get("user")).favorite_clip.all())
+        if clip in AdditionalUserInfo.objects.get(id= request.POST.get("user")).favorite_clip.all() :
+            result["is_favored"] = "true"
+        else:
+            result["is_favored"] = "false"
+    result["clip_title"] = clip.clip_title
+    result["clip_youtube"] = clip.clip_youtube
+    result["clip_user_id"]= clip.clip_user.id
+    result["clip_mov_url"] = clip.clip_mov_url
+    result["is_favored"] = is_in_favor_list( "clip" , clip.id , request.GET.get("gca_id")  )
+    result["clip_id"] = clip
+    result["clip_object"] = clip.clip_object
+    result["clip_info"] = clip.clip_info
+    result["clip_play"] = clip.clip_play
+
+
+    try:
+        result["clip_user"] = clip.clip_user.user.startup.repre_name
+    except:
+        result["clip_user"] = clip.clip_user.mng_name
+
+
+
+    result["clip_created_at"] = clip.clip_created_at
+    result["clip_thumb"] = clip.clip_thumb
+    result["clip_id"] = clip.id
+    result["int"] = len(clip.additionaluserinfo_set.all())
+    result["tag"]=[]
+    for  t in clip.clip_filter.all():
+        result["tag"].append(t.name)
+
+    result["another_clip"]=[]
+    for c in Clip.objects.all().order_by("?")[:4]:
+        temp={}
+        temp["id"] = c.id
+        temp["clip_play"] = c.clip_play
+        temp["clip_title"] = c.clip_title
+        temp["clip_thumb"] = c.clip_thumb
+        print(clip.clip_user)
+        try:
+            temp["clip_user"] = c.clip_user.user.startup.repre_name
+            print(temp["clip_user"])
+        except Exception as e:
+            print(e)
+            temp["clip_user"] = c.clip_user.mng_name
+
+        temp["clip_created_at"] = c.clip_created_at
+        temp["clip_youtube"] = c.clip_youtube
+        result["another_clip"].append(copy.deepcopy(temp))
+
+    result["another_course"] = []
+    for c in Course.objects.all().order_by("?"):
+        temp = {}
+        temp["id"] = c.id
+        temp["course_title"] = c.course_title
+        temp["course_total_play"] = c.course_total_play
+        temp["course_thumb"] = c.course_thumb
+        try:
+            temp["course_user"] = c.course_user.user.startup.repre_name
+        except:
+            temp["course_user"] = c.course_user.mng_name
+        temp["course_created_at"] = c.course_created_at
+        try:
+            temp["entry_point"] = "course/view/"+str(c.id) + "/"+ str(c.course_clips.all().first().id)
+        except Exception as e:
+            pass
+        temp["clip_youtube"] = clip.clip_youtube
+        result["another_course"].append(copy.deepcopy(temp))
+
+
+    return JsonResponse(result)
+
+
+
+
+
+
 
 @csrf_exempt
+def vue_get_course(request):
+    result={}
+    clip= Clip.objects.get(id=request.POST.get("clip"))
+    course = Course.objects.get(id=request.POST.get("id") )
 
-def vue_get_grant_appliance(request):
-    sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
-    ap = Appliance.objects.all().filter(sb=sb).filter(is_submit=True)
+    if request.GET.get("gca_id"):
+        print(AdditionalUserInfo.objects.get(id= request.GET.get("gca_id")).favorite_course.all())
+        if course in AdditionalUserInfo.objects.get(id= request.GET.get("gca_id")).favorite_course.all() :
+            result["is_favored"] = "true"
+        else:
+            result["is_favored"] = "false"
+
+    result["course_title"] = Course.objects.get(id=request.POST.get("id")).course_title
+    result["clip_title"] = clip.clip_title
+
+
+    result["course_play"] = course.course_total_play
+
+    result["course_youtube"] = clip.clip_youtube
+    result["course_mov_url"] = clip.clip_mov_url
+    result["course_object"] = clip.clip_object
+    result["course_info"] = clip.clip_info
+    result["course_info"] = clip.clip_info
+
+    result["is_favored"] = is_in_favor_list( "course", course.id , request.GET.get("gca_id"))
+    try:
+        result["course_user"] = clip.clip_user.user.startup.repre_name
+    except:
+        result["course_user"] = clip.clip_user.mng_name
+
+    result["course_created_at"] = clip.clip_created_at
+    result["int"] = len(clip.additionaluserinfo_set.all())
+    result["course_id"] = course.id
+    result["tag"] = []
+    for t in clip.clip_filter.all():
+        result["tag"].append(t.name)
+    result["another_clip"]=[]
     k=1
-    result = []
-    for a in ap :
+
+    url_list = []
+    prefix = "/channel/course/view/"
+    for c in Course.objects.get(id=request.POST.get("id")).course_clips.all():
         temp={}
+        url_list.append(prefix + str(course.id)+"/"+ str(c.id) )
         temp["index"] = k
         k=k+1
-        temp["name"] = a.name
-        temp["kind"] = a.kind
-        temp["id"] = a.id
-        temp["repre"] = a.repre_name
-        temp["business_number"] = a.business_number
-        temp["tel"] = a.repre_tel
-        temp["down_path"] = a.id
-        temp["submit_day"] = str(a.update_at).split(" ")[0]
+        temp["id"] = c.id
+        temp["clip_play"] = c.clip_play
+        temp["clip_created_at"] = c.clip_created_at
+        try:
+            temp["clip_user"] = c.clip_user.user.startup.repre_name
+        except:
+            temp["clip_user"] = c.clip_user.mng_name
+        temp["clip_title"] = c.clip_title
+        result["another_clip"].append(copy.deepcopy(temp))
+
+    result["another_course"] = []
+    for c in Course.objects.all().order_by("?")[:2]:
+        temp = {}
+        temp["id"] = c.id
+        temp["course_title"] = c.course_title
+        temp["course_total_play"] = c.course_total_play
+        temp["course_thumb"] = c.course_thumb
+        try:
+            temp["course_user"] = c.course_user.user.startup.repre_name
+        except:
+            temp["course_user"] = c.course_user.mng_name
+
+        temp["course_created_at"] = c.course_created_at
+        try:
+            temp["course_entry_point"] = "/channel/course/view/"+str(c.id)+"/"+str(c.course_clips.first().id)+"/"
+        except:
+            pass
+        result["another_course"].append(copy.deepcopy(temp))
+
+    present = url_list.index("/channel/course/view/"+ str(course.id) +"/"+str(clip.id) )
+    if present == 0:
+        prev=""
+    else:
+        prev = url_list[present - 1]
+
+    if present == len(url_list)-1:
+        next= ""
+    else:
+        next = url_list[present+1]
+
+    result["prev_url"]= prev
+    result["next_url"] = next
+
+    return JsonResponse(result)
+
+
+
+
+@csrf_exempt
+def vue_get_path(request):
+    result={}
+    try:
+        clip= Clip.objects.get(id=request.POST.get("clip"))
+        result["clip_title"] = clip.clip_title
+        result["clip_youtube"] = clip.clip_youtube
+        result["mov_address"] = clip.mov_address
+        result["object"] = clip.clip_object
+        result["course_info"] = clip.course_info
+
+        result["clip_id"] = clip.id
+        result["int"] = len(clip.additionaluserinfo_set.all())
+        result["clip_play"] = clip.clip_play
+        result["user"] = clip.user.name
+        result["created"] = clip.created_at
+
+    except Exception as e:
+        print(e)
+
+    p = Path.objects.get(id=request.POST.get("id"))
+    result["path_filter"] = []
+    try:
+        result["user"] = p.path_user.user.startup.repre_name
+    except:
+        result["user"] = p.path_user.mng_name
+    for t in p.path_filter.all():
+        result["path_filter"].append(t.name)
+    result["path_title"] = p.path_title
+    result["path_rec_dur"] = p.path_rec_dur
+    result["path_id"] = p.id
+    result["path_info"] = p.path_info
+    result["path_object"] = p.path_object
+    result["path_created_at"] = p.path_created_at
+    result["is_favored"]=""
+    try:
+        if p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_path.all():
+            result["is_favored"] = "true"
+        else:
+            result["is_favored"] = "false"
+    except:
+        print()
+    result["total_play"] = p.path_total_play
+    result["course"]=[]
+    result["another_course"] = []
+
+    k = 1
+    a = 1
+    # 패스 => 코스 항목
+    for c in Path.objects.get(id=request.POST.get("id")).path_course.all():
+            temp = {}
+            temp["index"] = a
+            a = a + 1
+            k = 1
+            temp["id"] = c.id
+            temp["course_title"] = c.course_title
+            try:
+                temp["author"] = c.course_user.user.startup.repre_name
+            except:
+                temp["author"] = c.course_user.mng_name
+            temp["course_created_at"] = c.course_created_at
+            temp["course_info"] = c.course_info
+            temp["course_object"] = c.course_object
+            temp["course_rec_dur"] = c.course_rec_dur
+            temp["course_total_play"] = c.course_total_play
+
+            temp["course_filter"] = []
+            for f in c.course_filter.all():
+                temp["course_filter"].append(f.name)
+
+            temp["clips"] = []
+            # 코스 항목 => 패스 항목 //
+            for clip in c.course_clips.all():
+                ttem = {}
+                ttem["index"] = k
+                k = k + 1
+                ttem["id"] = clip.id
+                try:
+                    ttem["clip_user"] = clip.clip_user.user.startup.repre_name
+                except:
+                    ttem["clip_user"] = clip.clip_user.mng_name
+                ttem["clip_play"] = clip.clip_play
+                ttem["clip_title"] = clip.clip_title
+                ttem["clip_created_at"] = clip.clip_created_at
+                ttem["clip_info"] = clip.clip_info
+                ttem["clip_object"] = clip.clip_object
+                temp["clips"].append(copy.deepcopy(ttem))
+            result["course"].append(copy.deepcopy(temp))
+            result["another_course"].append(copy.deepcopy(temp))
+    temp= JsonResponse(result)
+#    temp_content= temp.content // json string
+#    //  update stat_table set json_data= temp_content where  stat_id=1;
+    return temp
+    #return JsonResponse(result)
+
+#TODO: 통계 페이지 아이디 각각 정의할것
+@csrf_exempt
+def veu_del_history(request):
+    id= request.GET.get("id")
+    try:
+        History.objects.get(id=id).delete()
+    except:
+        pass
+    try:
+        ApplianceHistory.objects.get(id=id).delete()
+    except:
+        pass
+    return JsonResponse({"result":"ok"})
+
+@csrf_exempt
+def set_alarm_read(request):
+    arl=Alarm.objects.get(id= request.GET.get("val") )
+    arl.alarm_read = True;
+    arl.save()
+    return JsonResponse({"result","success"})
+
+@csrf_exempt
+def delete_alarm(request):
+    del_qs = Alarm.objects.all().filter(read=False).filter(alarm_created_at__lte = datetime.now()-timedelta(days=-7))
+    for qs in del_qs:
+        qs.delete()
+
+
+@csrf_exempt
+def  get_support_business_favorite_startup(request):
+    support_business_id = request.GET.get("support_business_id")
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    item = support_business.additionaluserinfo_set.all()
+    result=[]
+    index = 1
+    for st in item:
+        kind = st.user.startup.selected_company_filter_list
+        kind_l = ""
+        for k in kind.all():
+            if( k.cat_1 =="기업형태"):
+                kind_l = k.filter_name
+        result.append({
+            "id":st.user.startup.id,
+            "index":index,
+            "company_name":st.user.startup.company_name,
+            "company_kind":kind_l,
+            "repre_name":st.user.startup.repre_name,
+            "username":st.user.username,
+            "repre_tel" : st.user.startup.repre_tel,
+        })
+        index = index+1
+    return JsonResponse(result,safe=False)
+
+
+
+# --------[기관 회원관리 - 매니저 계정 정보 조회 ]------- (기관관리자)
+@csrf_exempt
+def opr_vue_get_kikwan_account(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    opr_account_set = []
+    k=1
+    opr_all_account_set=[]
+    for ac in  AdditionalUserInfo.objects.all().filter(mng_boss_id=request.POST.get("id")).order_by("-id"):
+        temp={}
+        temp["opr_index"] = k
+        k=k+1
+        temp["opr_id"] = ac.user.username
+        temp["opr_mng_name"] = ac.mng_name
+        temp["opr_mng_position"] = ac.mng_position
+        temp["opr_mng_bonbu"] = ac.mng_bonbu
+        temp["opr_mng_kikwan"] = ac.mng_kikwan
+        temp["opr_mng_team"] = ac.mng_team
+        temp["opr_mng_tel"] = ac.mng_tel
+        temp["opr_mng_phone"] = ac.mng_phone
+        temp["opr_mng_email"] = ac.mng_email
+        temp["opr_mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        opr_account_set.append(copy.deepcopy(temp))
+    k=1
+    for ac in AdditionalUserInfo.objects.all().filter(Q(auth="MNG")|Q(auth="OPR")|Q(auth="4")).order_by("-id"):
+        temp = {}
+        temp["opr_index"] = k
+        k = k + 1
+        temp["opr_id"] = ac.user.username
+        temp["opr_mng_name"] = ac.mng_name
+        temp["opr_mng_position"] = ac.mng_position
+        temp["opr_mng_bonbu"] = ac.mng_bonbu
+        temp["opr_mng_kikwan"] = ac.mng_kikwan
+        temp["opr_mng_team"] = ac.mng_team
+        try:
+            temp["opr_mng_sangsa"] = ac.mng_boss.mng_name
+        except:
+            temp["opr_mng_sangsa"] = ""
+        temp["opr_mng_tel"] = ac.mng_tel
+        temp["opr_mng_phone"] = ac.mng_phone
+        temp["opr_mng_email"] = ac.mng_email
+        temp["opr_mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        opr_all_account_set.append(copy.deepcopy(temp))
+    result={}
+    result["opr_account_set"] = opr_account_set
+    result["opr_all_account_set"] = opr_all_account_set
+
+    return  JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def opr_get_support_business_static(request):
+    result={}
+    support_business_id = request.GET.get("support_business_id")
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    support_business_author_id = request.GET.get("support_business_author")
+    result["opr_support_business_min_date"] =  str(SupportBusiness.objects.get(id=support_business_id).support_business_update_at_ymdt).split(" ")[0]
+    # 지원사업의 승인된 날짜부터 기산한다.
+
+    #  매니저의 해당 지원사업의 방문 데이터
+    support_business_detail_hit_date_ymd=[]
+    support_business_detail_hit=[]
+    for date_dict in  HitLog.objects.all().filter(support_business=support_business).values("date").order_by("-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_date_ymd :
+            support_business_detail_hit_date_ymd.append(date_dict["date"])
+    for date in  support_business_detail_hit_date_ymd:
+        support_business_detail_hit.append(
+            {
+                "date":date, "number":len(HitLog.objects.all().filter(support_business= support_business).filter(date=date))
+            }
+
+        )
+    result["opr_support_business_detail_hit"] = support_business_detail_hit
+
+
+    # 매니저의 해당 지원사업의 좋아요 데이터
+    support_business_detail_favorite_date_ymd = []
+    support_business_favorite=[]
+    for date_dict in FavoriteLog.objects.all().filter(support_business=support_business).filter(date__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0])\
+            .values("date").order_by("-date").distinct():
+        if date_dict["date"] not in support_business_detail_favorite_date_ymd:
+            support_business_detail_favorite_date_ymd.append(date_dict["date"])
+    for date in support_business_detail_favorite_date_ymd:
+        support_business_favorite.append(
+            {
+                "date": date,
+                "number": len(FavoriteLog.objects.all().filter(support_business=support_business).filter(date=date))
+            }
+        )
+    result["opr_support_business_detail_hit"] = support_business_detail_hit
+    result["opr_support_business_favorite"] = support_business_favorite
+
+    # =======[매니저 my 지원사업 좋아요 누른 스타트업의 id, 필터 추출]====== : 완료  list2
+    startup_list = []
+    for favored_startup in FavoredSupportBusiness.objects.all().filter(
+            favored_support_business=support_business).values("favored_usr").distinct():
+        print(favored_startup)
+        startup_list.append(
+            Startup.objects.get(user=AdditionalUserInfo.objects.get(id=favored_startup["favored_usr"]).user))
+    favored_comtype_filter = []
+    favored_location_filter = []
+    favored_genre_filter = []
+    favored_area_filter = []
+    result["favored_startup_list"] = []
+    k = 1
+    # 작업중
+    for startup in startup_list:
+        filter_list = startup.selected_company_filter_list.all()
+        company_kind = ""
+        local = []
+        for filter in filter_list:
+            if filter.cat_1 == "기업형태":
+                favored_comtype_filter.append(filter.filter_name)
+                company_kind = filter.filter_name
+            if filter.cat_1 == "소재지":
+                favored_location_filter.append(filter.filter_name)
+                local.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                favored_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                favored_area_filter.append(filter.filter_name)
+        result["favored_startup_list"].append({
+            "startup_id":startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+    result["favored_comtype_filter"] = (organize(favored_comtype_filter))
+    result["favored_location_filter"] = (organize(favored_location_filter))
+    result["favored_genre_filter"] = (organize(favored_genre_filter))
+    result["favored_area_filter"] = (organize(favored_area_filter))
+
+
+
+
+
+    # 매니저의 해당 지원사업의 지원  데이터
+    support_business_appliance_date_ymd = []
+    support_business_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business=support_business).filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]) \
+            .dates("appliance_update_at_ymdt","day").values("appliance_update_at_ymdt").order_by("-appliance_update_at_ymdt").distinct():
+        if date_dict["appliance_update_at_ymdt"] not in support_business_appliance_date_ymd:
+            support_business_appliance_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+    for date in support_business_appliance_date_ymd:
+        support_business_appliance.append(
+            {
+                "date": date,
+                "number": len(Appliance.objects.all().filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+            }
+        )
+
+    result["opr_support_business_appliance"] = support_business_appliance
+
+
+
+
+    #  매니저가 작성한 모든 지원사업의 방문 데이터
+    #  매니저가 작성한 모든 지원사업
+    support_business_mng_arr = SupportBusiness.objects.all().filter(support_business_author_id=support_business_author_id)
+
+    support_business_detail_hit_avg_date_ymd = []
+    support_business_detail_mng_sum_hit = []
+    support_business_detail_mng_avg_hit = []
+    for date_dict in HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter( date__gte= str(support_business.support_business_update_at_ymdt).split(" ")[0] ).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_avg_date_ymd:
+            support_business_detail_hit_avg_date_ymd.append(date_dict["date"])
+    for date in support_business_detail_hit_avg_date_ymd:
+        support_business_detail_mng_sum_hit.append(
+            {
+                "date": date,
+                "number": len(HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date))
+            }
+        )
+        support_business_detail_mng_avg_hit.append(
+            {
+                "date": date,
+                "number": round(len(HitLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date)) /
+                                len(SupportBusiness.objects.all().filter(support_business_author_id=support_business_author_id).exclude(Q(support_business_status="1") | Q(support_business_status="2")))
+                                ,1)
+            }
+        )
+    result["opr_support_business_detail_mng_sum_hit"] = support_business_detail_mng_sum_hit
+    result["opr_support_business_detail_mng_avg_hit"] = support_business_detail_mng_avg_hit
+
+
+
+    # 매니저가 작성한 모든 지원사업에 좋아요를 누른 데이터
+    support_business_favorite_date_ymd = []
+    support_business_mng_sum_favorite = []
+    support_business_mng_avg_favorite = []
+    for date_dict in FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(
+            date__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["date"])
+    for date in support_business_favorite_date_ymd:
+        support_business_mng_sum_favorite.append(
+            {
+                "date": date,
+                "number": len(
+                    FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date))
+            }
+        )
+        support_business_mng_avg_favorite.append(
+            {
+                "date": date,
+                "number": round(
+                    len(FavoriteLog.objects.all().filter(support_business__in=support_business_mng_arr).filter(date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id=support_business_author_id).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+        )
+    result["opr_support_business_mng_sum_favorite"] = support_business_mng_sum_favorite
+    result["opr_support_business_mng_avg_favorite"] = support_business_mng_avg_favorite
+
+
+
+
+    # 매니저가 작성한 모든 지원사업의 지원자 데이터
+    support_business_favorite_date_ymd = []
+    support_business_mng_sum_appliance = []
+    support_business_mng_avg_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business__in=support_business_mng_arr).dates("appliance_update_at_ymdt","day").filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("appliance_update_at_ymdt").order_by(
+            "-appliance_update_at_ymdt").distinct():
+
+        if date_dict["appliance_update_at_ymdt"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+
+    for date in support_business_favorite_date_ymd:
+        print(  Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date))
+        support_business_mng_sum_appliance.append(
+            {
+                "date": date,
+                "number": len(
+                    Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date))
+            }
+        )
+
+        if len(SupportBusiness.objects.all().filter(
+                        support_business_author_id=support_business_author_id).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")).filter(
+                        support_business_update_at_ymdt__lte=date)) != 0:
+            support_business_mng_avg_appliance.append(
+            {
+                "date": date,
+                "number": round(
+                    len(Appliance.objects.all().filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id=support_business_author_id).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+            )
+        else:
+            support_business_mng_avg_appliance.append(
+                {
+                    "date": date,
+                    "number": 0,
+                }
+            )
+    result["opr_support_business_mng_sum_appliance"] = support_business_mng_sum_appliance
+    result["opr_support_business_mng_avg_appliance"] = support_business_mng_avg_appliance
+
+
+    #  기관에서  작성한 모든 지원사업의 방문 데이터
+    #  매니저가 작성한 모든 지원사업
+    ad = AdditionalUserInfo.objects.get(id=support_business_author_id).additionaluserinfo_set.all()
+    author_list=[]
+    for a in ad:
+        author_list.append(a.id)
+    support_business_kikwan_arr = SupportBusiness.objects.all().filter(support_business_author_id__in=author_list)
+
+
+    support_business_detail_hit_date_ymd = []
+    support_business_detail_kikwan_sum_hit = []
+    support_business_detail_kikwan_avg_hit = []
+    for date_dict in HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter( date__gte= str(support_business.support_business_update_at_ymdt).split(" ")[0] ).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_detail_hit_date_ymd:
+            support_business_detail_hit_date_ymd.append(date_dict["date"])
+    for date in support_business_detail_hit_date_ymd:
+        support_business_detail_kikwan_sum_hit.append(
+            {
+                "date": date,
+                "number": len(HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+            }
+        )
+        support_business_detail_kikwan_avg_hit.append(
+            {
+                "date": date,
+                "number": round(len(HitLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
+                                len(SupportBusiness.objects.all().filter(support_business_author_id__in=author_list).exclude(Q(support_business_status="1") | Q(support_business_status="2")))
+                                ,1)
+            }
+        )
+    result["opr_support_business_detail_kikwan_sum_hit"] = support_business_detail_kikwan_sum_hit
+    result["opr_support_business_detail_kikwan_avg_hit"] = support_business_detail_kikwan_avg_hit
+
+
+
+    # 기관에서 작성한 모든 지원사업에 좋아요를 누른 데이터
+    support_business_favorite_date_ymd = []
+    support_business_kikwan_sum_favorite = []
+    support_business_kikwan_avg_favorite = []
+    for date_dict in FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(
+            date__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("date").order_by(
+            "-date").distinct():
+        if date_dict["date"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["date"])
+    for date in support_business_favorite_date_ymd:
+        support_business_kikwan_sum_favorite.append(
+            {
+                "date": date,
+                "number": len(
+                    FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+            }
+        )
+        support_business_kikwan_avg_favorite.append(
+            {
+                "date": date,
+                "number": round(
+                    len(FavoriteLog.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id__in=author_list).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+        )
+    result["opr_support_business_kikwan_sum_favorite"] = support_business_kikwan_sum_favorite
+    result["opr_support_business_kikwan_avg_favorite"] = support_business_kikwan_avg_favorite
+
+
+
+
+    # 기관에서 작성한 모든 지원사업의 지원자 데이터
+    support_business_favorite_date_ymd = []
+    support_business_kikwan_sum_appliance = []
+    support_business_kikwan_avg_appliance = []
+    for date_dict in Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).dates("appliance_update_at_ymdt","day").filter(
+            appliance_update_at_ymdt__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0]).values("appliance_update_at_ymdt").order_by(
+            "-appliance_update_at_ymdt").distinct():
+
+        if date_dict["appliance_update_at_ymdt"] not in support_business_favorite_date_ymd:
+            support_business_favorite_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+    for date in support_business_favorite_date_ymd:
+        print("넣기전")
+        print(  Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date))
+        support_business_kikwan_sum_appliance.append(
+            {
+                "date": date,
+                "number": len(
+                    Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date))
+            }
+        )
+        print()
+        support_business_kikwan_avg_appliance.append(
+            {
+                "date": date,
+                "number": round(
+                    len(Appliance.objects.all().filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date)) /
+                    len(SupportBusiness.objects.all().filter(
+                        support_business_author_id__in=author_list).exclude(
+                        Q(support_business_status="1") | Q(support_business_status="2")))
+                    , 1)
+            }
+        )
+    result["opr_support_business_kikwan_sum_appliance"] = support_business_mng_sum_appliance
+    result["opr_support_business_kikwan_avg_appliance"] = support_business_mng_avg_appliance
+
+
+
+    # 태그 추출
+    ap = Appliance.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values("startup")
+    # 지원자의 지역 추출
+    opr_ap_comtype_filter = []
+    opr_ap_location_filter = []
+    opr_ap_genre_filter = []
+    opr_ap_area_filter = []
+    result["opr_ap_area_filter"] = []
+    k = 0
+    for a in ap:
+        filter = Startup.objects.get(id=a["startup"]).selected_company_filter_list.all()
+        local_ap_company_kind_tag = []
+        local_ap_local_tag = []
+        company_kind=""
+        local=[]
+        for f in filter:
+            if f.cat_1 == "기업형태":
+                opr_ap_comtype_filter.append(f.filter_name)
+                company_kind = f.filter_name
+            if f.cat_1 == "소재지":
+                opr_ap_location_filter.append(f.filter_name)
+                local.append(f.filter_name)
+            if f.cat_0 == "기본장르":
+                opr_ap_genre_filter.append(f.filter_name)
+            if f.cat_0 == "영역":
+                opr_ap_area_filter.append(f.filter_name)
+
+    result["opr_ap_startup_list"]=[]
+    print(ap)
+    temp_list = []
+    for a in ap:
+        temp_list.append(a["startup"])
+    for a in set(temp_list):
+        startup = Startup.objects.get(id=a)
+        result["opr_ap_startup_list"].append({
+            "startup_id":startup.id,
+            "app_id":Appliance.objects.get(startup = startup, support_business= support_business).id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+
+    result["opr_ap_comtype_filter"] = (organize(opr_ap_comtype_filter))
+    result["opr_ap_location_filter"] = (organize(opr_ap_location_filter))
+    result["opr_ap_genre_filter"] = (organize(opr_ap_genre_filter))
+    result["opr_ap_area_filter"] = (organize(opr_ap_area_filter))
+
+
+
+    opr_hit_comtype_filter = []
+    opr_hit_location_filter = []
+    opr_hit_genre_filter = []
+    opr_hit_area_filter = []
+    support_business_detail_hit = HitLog.objects.all().filter(
+        support_business_id=request.GET.get("support_business_id")).values("user").distinct()
+    k = 0
+    result["opr_hit_startup_list"] = []
+
+    for h in support_business_detail_hit:
+        try:
+            if Startup.objects.all().filter(user_id=AdditionalUserInfo.objects.get(id=h["user"]).user.id):
+                filter = AdditionalUserInfo.objects.get(id=h["user"]).user.startup.selected_company_filter_list.all()
+                local_hit_company_kind_tag = []
+                local_hit_local_tag = []
+                company_kind=""
+                local=[]
+                for f in filter:
+                    if f.cat_1 == "기업형태":
+                        opr_hit_comtype_filter.append(f.filter_name)
+                        company_kind = f.filter_name
+                    if f.cat_1 == "소재지":
+                        opr_hit_location_filter.append(f.filter_name)
+                        local.append(f.filter_name)
+                    if f.cat_0 == "영역":
+                        opr_hit_area_filter.append(f.filter_name)
+                    if f.cat_0 == "기본장르":
+                        opr_hit_genre_filter.append(f.filter_name)
+
+
+                startup = AdditionalUserInfo.objects.get(id=h["user"]).user.startup
+                result["opr_hit_startup_list"].append({
+                    "startup_id":startup.id,
+                    "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+                    "company_kind": company_kind,
+                    "local": ",".join(local),
+                    "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+                })
+                k = k + 1
+        except:
+            pass
+
+    result["opr_hit_comtype_filter"] = (organize(opr_hit_comtype_filter))
+    result["opr_hit_location_filter"] = (organize(opr_hit_location_filter))
+    result["opr_hit_genre_filter"] = (organize(opr_hit_genre_filter))
+    result["opr_hit_area_filter"] = (organize(opr_hit_area_filter))
+
+    opr_aw_comtype_filter = []
+    opr_aw_location_filter = []
+    opr_aw_genre_filter = []
+    opr_aw_area_filter = []
+    aw_startup_list = []
+    result["opr_aw_startup_list"] = []
+    k = 0
+    award = Award.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+    for aw in award:
+        filter = Startup.objects.get(id=aw["startup"]).selected_company_filter_list.all()
+        local_aw_company_kind_tag = []
+        local_aw_local_tag = []
+        company_kind=""
+        local=[]
+        for f in filter:
+            if f.cat_1 == "기업형태":
+                opr_aw_comtype_filter.append(f.filter_name)
+                company_kind=f.filter_name
+            if f.cat_1 == "소재지":
+                opr_aw_location_filter.append(f.filter_name)
+                local.append(f.filter_name)
+            if f.cat_0 == "기본장르":
+                opr_aw_genre_filter.append(f.filter_name)
+            if f.cat_0 == "영역":
+                opr_aw_area_filter.append(f.filter_name)
+
+        startup = Startup.objects.get(id=aw["startup"])
+        result["opr_aw_startup_list"].append({
+            "startup_id":startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+        })
+        k = k + 1
+
+    result["opr_aw_comtype_filter"] = (organize(opr_aw_comtype_filter))
+    result["opr_aw_location_filter"] = (organize(opr_aw_location_filter))
+    result["opr_aw_genre_filter"] = (organize(opr_aw_genre_filter))
+    result["opr_aw_area_filter"] = (organize(opr_aw_area_filter))
+
+    support_business = SupportBusiness.objects.all().filter(support_business_author_id=request.GET.get("id"))
+    q_objects = Q()
+    startup_list = []
+    for s in support_business:
+        q_objects = q_objects | Q(support_business_id=s.id)
+    ap = Appliance.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+    for a in ap:
+        startup_list.append(a["startup"])
+    support_business_detail_hit = HitLog.objects.all().filter(
+        support_business_id=request.GET.get("support_business_id")).values("user").distinct()
+    for h in support_business_detail_hit:
+        try:
+            if len(Startup.objects.all().filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
+                startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
+        except:
+            pass
+    award = Award.objects.all().filter(support_business_id=request.GET.get("support_business_id")).values(
+        "startup").distinct()
+
+    opr_all_comtype_filter = []
+    opr_all_location_filter = []
+    opr_all_genre_filter = []
+    opr_all_area_filter = []
+    for aw in award:
+        startup_list.append(aw["startup"])
+    result["opr_all_startup_list"] = []
+    k = 1
+    for id in set(startup_list):
+        filter = Startup.objects.get(id=id).selected_company_filter_list.all()
+        startup = Startup.objects.get(id=id)
+        try:
+            submit_day=Appliance.objects.get(support_business_id=request.GET.get("support_business_id"),startup_id=id).appliance_update_at_ymdt
+        except Exception as e:
+            print(e)
+            submit_day=""
+
+        company_kind=""
+        local=[]
+        for f in filter:
+            if f.cat_1 == "기업형태":
+                opr_all_comtype_filter.append(f.filter_name)
+                company_kind= f.filter_name
+            if f.cat_1 == "소재지":
+                opr_all_location_filter.append(f.filter_name)
+                local.append(f.filter_name)
+            if f.cat_0 == "기본장르":
+                opr_all_genre_filter.append(f.filter_name)
+            if f.cat_0 == "영역":
+                opr_all_area_filter.append(f.filter_name)
+
+        result["opr_all_startup_list"].append({
+            "startup_id":startup.id,
+            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+            "company_kind": company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel,"submit_day" : submit_day,
+        })
+        k = k + 1
+    result["opr_all_comtype_filter"] = organize(opr_all_comtype_filter)
+    result["opr_all_location_filter"] = organize(opr_all_location_filter)
+    result["opr_all_genre_filter"] = organize(opr_all_genre_filter)
+    result["opr_all_area_filter"] = organize(opr_all_area_filter)
+
+
+    st = StatTable()
+    st.stat_user_id = request.GET.get("stat_user_id")
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business_id"))
+    if support_business.support_business_status != 5 and support_business.support_business_author_id  == request.GET.get("id"):
+        st.stat_name = "my_support_business_ing"
+    elif support_business.support_business_status == 5 and support_business.support_business_author_id  == request.GET.get("id"):
+        st.stat_name = "my_support_business_end"
+    elif support_business.support_business_status != 5 and support_business.support_business_author_id != request.GET.get("id"):
+        st.stat_name = "other_support_business_ing"
+    elif support_business.support_business_status == 5 and support_business.support_business_author_id  != request.GET.get("id"):
+        st.stat_name = "other_support_business_end"
+
+
+
+    result_json = JsonResponse(result)
+    st.stat_json  =result_json.content
+    st.save()
+
+    return result_json
+
+
+@csrf_exempt
+def opr_vue_get_support_business_info(request):
+    if gca_check_session(request)== False:
+            return HttpResponse("{}")
+    result = {}
+    support_business_author_list  = []
+    print(AdditionalUserInfo.objects.get(id=request.GET.get("id")).child_list())
+    print(datetime.datetime.now())
+    for r in AdditionalUserInfo.objects.get(id=request.GET.get("id")).child_list():
+        support_business_author_list.append(r.id)
+    #user_id = request.POST.get("id")
+    end_support_business = SupportBusiness.objects.all().filter(support_business_apply_end_ymdt__lte=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+        support_business_author_id__in=support_business_author_list)
+
+    end_set = []
+    for support_business in end_support_business:
+
+        result_end = {}
+        result_end["opr_id"] = support_business.id
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status"] = "모집종료"
+
+
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number = "0"
+
+            result_end["opr_comp"] = number + " : 1"
+
+        else:
+            result_end["opr_comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                is_submit=True))) + " : 1"
+        end_set.append(copy.deepcopy(result_end))
+
+    waiting_support_business = SupportBusiness.objects.all().filter(support_business_status="2").filter( support_business_author_id__in=support_business_author_list)
+    waiting_set = []
+    for support_business in waiting_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["opr_id"] = support_business.id
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end["opr_status"] = "승인대기"
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if( number =="0.0"):
+                number ="0"
+            result_end["opr_comp"] = number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        waiting_set.append(copy.deepcopy(result_end))
+
+    # 작성중인 공고
+    writing_support_business = SupportBusiness.objects.all().filter(support_business_status="1").filter( support_business_author_id__in=support_business_author_list)
+    writing_set = []
+    for support_business in writing_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["opr_id"] = support_business.id
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status"] = "작성중"
+
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number ="0"
+            result_end["opr_comp"] = number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        writing_set.append(copy.deepcopy(result_end))
+    # 공고중인 공고
+    ing_support_business = SupportBusiness.objects.all().filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.datetime.now()).filter(
+        support_business_author_id__in=support_business_author_list)
+    ing_set = []
+    for support_business in ing_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["opr_id"] = support_business.id
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_status"] = "공고중"
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number =="0.0":
+                number ="0"
+            result_end["opr_comp"] = number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        ing_set.append(copy.deepcopy(result_end))
+
+    # 공고 종료된 공고
+    comp_support_business= SupportBusiness.objects.all().filter(support_business_status="5").filter(support_business_author_id__in=support_business_author_list)
+    comp_set = []
+    for support_business in comp_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["opr_id"] = support_business.id
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status"] = "공고종료"
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number = str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+            result_end["opr_comp"] = number  + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        comp_set.append(copy.deepcopy(result_end))
+    # 블라인드된 공고문
+    blind_support_business = SupportBusiness.objects.all().filter(support_business_status="6").filter( support_business_author_id__in=support_business_author_list)
+    blind_set = []
+    for support_business in blind_support_business:
+        result_end = {}
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end["opr_id"] = support_business.id
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status"] = "블라인드"
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+            result_end["opr_comp"] = number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        blind_set.append(copy.deepcopy(result_end))
+
+    all_support_business = SupportBusiness.objects.all().filter( support_business_author_id__in=support_business_author_list).exclude(Q(support_business_status="1")|Q(support_business_status="6"))
+
+    all_set = []
+    for support_business in all_support_business:
+        result_end = {}
+        result_end["opr_id"] = support_business.id
+        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
+        result_end['opr_support_business_poster'] = support_business.support_business_poster
+        result_end['opr_support_business_name'] = support_business.support_business_name
+        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_author"] = support_business.support_business_author.mng_name
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+
+        try:
+            result_end["author"] = support_business.support_business_author.mng_name
+        except Exception as e:
+            print(e)
+        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+        result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
+        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
+        try:
+            if support_business.support_business_status == "4":  # 작성중인 공고문
+                result_end["opr_status"] = "모집종료"
+            if support_business.support_business_status == "1":  # 작성중인 공고문
+                result_end["opr_status"] = "작성중"
+            if support_business.support_business_status == "2":  # 승인대기중인 공고문
+                result_end["opr_status"] = "승인대기"
+            if support_business.support_business_status == "3":
+                result_end["opr_status"] = "공고중"
+            if support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+                result_end["opr_status"] = "모집종료"
+            if support_business.support_business_status == "5":  # 공고 종료 된 공고문
+                result_end["opr_status"] = "공고종료"
+            if support_business.support_business_status == "6":  # 블라인드 공고문
+                result_end["opr_status"] = "블라인드"
+        except:
+            result_end["opr_status"] = "작성중"
+        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+            number =  str(round(len(
+                Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+                support_business.support_business_recruit_size), 1))
+            if number == "0.0":
+                number ="0"
+            result_end["opr_comp"] =  number + " : 1"
+            pass
+        else:
+            result_end["opr_comp"] = str(
+                len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
+                    is_submit=True))) + " : 1"
+        all_set.append(copy.deepcopy(result_end))
+
+    result["opr_end_set"] = end_set
+    result["opr_blind_set"] = blind_set
+    result["opr_writing_set"] = []
+    result["opr_ing_set"] = ing_set
+    result["opr_waiting_set"] = waiting_set
+    result["opr_comp_set"] = comp_set
+    result["opr_all_set"] = all_set
+
+    return JsonResponse(result)
+
+#------ (매니저) 지원사업 관리페이지 : 스타트업 리스트가 나타나게 해주는 함수 / 선정 대상자 리스트업
+@csrf_exempt
+def opr_vue_get_support_business_appliance(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    print("지원사업 아이디")
+    print(request.GET.get("support_business"))
+    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
+    ap = Appliance.objects.all().filter(support_business=support_business).filter(is_submit=True)
+    k=1
+    result = []
+    print("지원서 목록")
+    print(ap)
+    for a in ap :
+        temp={}
+        temp["opr_index"] = k
+        k=k+1
+        temp["opr_company_name"] = a.company_name
+        temp["opr_company_kind"] = a.company_kind
+        temp["opr_id"] = a.id
+        temp["id"] = a.startup.id
+
+        temp["opr_repre_name"] = a.repre_name
+        temp["opr_repre_email"] = a.repre_email
+
+        temp["opr_repre_tel"] = a.repre_tel
+        temp["opr_appliance_update_at_ymdt"] = a.appliance_update_at_ymdt
+        temp["opr_down_path"] = a.id
         result.append(copy.deepcopy(temp))
         print(temp)
     print(result)
     return JsonResponse(result,safe=False)
 
 
+@csrf_exempt
+def index(request):
+    print("blah")
+@csrf_exempt
+def login_sns(request):
+    print(request.GET.get("code"))
+    print(request.GET.get("site"))
 
 @csrf_exempt
-def vue_get_all_fav(request):
-    u = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
-    result={}
-    result["startup"] =[]
-    for i in u.interest_startup.all():
-        result["startup"].append(i.id)
+def vue_get_startup_public_detail(request):
+    print(request.GET.get("id"))
+    # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    startup = Startup.objects.get(id=request.GET.get("id"))
+    result = {}
+    result["back_img"] = startup.back_img
+    result["logo"] = startup.logo
+    result["company_website"] = startup.company_website
+    result["company_id"] = startup.id
 
-    result["sp"] = []
-    for i in u.supportbusiness_set.all():
-        result["sp"].append(i.id)
+    result["is_favored"]= is_in_favor_list("startup", startup.id, request.GET.get("gca_id"))
 
-    result["course"]=[]
-    for i in  u.interest_course.all():
-        result["course"].append(i.id)
+    result["company_youtube"] = startup.company_youtube
+    result["company_instagram"] = startup.company_instagram
+    result["company_facebook"] = startup.company_facebook
+    result["company_keyword"] = startup.company_keyword
+    result["established_date"] = startup.established_date
+    result["company_short_desc"] = startup.company_short_desc
+    result["company_intro"] = startup.company_intro
+    result["select_tag"] = []
+    for f in startup.selected_company_filter_list.all():
+        result["select_tag"].append(f.filter_name)
+    result["startup_id"] = startup.id
+    result["repre_tel"] = startup.repre_tel
+    result["company_name"] = startup.company_name
+    result["company_kind"] = startup.company_kind
 
-    result["clip"] = []
-    for i in u.interest_clip.all():
-        result["clip"].append(i.id)
 
-    result["path"] = []
-    for i in u.interest_path.all():
-        result["path"].append(i.id)
+    result["repre_name"] = startup.repre_name
+    result["repre_email"] = startup.repre_email if startup.repre_email != "" else startup.user.username
 
-    return JsonResponse(result, safe = False)
+    # result["logo"] = startup.clip_thumbnail_selected_company_filter_list
+
+    result["information"] = {}
+    result["information"]["id"] = startup.id
+    result["information"]["tag"] = []
+    result["support_business_tag"] = []
+    for f in startup.selected_company_filter_list.all():
+        if f.cat_0 == "지원형태":
+            result["support_business_tag"].append(f.filter_name)
+    result["select_tag"] = []
+
+    for f in startup.selected_company_filter_list.all():
+        result["information"]["tag"].append(f.filter_name)
+
+    for t in startup.selected_company_filter_list.all():
+        if t.filter_name != "" and t.filter_name != None:
+            result["information"]["tag"].append(t.filter_name)
+    result['information']["company_website"] = startup.company_website
+    result["information"]["repre_email"] = startup.repre_email if startup.repre_email != "" else startup.user.username
+    result["address_0"] = startup.address_0
+    result["address_1"] = startup.address_1
+    result["ip_chk"] = startup.ip_chk
+    result["revenue_chk"] = startup.revenue_chk
+    result["export_chk"] = startup.export_chk
+    result["company_invest_chk"] = startup.company_invest_chk
+    result["service"] = []
+
+    result["tag"] = []
+
+    for f in startup.selected_company_filter_list.all():
+        result["tag"].append(f.filter_name)
+
+    for service in startup.service_set.all():
+        obj = {}
+        obj["service_intro"] = service.service_intro
+        obj["service_file"] = service.service_file
+        obj["file_name"] = service.service_file.split("/")[-1]
+        obj["service_name"] = service.service_name
+        obj["service_img"] = service.service_img
+        obj["img_name"] = service.service_img.split("/")[-1]
+        obj["id"] = service.id
+        result["service"].append(copy.deepcopy(obj))
+    result["company_history"] = []
+    for history in startup.history_set.all():
+        obj = {}
+        obj["company_history_year"] = history.company_history_year
+        obj["company_history_month"] = history.company_history_month
+        obj["company_history_content"] = history.company_history_content
+        obj["id"] = history.id
+        result["company_history"].append(copy.deepcopy(obj))
+
+    result["revenue_before_year_0"] = startup.revenue_before_year_0
+    result["revenue_before_year_1"] = startup.revenue_before_year_1
+    result["revenue_before_year_2"] = startup.revenue_before_year_2
+    result["revenue_before_0"] = startup.revenue_before_0
+    result["revenue_before_1"] = startup.revenue_before_1
+    result["revenue_before_2"] = startup.revenue_before_2
+
+    result["export_before_year_0"] = startup.export_before_year_0
+    result["export_before_year_1"] = startup.export_before_year_1
+    result["export_before_year_2"] = startup.export_before_year_2
+    result["export_before_0"] = startup.export_before_0
+    result["export_before_1"] = startup.export_before_1
+    result["export_before_2"] = startup.export_before_2
+    result["export_before_nation_0"] = startup.export_before_nation_0
+    result["export_before_nation_1"] = startup.export_before_nation_1
+    result["export_before_nation_2"] = startup.export_before_nation_2
+    result["attached_cert_file"] = startup.attached_cert_file
+    result["attached_ip_file"] = startup.attached_ip_file
+
+    result["invest"] = []
+
+    for invest in startup.companyinvest_set.all():
+        obj = {}
+        obj["company_invest_year"] = invest.company_invest_year
+        obj["company_invest_size"] = invest.company_invest_size
+        obj["company_invest_agency"] = invest.company_invest_agency
+        result["invest"].append(copy.deepcopy(obj))
+
+    result["news"] = []
+    for news in startup.activity_set.order_by("-company_activity_created_at").all():
+        obj = {}
+        obj["company_activity_created_at"] = news.company_activity_created_at
+        obj["company_activity_text"] = news.company_activity_text
+        obj["company_activity_img"] = news.company_activity_img
+        obj["company_activity_youtube"] = news.company_activity_youtube
+        obj["like_num"] = len(news.activitylike_set.all())
+        obj["rep_num"] = len(news.reply_set.all())
+        obj["id"] = news.id
+
+        obj["rep"] = []
+        for rep in news.reply_set.all():
+            temp = {}
+            # temp["logo"] = rep.activity.startup.clip_thumbnail
+            temp["company_activity_text"] = rep.company_activity_text
+            temp["company_activity_created_at"] = rep.company_activity_created_at
+            temp["id"] = rep.id
+            obj["rep"].append(copy.deepcopy(temp))
+        result["news"].append(copy.deepcopy(obj))
+    print("end")
+    return JsonResponse(result)
+
 
 @csrf_exempt
-def hit_sb(request):
+def save_user_appliance_data_url(request):
+    print(request)
+    data = request.POST.get("data")
+    app = Appliance.objects.get(startup=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).user.startup , support_business_id=request.POST.get("support_business_id"))
+    app.img_data_url = data
+    app.save()
+    return JsonResponse({"RESULT":"ok"})
+import os
+import zipfile
+
+
+
+@csrf_exempt
+def vue_get_startup_public_detail_news(request):
+    print(request.GET.get("id"))
+    # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+    startup = Startup.objects.get(id=request.GET.get("id"))
+    result = {}
+
+    result["news"] = []
+    for news in startup.activity_set.order_by("-company_activity_created_at").all():
+        obj = {}
+        obj["company_activity_created_at"] = news.company_activity_created_at
+        obj["company_activity_text"] = news.company_activity_text
+        obj["company_activity_img"] = news.company_activity_img
+        obj["company_activity_youtube"] = news.company_activity_youtube
+        obj["like_num"] = len(news.activitylike_set.all())
+        obj["rep_num"] = len(news.reply_set.all())
+        obj["id"] = news.id
+
+        obj["rep"] = []
+        for rep in news.reply_set.all():
+            temp = {}
+            # temp["logo"] = rep.activity.startup.clip_thumbnail
+            temp["company_activity_text"] = rep.company_activity_text
+            temp["company_activity_created_at"] = rep.company_activity_created_at
+            temp["id"] = rep.id
+            obj["rep"].append(copy.deepcopy(temp))
+        result["news"].append(copy.deepcopy(obj))
+    print("end")
+    return JsonResponse(result)
+@csrf_exempt
+def hit_support_business(request):
     target = request.POST.get("target")
     try:
         id= request.POST.get("id")
         h = HitLog()
         h.user = AdditionalUserInfo.objects.get(id=id)
-        h.sb_id = target
+        h.support_business_id = target
         h.save()
+        vsb = VisitedSupportBusiness()
+        vsb.visited_support_business_id = target
+        vsb.visited_usr = AdditionalUserInfo.objects.get(id=id)
+        vsb.save()
+
+        #필터 넣기 수정 작업 중
+
+        vsb.visited_usr_filter.add(AdditionalUserInfo.objects.get(id=id).user.startup.selected_company_filter_list.all())
+        for filter in AdditionalUserInfo.objects.get(id=id).user.startup.selected_company_filter_list.all():
+            try:
+                vsb.visited_usr_filter.add(  FilterForStatics.objects.get(filter_name=filter.filter_name)  )
+            except:
+                pass
+        tds,flag = LineGraphTable.objects.get_or_create(linegraph_date=datetime.datetime.today())
+        tds.linegraph_visitied = tds.linegraph_visitied + 1
+        tds.save()
+
+
     except:
         h = HitLog()
-        h.sb_id = target
+        h.support_business_id = target
         h.save()
+        vsb = VisitedSupportBusiness()
+        vsb.visited_support_business_id = target
+        vsb.save()
+        tds, flag = LineGraphTable.objects.get(linegraph_date=datetime.datetime.today())
+        tds.linegraph_visitied = tds.linegraph_visitied + 1
+        tds.save()
+
+
+
     return JsonResponse({"result":"success"})
 
 
+@csrf_exempt
+def vue_get_kikwan_account(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    opr_account_set = []
+    k = 1
+    boss_id = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).mng_boss_id
+    opr_all_account_set = []
+    for ac in AdditionalUserInfo.objects.all().filter(mng_boss_id=boss_id).order_by("-id"):
+        temp = {}
+        temp["mng_index"] = k
+        k = k + 1
+        temp["id"] = ac.user.username
+        temp["mng_name"] = ac.mng_name
+        temp["mng_position"] = ac.mng_position
+        temp["mng_bonbu"] = ac.mng_bonbu
+        temp["mng_kikwan"] = ac.mng_kikwan
+        temp["mng_team"] = ac.mng_team
+        temp["mng_tel"] = ac.mng_tel
+        temp["mng_phone"] = ac.mng_phone
+        temp["mng_email"] = ac.mng_email
+        temp["mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        opr_account_set.append(copy.deepcopy(temp))
+
+
+    result = {}
+    result["account_set"] = opr_account_set
+
+
+    return JsonResponse(result, safe=False)
+
 
 @csrf_exempt
-def vue_get_grant_optional_data(request):
-    sb = SupportBusiness.objects.get(id=request.GET.get("gr"))
-    result = sb.meta
-    return JsonResponse({"result":result})
+def delete_channel(request):
+    print(request.POST.get("del_num"))
+    print(request.POST.get("del_target"))
+    if request.POST.get("del_target") == "clip":
+        Clip.objects.get(id=request.POST.get("del_num")).delete()
+        print("clip delete!!!!!")
+
+    if request.POST.get("del_target") == "course":
+        Course.objects.get(id=request.POST.get("del_num")).delete()
+        print("course delete!!!!!")
+
+    if request.POST.get("del_target") == "path":
+        Path.objects.get(id=request.POST.get("del_num")).delete()
+        print("pathdelete!!!!!")
 
 
+
+    return  JsonResponse({"result":"ok"})
 
 
 @csrf_exempt
-def vue_login_user(request):
-    print(request.body)
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            try:
-                if str(user.additionaluserinfo.auth) == "4" or (user.additionaluserinfo.auth) == "5":
-                    print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
-                    if len(user.additionaluserinfo.additionaluserinfo_set.all())>0:
-                        return JsonResponse({"result":"success", "user":"ma","id":user.additionaluserinfo.id})
-                    return JsonResponse({"result":"success","user": "m","id":user.additionaluserinfo.id})
-                else:
-                    return JsonResponse({"result":"success","user":"u","id":user.additionaluserinfo.id})
-            except:
-                return JsonResponse({})
+def vue_get_register_channel(request):
+    print(request.GET.get("gca_id"))
+    if request.POST.get("target") == "path":
+        RegisteredChannel.objects.get_or_create(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")), path=Path.objects.get(id=request.POST.get("id"))
+        )
+        return JsonResponse({"result":"ok"})
+    if request.POST.get("target") == "course":
+        RegisteredChannel.objects.get_or_create(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")),
+                                                        course=Course.objects.get(id=request.POST.get("id"))
+        )
+        return JsonResponse({"result": "ok"})
+    if request.POST.get("target") == "clip":
+        RegisteredChannel.objects.get_or_create(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")),
+                                                        clip=Clip.objects.get(id=request.POST.get("id"))
+        )
+        return JsonResponse({"result": "ok"})
+
+@csrf_exempt
+def vue_channel_register_check(request):
+
+    if request.POST.get("target") == "path":
+        result = RegisteredChannel.objects.all().filter(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")), path=Path.objects.get(id=request.POST.get("id"))
+        )
+        if len(result) >0 :
+            return JsonResponse({"result":"reg"})
+        else :
+            return  JsonResponse({"result":"no"})
+    if request.POST.get("target") == "course":
+        result = RegisteredChannel.objects.all().filter(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))).filter(course=Course.objects.get(id=request.POST.get("id")) )
+        if len(result) > 0:
+            return JsonResponse({"result": "reg"})
         else:
-            return JsonResponse({"result":'로그인 실패. 다시 시도 해보세요.'})
+            return JsonResponse({"result": "no"})
+
+    if request.POST.get("target") == "clip":
+        result = RegisteredChannel.objects.all().filter(
+            channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")),
+                                                        clip=Clip.objects.get(id=request.POST.get("id"))
+        )
+
+        if len(result) >0 :
+            return JsonResponse({"result":"reg"})
+        else :
+            return  JsonResponse({"result":"no"})
+
+@csrf_exempt
+def vue_get_registerd_channel(request):
+    result={}
+    result["path_list"]=[]
+    result["course_list"] =[]
+    result["clip_list"]=[]
+    for ch in RegisteredChannel.objects.all().filter(channel_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))):
+        if ch.path != None:
+            p = ch.path
+            t = {}
+            t["path_title"] = p.path_title
+            t["id"] = p.id
+            t["path_created_at"] = p.path_created_at
+
+            try:
+                result["path_user"] = p.path_user.user.startup.repre_name
+            except:
+                result["path_user"] = p.path_user.mng_name
+            t["path_total_play"] = p.path_total_play
+            t["path_thumb"] = p.path_thumb
+            t["path_percent"] = 0
+            origin_length = int(p.path_total_play)
+            view_num = len(WatchHistory.objects.all().filter(
+                watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
+                           .filter(watch_path=p)) * 6
+            per = round(view_num * 100 / origin_length,2)
+            if(per > 100):
+                per = 100
+            t["path_percent"] = per
+            t["path_entry_point"] = ""
+            result["path_list"].append(copy.deepcopy(t))
+        if ch.course != None:
+            p=ch.course
+            t = {}
+            t["course_title"] = p.course_title
+            t["id"] = p.id
+            t["course_created_at"] = p.course_created_at
+            try:
+                result["course_user"] = p.course_user.user.startup.repre_name
+            except:
+                result["course_user"] = p.course_user.mng_name
+            t["course_total_play"] = p.course_total_play
+            t["course_thumb"] = p.course_thumb
+
+            origin_length = int(p.course_total_play)
+            view_num = len(WatchHistory.objects.all().filter(
+                watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
+                           .filter(watch_course=p)) * 6
+            per = round(view_num * 100 / origin_length,2)
+            if (per > 100):
+                per = 100
+            t["course_percent"] = per
+
+            try:
+                t["course_entry_point"] = ""
+            except:
+                pass
+            result["course_list"].append(copy.deepcopy(t))
+        if ch.clip != None:
+            p = ch.clip
+            t = {}
+            t["clip_title"] = p.clip_title
+            t["id"] = p.id
+            t["clip_created_at"] = p.clip_created_at
+
+            try:
+                result["clip_user"] = p.clip_user.user.startup.repre_name
+            except:
+                result["clip_user"] = p.clip_user.mng_name
+
+            t["clip_play"] = p.clip_play
+            t["clip_thumb"] = p.clip_thumb
+
+            origin_length = int(p.clip_play)
+            view_num = len(WatchHistory.objects.all().filter(
+                watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
+                           .filter(watch_clip=p)) * 6
+            per = round(view_num * 100 / origin_length,2)
+            if (per > 100):
+                per = 100
+            t["clip_percent"] = per
+
+            try:
+                t["clip_entry_point"] =""
+            except:
+                pass
+            result["clip_list"].append(copy.deepcopy(t))
+
+    return  JsonResponse(result, safe = False)
+
+from django.http import HttpResponse
+@csrf_exempt
+def make_excel_kikwan(request):
+    print(request.GET.get("id_list"))
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=support_business_list.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+
+
+    support_business = SupportBusiness.objects.all().filter(id__in=request.GET.get("id_list").split(","))
+    k = 0
+    result_set = []
+    for s in support_business:
+        temp = {}
+        temp["id"] = s.id
+        ws.write( k , 0, str(k+1) )
+        ws.write( k, 1, s.support_business_name )
+        ws.write(k, 2, s.support_business_created_at_ymdt)
+        ws.write(k, 3, s.support_business_author.mng_name)
+        ws.write(k, 4, s.support_business_author.mng_team)
+        ws.write(k, 5, s.support_business_author.mng_kikwan)
+        ws.write(k, 6, s.support_business_author.mng_tel)
+        ws.write(k,  7 ,len(Appliance.objects.all().filter(support_business=s)))
+        ws.write(k, 8, len(Award.objects.all().filter(support_business=s)))
+
+        try:
+
+            if s.support_business_status == "1":
+                ws.write(k, 9, "작성중")
+            elif s.support_business_status == "2":
+                ws.write(k, 9, "승인대기중")
+            elif s.support_business_status == "3":
+                ws.write(k, 9, "공고중")
+            elif s.support_business_status == "4":
+                ws.write(k, 9, "모집종료")
+            elif s.support_business_status == "5":
+                ws.write(k, 9, "공고종료")
+            elif s.support_business_status == "6":
+                ws.write(k, 9, "블라인드중")
+
+
+            k = k + 1
+        except Exception as e:
+            print(e)
+            print("error")
+            status = ""
+
+    wb.save(response)
+    return response
+
+@csrf_exempt
+def excel_down_all_account(request):
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=kikwan_account_list.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+    k=0
+    for ac in  AdditionalUserInfo.objects.all().filter(mng_boss=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).mng_boss).order_by("-id"):
+        temp={}
+        ws.write(k, 0, k)
+        ws.write(k, 1, ac.user.username)
+        ws.write(k, 2, ac.mng_name)
+        ws.write(k, 3, ac.mng_position)
+        ws.write(k, 4, ac.mng_bonbu)
+        ws.write(k, 5, ac.mng_kikwan)
+        ws.write(k, 6, ac.mng_team)
+        ws.write(k, 7, ac.mng_tel)
+        ws.write(k, 8, ac.mng_phone)
+        ws.write(k, 9, ac.mng_email)
+        ws.write(k, 10, ac.mng_date_joined_ymd)
+        k = k + 1
+    wb.save(response)
+    return response
 
 
 
 
-import os
-import tempfile
-from zipfile import ZipFile
-import shutil
 
 
-def appliance_download(request, apid):
-    ap = apid
-    ap_target = Appliance.objects.get(id=ap)
-    # filenames = ["temp_folder/" + business_file.name.split("/")[-1], ]
-    zip_subdir = "applicance"
-    zip_filename = "%s.zip" % (
-        str(ap_target.sb.apply_end).split("-")[
-            0] + "_" + ap_target.sb.title + "_" + ap_target.startup.name + "_" + ap_target.startup.user.additionaluserinfo.name)
-    s = io.BytesIO()
-    url = "http://gconnect.kr/grant/" + str(ap_target.sb_id) + "/" + str(apid)
-    print(url)
-    subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf", shell=True, check=True)
-    print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    zf = ZipFile(s, "w")
-    if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-        zip_path = os.path.join("지원서.pdf")
-        zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-    if ap_target.business_file != "":
-        fdir, fname = os.path.split(ap_target.business_file.path)
-        zip_path = os.path.join("사업자등록증." + fname.split(".")[-1])
-        zf.write(ap_target.business_file.path, zip_path)
-    if ap_target.fund_file != "":
-        fdir, fname = os.path.split(ap_target.fund_file.path)
-        zip_path = os.path.join("투자증명서." + fname.split(".")[-1])
-        zf.write(ap_target.fund_file.path, zip_path)
-    if ap_target.etc_file != "":
-        fdir, fname = os.path.split(ap_target.etc_file.path)
-        zip_path = os.path.join("기타첨부파일." + fname.split(".")[-1])
-        zf.write(ap_target.etc_file.path, zip_path)
-    if ap_target.ir_file != "":
-        fdir, fname = os.path.split(ap_target.ir_file.path)
-        zip_path = os.path.join("사업소개서." + fname.split(".")[-1])
-        zf.write(ap_target.ir_file.path, zip_path)
-    if ap_target.ppt_file != "":
-        fdir, fname = os.path.split(ap_target.ppt_file.path)
-        zip_path = os.path.join("ppt파일." + fname.split(".")[-1])
-        zf.write(ap_target.ppt_file.path, zip_path)
-    if ap_target.tax_file != "":
-        fdir, fname = os.path.split(ap_target.tax_file.path)
-        zip_path = os.path.join("납세증명서." + fname.split(".")[-1])
-        zf.write(ap_target.tax_file.path, zip_path)
-    # for fpath in filenames:
-    #     # Calculate path for file in zip
-    #     fdir, fname = os.path.split(fpath)
-    #     zip_path = os.path.join(zip_subdir, fname)
-    #
-    #     # Add file, at correct path
-    #     zf.write(fpath, zip_path)
 
-    # Must close zip for all contents to be written
-    zf.close()
+@csrf_exempt
+def vue_get_course_information(request):
+    result={}
+    course = Course.objects.get(id=request.GET.get("course_id"))
+    result["course_object"] = course.course_object
+    result["course_info"] = course.course_info
+    result["is_favored"] = ""
 
-    # Grab ZIP file from in-memory, make response with correct MIME-type
-    resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
-    resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
-    return resp
+    try :
+        if course in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_course.all():
+            result["is_favored"] = "true"
+        else:
+            result["is_favored"] = "false"
+    except:
+        result["is_favored"] = "false"
+
+    result["course_title"] = course.course_title
+    result["course_rec_dur"] = course.course_rec_dur
+    result["course_total_play"] = course.course_total_play
+    result["course_created_at"] = course.course_created_at
+    result["course_thumb"] = course.course_thumb
+    result["course_id"] = course.id
+    try:
+        result["course_author"] = course.course_user.user.startup.repre_name
+    except:
+        result["course_author"] = course.course_user.mng_name
+    result["course_filter"]=[]
+    for filter in course.course_filter.all():
+        print(filter)
+        result["course_filter"].append(filter.name)
+
+    result["course_clip"]=[]
+    for clip in course.course_clips.all():
+        obj = {}
+        obj["clip_title"] = clip.clip_title
+        obj["clip_created_at"] = clip.clip_created_at
+        try:
+            obj["clip_author"] = clip.clip_user.user.startup.repre_name
+        except:
+            obj["clip_author"] = clip.clip_user.mng_name
+        obj["clip_thumb"] = clip.clip_thumb
+        obj["clip_play"] = clip.clip_play
+        obj["clip_id"] = clip.id
+        result["course_clip"].append(copy.deepcopy(obj))
+
+    print(result)
+    return JsonResponse(result, safe=False)
 
 
-import time
 
 
-def appliance_all_download(request, sb):
-    ap_list = Appliance.objects.filter(sb_id=sb)
-    zip_filename = "%s.zip" % (
-        str(ap_list[0].sb.apply_end).split("-")[
-            0] + "_" + ap_list[0].sb.title)
-    s = io.BytesIO()
-    zf = ZipFile(s, "w")
-    for ap in ap_list:
-        zip_subdir = "applicance"
-        url = "http://gconnect.kr/apply/preview/pdf/" + str(ap_list[0].sb_id) + "/" + str(ap.id)
-        subprocess.run("/usr/bin/xvfb-run wkhtmltopdf " + url + "  test.pdf ", shell=True, check=True)
-        print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-        if os.path.abspath(os.path.dirname(__name__)) + "/test.pdf":
-            zip_path = os.path.join(ap.startup.name + "/지원서.pdf")
-            zf.write(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf", zip_path)
-            print(os.path.abspath(os.path.dirname(__name__)) + "/test.pdf")
-            time.sleep(1)
-        if ap.business_file != "":
-            fdir, fname = os.path.split(ap.business_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업자등록증." + fname.split(".")[-1])
-            zf.write(ap.business_file.path, zip_path)
-        if ap.fund_file != "":
-            fdir, fname = os.path.split(ap.fund_file.path)
-            zip_path = os.path.join(ap.startup.name + "/투자증명서." + fname.split(".")[-1])
-            zf.write(ap.fund_file.path, zip_path)
-        if ap.etc_file != "":
-            fdir, fname = os.path.split(ap.etc_file.path)
-            zip_path = os.path.join(ap.startup.name + "/기타첨부파일." + fname.split(".")[-1])
-            zf.write(ap.etc_file.path, zip_path)
-        if ap.ir_file != "":
-            fdir, fname = os.path.split(ap.ir_file.path)
-            zip_path = os.path.join(ap.startup.name + "/사업소개서." + fname.split(".")[-1])
-            zf.write(ap.ir_file.path, zip_path)
-        if ap.ppt_file != "":
-            fdir, fname = os.path.split(ap.ppt_file.path)
-            zip_path = os.path.join(ap.startup.name + "/ppt파일." + fname.split(".")[-1])
-            zf.write(ap.ppt_file.path, zip_path)
-        if ap.tax_file != "":
-            fdir, fname = os.path.split(ap.tax_file.path)
-            zip_path = os.path.join(ap.startup.name + "/납세증명서." + fname.split(".")[-1])
-            zf.write(ap.tax_file.path, zip_path)
+
+@csrf_exempt
+def vue_get_path_information(request):
+
+    result = {}
+    path = Path.objects.get(id=request.GET.get("path_id"))
+    result["path_object"] = path.path_object
+    result["path_info"] = path.path_info
+    result["path_title"] = path.path_title
+    result["path_rec_dur"] = path.path_rec_dur
+    result["path_total_play"] = path.path_total_play
+    result["path_created_at"] = path.path_created_at
+    result["is_favored"] = is_in_favor_list("path", path.id , request.GET.get("gca_id") )
+
+    result["path_thumb"] = path.path_thumb
+    result["path_id"] = path.id
+    try:
+        result["path_author"] = path.path_user.user.startup.repre_name
+    except:
+        result["path_author"] = path.path_user.mng_name
+    result["path_filter"] = []
+
+    for filter in path.path_filter.all():
+        print(filter)
+        result["path_filter"].append(filter.name)
+
+    result["path_course"]=[]
+    for course in path.path_course.all():
+        obj_c={}
+        obj_c["course_id"] = course.id
+        obj_c["course_object"] = course.course_object
+        obj_c["course_info"] = course.course_info
+        obj_c["course_title"] = course.course_title
+        obj_c["course_rec_dur"] = course.course_rec_dur
+        obj_c["course_total_play"] = course.course_total_play
+        obj_c["course_created_at"] = course.course_created_at
+        obj_c["course_thumb"] = course.course_thumb
+        try:
+            obj_c["course_author"] = course.course_user.user.startup.repre_name
+        except:
+            obj_c["course_author"] = course.course_user.mng_name
+        obj_c["course_entry_point"] = ""
+        obj_c["course_filter"]=[]
+        for filter in course.course_filter.all():
+            print(filter)
+            obj_c["course_filter"].append(filter.name)
+
+        obj_c["course_clip"]=[]
+        for clip in course.course_clips.all():
+            obj = {}
+            obj["clip_title"] = clip.clip_title
+            obj["clip_created_at"] = clip.clip_created_at
+            try:
+                obj["clip_author"] = clip.clip_user.user.startup.repre_name
+            except:
+                obj["clip_author"] = clip.clip_user.mng_name
+            obj["clip_thumb"] = clip.clip_thumb
+            obj["clip_play"] = clip.clip_play
+            obj["clip_id"] = clip.id
+            obj_c["course_clip"].append(copy.deepcopy(obj))
+        result["path_course"].append(copy.deepcopy(obj_c))
+
+    print(result)
+    return JsonResponse(result, safe=False)
+
+@csrf_exempt
+def vue_get_name(request):
+    name = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).user.startup.repre_name
+    return JsonResponse({"name":name},safe=False)
+
+
+
+
+
+
+@csrf_exempt
+def excel_down_support_business_gwanri_ap(request):
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=support_business_gwanri.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+    k=0
+    startup_list = []
+    for id in request.GET.get("id_list").split(","):
+        startup_list.append(Startup.objects.get(id=id))
+    for startup in startup_list :
+        com_type_list = startup.selected_company_filter_list.all()
+        com_type=""
+        for filter in com_type_list:
+            if(filter.cat_1=="기업형태"):
+                com_type = filter.filter_name
+        app = Appliance.objects.get(startup=startup, support_business_id=request.GET.get("support_business"))
+        ws.write(k, 0, k+1)
+        ws.write(k, 1, startup.company_name)
+        ws.write(k, 2, com_type)
+        ws.write(k, 3, startup.repre_name)
+        ws.write(k, 4, startup.repre_tel)
+        ws.write(k, 5, app.appliance_update_at_ymdt)
+        k = k + 1
+    wb.save(response)
+    return response
+
+
+
+
+
+@csrf_exempt
+def excel_down_support_business_gwanri_fav(request):
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=support_business_gwanri.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+    k=0
+    startup_list = []
+    for id in request.GET.get("id_list").split(","):
+        startup_list.append(Startup.objects.get(id=id))
+    for startup in startup_list :
+        com_type_list = startup.selected_company_filter_list.all()
+        com_type=""
+        for filter in com_type_list:
+            if(filter.cat_1=="기업형태"):
+                com_type = filter.filter_name
+
+        ws.write(k, 0, k+1)
+        ws.write(k, 1, startup.company_name)
+        ws.write(k, 2, com_type)
+        ws.write(k, 3, startup.repre_name)
+        ws.write(k, 4, startup.user.username)
+        ws.write(k, 5, startup.repre_tel)
+        ws.write(k, 6, startup.repre_email)
+        k = k + 1
+    wb.save(response)
+    return response
+
+
+
+@csrf_exempt
+def excel_down_support_business_gwanri_aw(request):
+    response = HttpResponse(content_type="application/ms-excel")
+    response['Content-Disposition'] = 'attachment; filename=support_business_gwanri.xls'
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet_1')
+    k=0
+    startup_list = []
+    for id in request.GET.get("id_list").split(","):
+        startup_list.append(Startup.objects.get(id=id))
+    for startup in startup_list :
+        com_type_list = startup.selected_company_filter_list.all()
+        com_type=""
+        for filter in com_type_list:
+            if(filter.cat_1=="기업형태"):
+                com_type = filter.filter_name
+
+        ws.write(k, 0, k+1)
+        ws.write(k, 1, startup.company_name)
+        ws.write(k, 2, com_type)
+        ws.write(k, 3, startup.repre_name)
+        ws.write(k, 4, startup.user.username)
+        ws.write(k, 5, startup.repre_tel)
+        ws.write(k, 6, startup.repre_email)
+        k = k + 1
+    wb.save(response)
+    return response
+
+
+def vue_get_support_business_list_excel(request):
+    sb = SupportBusiness.objects.all()
+    k=0
+    result_set = []
     f = io.BytesIO()
     book = xlwt.Workbook()
-    sheet = book.add_sheet("지원자 리스트")
-    sheet.write(0, 0, "순서")
-    sheet.write(0, 1, "기업명")
-    sheet.write(0, 2, "업종")
-    sheet.write(0, 3, "대표자명")
-    sheet.write(0, 4, "사업자 등록번호")
-    sheet.write(0, 5, "이메일")
-    sheet.write(0, 6, "대표 전화번호")
-    sheet.write(0, 7, "필터")
+    sheet = book.add_sheet("지원사업 리스트")
+    sheet.write(0, 1, "순서")
+    sheet.write(0, 2, "공고명")
+    sheet.write(0, 3, "핸드폰 번호")
+    sheet.write(0, 4, "담당자")
+    sheet.write(0, 5, "팀")
+    sheet.write(0, 6, "기관")
+    sheet.write(0, 7, "연락처")
+    sheet.write(0, 8, "지원기업수")
+    sheet.write(0, 9, "상태")
     k = 1
-    for a in ap_list:
-        sheet.write(k, 0, k)
-        sheet.write(k, 1, a.startup.name)
-        sheet.write(k, 2, a.startup.category)
-        sheet.write(k, 3, a.startup.user.additionaluserinfo.name)
-        sheet.write(k, 4, Appliance.objects.all().filter(sb_id=sb).filter(startup_id=a.startup.id)[0].business_number)
-        sheet.write(k, 5, a.startup.user.username)
-        sheet.write(k, 6, a.startup.user.additionaluserinfo.tel)
-        filter_list = a.startup.filter.all()
-        f_arr = []
-        for fil in filter_list:
-            f_arr.append(fil.name)
-        sheet.write(k, 7, ",".join(f_arr))
+    for s in sb:
+        print(k)
+        sheet.write(k, 1, k)
+        sheet.write(k, 2, s.support_business_name)
+        sheet.write(k, 3, s.support_business_author.mng_phone)
+        sheet.write(k, 4, s.support_business_author.mng_tel)
+        sheet.write(k, 5, s.support_business_author.mng_team)
+        sheet.write(k, 6, "경기도 콘텐츠진흥원")
+        sheet.write(k, 7, s.support_business_author.mng_phone)
+        sheet.write(k, 8, len(Appliance.objects.all().filter(support_business =s)))
+        sheet.write(k, 9, len(Award.objects.all().filter(support_business=s)))
         k = k + 1
     book.save(f)
     out_content = f.getvalue()
-    zf.writestr("전체 리스트.xls", f.getvalue())
+    response = HttpResponse(content_type='application/force-download')
+    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+        "지원사업 리스트.xls", safe='')
+    book.save(response)
+    return response
 
+
+
+def vue_get_support_business_selected_list_excel(request):
+
+    sb = SupportBusiness.objects.all().filter(id__in=request.GET.get("id_list").split(","))
+    k=0
+    result_set = []
+    f = io.BytesIO()
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("지원사업 리스트")
+    sheet.write(0, 1, "순서")
+    sheet.write(0, 2, "공고명")
+    sheet.write(0, 3, "핸드폰 번호")
+    sheet.write(0, 4, "담당자")
+    sheet.write(0, 5, "팀")
+    sheet.write(0, 6, "기관")
+    sheet.write(0, 7, "연락처")
+    sheet.write(0, 8, "지원기업수")
+    sheet.write(0, 9, "상태")
+    k = 1
+    for s in sb:
+        print(k)
+        sheet.write(k, 1, k)
+        sheet.write(k, 2, s.support_business_name)
+        sheet.write(k, 3, s.support_business_author.mng_phone)
+        sheet.write(k, 4, s.support_business_author.mng_tel)
+        sheet.write(k, 5, s.support_business_author.mng_team)
+        sheet.write(k, 6, "경기도 콘텐츠진흥원")
+        sheet.write(k, 7, s.support_business_author.mng_phone)
+        sheet.write(k, 8, len(Appliance.objects.all().filter(support_business =s)))
+        sheet.write(k, 9, len(Award.objects.all().filter(support_business=s)))
+        k = k + 1
+    book.save(f)
+    out_content = f.getvalue()
+    response = HttpResponse(content_type='application/force-download')
+    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+        "지원사업 리스트.xls", safe='')
+    book.save(response)
+    return response
+#
+# @csrf_exempt
+# def download_file(request):
+
+@csrf_exempt
+def vue_get_download_usr_account(request):
+
+    if request.GET.get("tbl")=="1":
+        startup = Startup.objects.all()
+
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "기업명")
+        sheet.write(0, 3, "계정아이디")
+        sheet.write(0, 4, "대표자")
+        sheet.write(0, 5, "핸드폰번호")
+        sheet.write(0, 6, "메일주소")
+        sheet.write(0, 7, "소재지")
+        sheet.write(0, 8, "구성원수")
+        sheet.write(0, 9, "사업참가횟수")
+        sheet.write(0, 10, "사업선정횟수")
+        sheet.write(0, 11, "가입일")
+        k = 1
+        for s in startup:
+            temp = {}
+            temp["opr_index"] = k
+            sheet.write(k, 1, k)
+
+            sheet.write(k, 2, s.company_name)
+            sheet.write(k, 3, s.user.username)
+            sheet.write(k, 4, s.user.startup.repre_name)
+            sheet.write(k, 5, s.user.additionaluserinfo.repre_tel)
+            sheet.write(k, 6,s.repre_email)
+            tag_list = []
+            for t in s.selected_company_filter_list.all():
+                tag_list.append(t.filter_name)
+            temp["opr_tag"] = tag_list
+            try:
+                if "경기" in s.address_0:
+                    local = "경기"
+                elif "서울" in s.address_0:
+                    local = "서울"
+                elif "인천" in s.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local = "기타"
+
+            sheet.write(k, 7, (local))
+            sheet.write(k, 8, s.company_total_employee)
+            sheet.write(k, 9, len(Appliance.objects.all().filter(startup=s)))
+            sheet.write(k, 10,len(Award.objects.all().filter(startup=s)))
+            sheet.write(k, 11,s.user.date_joined)
+            k = k + 1
+
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+    if request.GET.get("tbl")=="2":
+        aw_startup_set = Appliance.objects.all().values("startup").distinct()
+        k = 1
+        ap_set = []
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "기업명")
+        sheet.write(0, 3, "공고마감일")
+        sheet.write(0, 4, "공고명")
+        sheet.write(0, 5, "대표자")
+        sheet.write(0, 6, "소재지")
+        sheet.write(0, 7, "선정여부")
+
+        for s in aw_startup_set:
+            aw_st = {}
+            startup = Startup.objects.get(id=s["startup"])
+            sheet.write(k, 1, k)
+            sheet.write(k, 2, startup.company_name)
+            sheet.write(k, 3,   str(Appliance.objects.all().filter(
+                startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0] )
+            sheet.write(k, 4,   Appliance.objects.all().filter(
+                startup=startup).last().support_business.support_business_name )
+            sheet.write(k, 5,  startup.repre_name)
+
+
+            try:
+                if "경기" in startup.address_0:
+                    local = "경기"
+                elif "서울" in startup.address_0:
+                    local = "서울"
+                elif "인천" in startup.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local = "기타"
+            sheet.write(k, 6,(local))
+            aw_st["opr_support_business_name"] = Appliance.objects.all().filter(
+                startup=startup).last().support_business.support_business_name
+            if len(Award.objects.all().filter(
+                    support_business=Appliance.objects.all().filter(startup=startup).last().support_business).filter(
+                    startup=startup)) == 0:
+                aw_st["opr_awarded"] = "탈락"
+            else:
+                aw_st["opr_awarded"] = "선정"
+            sheet.write(k, 7, aw_st["opr_awarded"] )
+            k=k+1
+
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+
+    if request.GET.get("tbl") == "3":
+        user_ad = AdditionalUserInfo.objects.all().exclude(auth="MNG").exclude(auth="OPR")
+
+        user_set = []
+        p = 1
+        k=1
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "회원 아이디")
+        sheet.write(0, 3, "이름")
+        sheet.write(0, 4, "핸드폰번호")
+        sheet.write(0, 5, "SNS")
+        sheet.write(0, 6, "가입일")
+
+        for u in user_ad:
+            try:
+                user = {}
+                user["opr_id"] = u.user.username
+                repre_name = Startup.objects.get(user=u.user).repre_name
+                username = u.user.username
+                tel = Startup.objects.get(user=u.user).repre_tel
+                date_joined =  u.user.date_joined
+
+                sheet.write(k, 1, k)
+                sheet.write(k, 2,  username)
+                sheet.write(k, 3, repre_name)
+                sheet.write(k, 4, tel)
+                sheet.write(k, 5, "")
+                sheet.write(k, 6, date_joined)
+                k=k+1
+
+
+            except Exception as e:
+                print(e)
+
+                pass
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+
+@csrf_exempt
+def vue_get_download_usr_account_selected(request):
+
+    if request.GET.get("tbl")=="1":
+        startup = Startup.objects.all().filter(id__in=request.GET.get("id_list").split(","))
+
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "기업명")
+        sheet.write(0, 3, "계정아이디")
+        sheet.write(0, 4, "대표자")
+        sheet.write(0, 5, "핸드폰번호")
+        sheet.write(0, 6, "메일주소")
+        sheet.write(0, 7, "소재지")
+        sheet.write(0, 8, "구성원수")
+        sheet.write(0, 9, "사업참가횟수")
+        sheet.write(0, 10, "사업선정횟수")
+        sheet.write(0, 11, "가입일")
+        k = 1
+        for s in startup:
+            temp = {}
+            temp["opr_index"] = k
+            sheet.write(k, 1, k)
+
+            sheet.write(k, 2, s.company_name)
+            sheet.write(k, 3, s.user.username)
+            sheet.write(k, 4, s.user.startup.repre_name)
+            sheet.write(k, 5, s.user.additionaluserinfo.repre_tel)
+            sheet.write(k, 6,s.repre_email)
+            tag_list = []
+            for t in s.selected_company_filter_list.all():
+                tag_list.append(t.filter_name)
+            temp["opr_tag"] = tag_list
+            try:
+                if "경기" in s.address_0:
+                    local = "경기"
+                elif "서울" in s.address_0:
+                    local = "서울"
+                elif "인천" in s.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local = "기타"
+
+            sheet.write(k, 7, (local))
+            sheet.write(k, 8, s.company_total_employee)
+            sheet.write(k, 9, len(Appliance.objects.all().filter(startup=s)))
+            sheet.write(k, 10,len(Award.objects.all().filter(startup=s)))
+            sheet.write(k, 11,s.user.date_joined)
+            k = k + 1
+
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+    if request.GET.get("tbl")=="2":
+        aw_startup_set = Appliance.objects.all().values("startup").distinct()
+        k = 1
+        ap_set = []
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "기업명")
+        sheet.write(0, 3, "공고마감일")
+        sheet.write(0, 4, "공고명")
+        sheet.write(0, 5, "대표자")
+        sheet.write(0, 6, "소재지")
+        sheet.write(0, 7, "선정여부")
+
+        for s in aw_startup_set:
+            aw_st = {}
+            startup = Startup.objects.get(id=s["startup"])
+            if startup.id in request.GET.get("id_list").split(","):
+                sheet.write(k, 1, k)
+                sheet.write(k, 2, startup.company_name)
+                sheet.write(k, 3,   str(Appliance.objects.all().filter(
+                    startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0] )
+                sheet.write(k, 4,   Appliance.objects.all().filter(
+                    startup=startup).last().support_business.support_business_name )
+                sheet.write(k, 5,  startup.repre_name)
+
+
+                try:
+                    if "경기" in startup.address_0:
+                        local = "경기"
+                    elif "서울" in startup.address_0:
+                        local = "서울"
+                    elif "인천" in startup.address_0:
+                        local = "인천"
+                    else:
+                        local = "기타"
+                except:
+                    local = "기타"
+                sheet.write(k, 6,(local))
+                aw_st["opr_support_business_name"] = Appliance.objects.all().filter(
+                    startup=startup).last().support_business.support_business_name
+                if len(Award.objects.all().filter(
+                        support_business=Appliance.objects.all().filter(startup=startup).last().support_business).filter(
+                        startup=startup)) == 0:
+                    aw_st["opr_awarded"] = "탈락"
+                else:
+                    aw_st["opr_awarded"] = "선정"
+                sheet.write(k, 7, aw_st["opr_awarded"] )
+                k=k+1
+
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+
+    if request.GET.get("tbl") == "3":
+        user_ad = AdditionalUserInfo.objects.all().exclude(auth="OPR").exclude(auth="MNG")
+
+        user_set = []
+        p = 1
+        k=1
+        f = io.BytesIO()
+        book = xlwt.Workbook()
+        sheet = book.add_sheet("회원 리스트")
+        sheet.write(0, 1, "순서")
+        sheet.write(0, 2, "회원 아이디")
+        sheet.write(0, 3, "이름")
+        sheet.write(0, 4, "핸드폰번호")
+        sheet.write(0, 5, "SNS")
+        sheet.write(0, 6, "가입일")
+
+        for u in user_ad:
+            try:
+                if u.user.startup.id in request.GET.get("id_list").split(","):
+                    user = {}
+                    user["opr_id"] = u.user.username
+                    repre_name = Startup.objects.get(user=u.user).repre_name
+                    username = u.user.username
+                    tel = Startup.objects.get(user=u.user).repre_tel
+                    date_joined = u.user.date_joined
+
+                    sheet.write(k, 1, k)
+                    sheet.write(k, 2, username)
+                    sheet.write(k, 3, repre_name)
+                    sheet.write(k, 4, tel)
+                    sheet.write(k, 5, "")
+                    sheet.write(k, 6, date_joined)
+                    k = k + 1
+
+
+            except Exception as e:
+                print(e)
+
+                pass
+        book.save(f)
+        out_content = f.getvalue()
+        response = HttpResponse(content_type='application/force-download')
+        response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+            "회원 리스트.xls", safe='')
+        book.save(response)
+        return response
+
+from binascii import a2b_base64
+@csrf_exempt
+def download_appliance(request):
+
+    # Files (local path) to put in the .zip
+    # FIXME: Change this (get paths from DB etc)
+    filenames = []
+    support_business_id = request.GET.get("support_business_id")
+    print(request.GET)
+    sb = SupportBusiness.objects.get(id=support_business_id)
+    appliance_id = request.GET.get("appliance_id")
+    app = Appliance.objects.get(id=appliance_id)
+    filelist = sb.support_business_meta
+    if "file_0" in filelist:
+        filenames.append(app.attached_ir_file)
+    if "file_1" in filelist:
+        filenames.append(app.attached_cert_file)
+    if "file_2" in filelist:
+        filenames.append(app.attached_tax_file)
+    if "file_3" in filelist:
+        filenames.append(app.attached_fund_file)
+    if "file_4" in filelist:
+        filenames.append(app.attached_ppt_file)
+    if "file_5" in filelist:
+        filenames.append(app.attached_ip_file)
+    if "file_6" in filelist:
+        filenames.append(app.attached_etc_file)
+
+    try:
+        imgdata =(app.img_data_url)
+        binary_data = a2b_base64(imgdata.split(",")[1])
+        filename = 'media/스타트업_지원서.png'  # I assume you have a way of picking unique filenames
+        with open(filename, 'wb') as f:
+            f.write(binary_data)
+        filenames.append(filename)
+    except:
+        pass
+
+    # Folder name in ZIP archive which contains the above files
+    # E.g [thearchive.zip]/somefiles/file2.txt
+    zip_subdir = "지원서 "
+    zip_filename = "%s.zip" % zip_subdir
+
+    # Open StringIO to grab in-memory ZIP contents
+    s = io.BytesIO()
+    # The zip compressor
+    zf = zipfile.ZipFile(s, "w")
+
+    for fpath in filenames:
+        try:
+            print(filenames)
+            print("경로"+fpath)
+            # Calculate path for file in zip
+            fdir, fname = os.path.split(fpath)
+            zip_path = os.path.join(zip_subdir, fname)
+            print(fname)
+            print(zip_path)
+            # Add file, at correct path
+            zf.write(fpath, zip_path)
+        except:
+            pass
+    # Must close zip for all contents to be written
     zf.close()
+    # Grab ZIP file from in-memory, make response with correct MIME-type
 
     resp = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
     resp['Content-Disposition'] = 'attachment;filename*=UTF-8\'\'%s' % urllib.parse.quote(zip_filename, safe='')
     return resp
 
 
-def vue_get_alarm_startup(arr,msg, sb_id):
-    filter_list = arr
-    startup_list = Startup.objects.filter(filter__in=filter_list)
-    for s in startup_list:
-        a = Alarm()
-        a.user = s.user
-        a.content = msg
-        a.origin_sb =  sb_id
-        a.save()
+@csrf_exempt
+def get_realtime_support_business_appliance(request):
 
-def vue_get_follow_startup(st_id):
-    follow_users =Startup.objects.get(id=st_id).additionaluserinfo_set
-    startup_name = Startup.objects,get(id=id).name
-    for a_follow_user in follow_users:
-        a= Alarm()
-        a.user = a_follow_user
-        a.content = startup_name + "의 정보가 변경되었습니다"
-        a.origin_st = Startup.objects.get(id=st_id)
-        a.save()
+    support_business_id = request.GET.get("support_business_id")
+    print("==========================")
+    print(support_business_id)
+    support_business = SupportBusiness.objects.get(id=support_business_id)
+    support_business_appliance_date_ymd = []
+    support_business_appliance = []
+    result={}
+    result["support_business_min_date"] =  str(SupportBusiness.objects.get(id=support_business_id).support_business_apply_start_ymd).split(" ")[0]
 
 
-def get_unread_alarm(request):
-    user_id = request.GET.get("id")
-    user = AdditionalUserInfo.objects.get(id= user_id)
-    alarm_set = Alarm.objects.filter(user = user).filter(read=False)
-    return JsonResponse(list(alarm_set), safe=False)
+    for date_dict in Appliance.objects.all().filter(support_business=support_business).\
+            dates("appliance_update_at_ymdt","day").values("appliance_update_at_ymdt").order_by("-appliance_update_at_ymdt").distinct():
+        if date_dict["appliance_update_at_ymdt"] not in support_business_appliance_date_ymd:
+            support_business_appliance_date_ymd.append(date_dict["appliance_update_at_ymdt"])
+    for date in support_business_appliance_date_ymd:
+        support_business_appliance.append(
+            {
+                "date": date,
+                "number": len(Appliance.objects.all().filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+            }
+        )
 
-def vue_fav_sb_list(request):
-    ad = AdditionalUserInfo.objects.get(id=request.GET.get("id"))
-    list=[]
-    for f in ad.interest.all():
-        list.append(f.id)
-    return JsonResponse(list, safe=False)
 
-def get_sb_hit_log(request):
-    id = request.GET.get("id")
-    sb = SupportBusiness.objects.get(id=id)
-    hit_log_date = HitLog.objects.filter(sb=sb).order_by("date").values("date").distinct()
-    date_list=[]
-    for date in hit_log_date:
-        close = len(HitLog.objects.filter(sb=sb).filter(date=date["date"]))
-        date_list.append({"date":date["date"], "close":close})
-    return JsonResponse(date_list, safe=False)
+    result["support_business_appliance"] = support_business_appliance
+    print(result)
+    print("==============")
+    return JsonResponse(result)
+
+@csrf_exempt
+def mng_vue_get_support_business_list(request):
+    support_business = SupportBusiness.objects.all()
+    k = 0
+    result_set = []
+    for s in support_business:
+        temp = {}
+        temp["mng_id"] = s.id
+        temp["mng_index"] = k
+        k = k + 1
+        temp["mng_support_business_name"] = s.support_business_name
+        temp["mng_support_business_apply_start_ymd"] = s.support_business_apply_start_ymd
+        temp["mng_author"] = s.support_business_author.mng_name
+        temp["mng_mng_team"] = s.support_business_author.mng_team
+        temp["mng_mng_kikwan"] = s.support_business_author.mng_kikwan
+        temp["mng_mng_tel"] = s.support_business_author.mng_tel
+        temp["mng_apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
+        temp["mng_award_num"] = len(Award.objects.all().filter(support_business=s))
+        opr_status = ""
+        try:
+
+            if s.support_business_status == "1":
+                mng_status = "작성중"
+            elif s.support_business_status == "2":
+                mng_status = "승인대기중"
+            elif s.support_business_status == "3":
+                mng_status = "공고중"
+            elif s.support_business_status == "4":
+                mng_status = "모집종료"
+            elif s.support_business_status == "5":
+                mng_status = "공고종료"
+            elif s.support_business_status == "6":
+                mng_status = "블라인드중"
+
+        except:
+            print("error")
+            mng_status = ""
+        temp["mng_status"] = mng_status
+        result_set.append(copy.deepcopy(temp))
+
+    return JsonResponse(result_set, safe=False)
+
+@csrf_exempt
+def mng_vue_get_kikwan_account(request):
+    if gca_check_session(request) == False:
+        return HttpResponse("{}")
+    opr_account_set = []
+    k = 1
+    opr_all_account_set = []
+    result={}
+    boss_id = AdditionalUserInfo.objects.get(id = request.POST.get("id")).mng_boss_id
+
+    for ac in AdditionalUserInfo.objects.all().filter(mng_boss_id=boss_id).order_by("-id"):
+        temp = {}
+        temp["mng_index"] = k
+        k = k + 1
+        temp["mng_id"] = ac.user.username
+        temp["mng_mng_name"] = ac.mng_name
+        temp["mng_mng_position"] = ac.mng_position
+        temp["mng_mng_bonbu"] = ac.mng_bonbu
+        temp["mng_mng_kikwan"] = ac.mng_kikwan
+        temp["mng_mng_team"] = ac.mng_team
+        temp["mng_mng_tel"] = ac.mng_tel
+        temp["mng_mng_phone"] = ac.mng_phone
+        temp["mng_mng_email"] = ac.mng_email
+        temp["mng_mng_date_joined_ymd"] = ac.mng_date_joined_ymd
+        opr_account_set.append(copy.deepcopy(temp))
+    k = 1
+
+    result["opr_account_set"] = opr_account_set
+
+    return JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def opr_vue_get_kikwan_account_excel(request):
+    opr_account_set = []
+    k = 1
+    opr_all_account_set = []
+    result = {}
+
+    f = io.BytesIO()
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("회원 리스트")
+    sheet.write(0, 1, "순서")
+    sheet.write(0, 2, "계정 아이디")
+    sheet.write(0, 3, "이름")
+    sheet.write(0, 4, "직급")
+    sheet.write(0, 5, "본부")
+    sheet.write(0, 6, "기관")
+    sheet.write(0, 7, "연락처")
+    sheet.write(0, 8, "메일주소")
+    sheet.write(0, 9, "가입일")
+    for ac in boss.additionaluserinfo_set.all().order_by("-id"):
+        temp = {}
+        temp["mng_index"] = k
+
+
+        sheet.write(k, 1,k)
+        sheet.write(k, 2,  ac.user.username)
+        sheet.write(k, 3 , ac.mng_name)
+        sheet.write(k, 4, ac.mng_position)
+        sheet.write(k, 5,  ac.mng_bonbu)
+        sheet.write(k, 6, ac.mng_kikwan)
+        sheet.write(k, 7, ac.mng_team)
+        sheet.write(k, 8, ac.mng_tel)
+        sheet.write(k, 9, ac.mng_phone)
+        sheet.write(k, 10, ac.mng_email)
+        sheet.write(k, 11, ac.mng_date_joined_ymd)
+        k = k + 1
+
+    book.save(f)
+    out_content = f.getvalue()
+    response = HttpResponse(content_type='application/force-download')
+    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+        "기관내회원 리스트.xls", safe='')
+    book.save(response)
+    return response
+
+
+
+@csrf_exempt
+def mng_vue_get_kikwan_account_excel(request):
+    opr_account_set = []
+    k = 1
+    opr_all_account_set = []
+    result = {}
+    boss_id = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).mng_boss_id
+    f = io.BytesIO()
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("회원 리스트")
+    sheet.write(0, 1, "순서")
+    sheet.write(0, 2, "계정 아이디")
+    sheet.write(0, 3, "이름")
+    sheet.write(0, 4, "직급")
+    sheet.write(0, 5, "본부")
+    sheet.write(0, 6, "기관")
+    sheet.write(0, 7, "연락처")
+    sheet.write(0, 8, "메일주소")
+    sheet.write(0, 9, "가입일")
+    for ac in AdditionalUserInfo.objects.all().filter(mng_boss_id=boss_id).order_by("-id"):
+        temp = {}
+        temp["mng_index"] = k
+
+
+        sheet.write(k, 1,k)
+        sheet.write(k, 2,   ac.user.username)
+
+        sheet.write(k, 3 , ac.mng_name)
+        sheet.write(k, 4, ac.mng_position)
+        sheet.write(k, 5,  ac.mng_bonbu)
+        sheet.write(k, 6, ac.mng_kikwan)
+        sheet.write(k, 7, ac.mng_team)
+        sheet.write(k, 8, ac.mng_tel)
+        sheet.write(k, 9, ac.mng_phone)
+        sheet.write(k, 10, ac.mng_email)
+        sheet.write(k, 11, ac.mng_date_joined_ymd)
+        k = k + 1
+
+    book.save(f)
+    out_content = f.getvalue()
+    response = HttpResponse(content_type='application/force-download')
+    response['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
+    response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'%s' % urllib.parse.quote(
+        "기관 회원 리스트.xls", safe='')
+    book.save(response)
+    return response
+
+
+
+@csrf_exempt
+def mng_vue_get_startup_account(request):
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
+    startup= Startup.objects.all()
+    result = {}
+    k=1
+    startup_set=[]
+    for s in startup :
+        temp={}
+        temp["mng_index"]=k
+        k=k+1
+        temp["mng_company_name"] = s.company_name
+        temp["mng_id"] = s.user.username
+        temp["mng_startup_id"] = s.id
+
+        temp["mng_repre_name"] = s.user.startup.repre_name
+        temp["mng_repre_tel"] = s.user.additionaluserinfo.repre_tel
+
+        temp["mng_repre_email"] = s.repre_email if s.user.additionaluserinfo.repre_email !="" else  s.user.username
+        tag_list=[]
+        for t in s.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        temp["mng_tag"] = tag_list
+        try:
+            if "경기" in s.address_0:
+                local = "경기"
+            elif "서울" in s.address_0:
+                local = "서울"
+            elif "인천" in s.address_0:
+                local = "인천"
+            else :
+                local = "기타"
+        except:
+            local="기타"
+        temp["mng_local"] = local
+        temp["mng_employ_num"] = s.company_total_employee
+        temp["mng_apply_num"] = len(Appliance.objects.all().filter(startup=s))
+        temp["mng_award_num"] = len(Award.objects.all().filter(startup=s))
+        temp["mng_join"] = s.user.date_joined
+        temp["mng_tag"]=[]
+        for t in s.selected_company_filter_list.all():
+            temp["mng_tag"].append(t.filter_name)
+        startup_set.append(copy.deepcopy(temp))
+    result["mng_startup"] = startup_set
+    user_ad = AdditionalUserInfo.objects.all().exclude(auth=4).exclude(auth=5)
+
+    user_set = []
+    p=1
+    for u in user_ad:
+        try:
+            user = {}
+            user["mng_id"] = u.user.username
+            user["mng_repre_name"] = Startup.objects.get(user=u.user).repre_name
+            user["mng_repre_tel"] = Startup.objects.get(user=u.user).repre_tel
+            user["mng_joined"] = u.user.date_joined
+
+            user["mng_index"]=p
+            p=p+1
+            print(u.user)
+
+
+            user_set.append(copy.deepcopy(user))
+
+        except Exception as e:
+            print(e)
+            pass
+        result["mng_usr_set"] = user_set
+
+    ## 사업 참여 기업
+    aw_startup_set = Appliance.objects.all().values("startup").distinct()
+    k=1
+    ap_set = []
+    for s in aw_startup_set:
+
+        aw_st={}
+        print(s)
+        startup = Startup.objects.get(id=s["startup"])
+        aw_st["mng_index"] = k
+        k=k+1
+        aw_st["mng_company_name"] = startup.company_name
+        aw_st["mng_repre_name"] = startup.repre_name
+        aw_st["mng_startup_id"] = startup.id
+        aw_st["mng_repre_tel"] = startup.repre_tel
+        tag_list = []
+        for t in startup.selected_company_filter_list.all():
+            tag_list.append(t.filter_name)
+        aw_st["mng_tag"] = tag_list
+        try:
+            if "경기" in startup.address_0:
+                local = "경기"
+            elif "서울" in startup.address_0:
+                local = "서울"
+            elif "인천" in startup.address_0:
+                local = "인천"
+            else:
+                local = "기타"
+        except:
+            local="기타"
+        aw_st["mng_local"] = local
+
+
+        aw_st["mng_support_business_name"] = Appliance.objects.all().filter(startup=startup).last().support_business.support_business_name
+        if len(Award.objects.all().filter(support_business=Appliance.objects.all().filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+            aw_st["mng_awarded"] = "N"
+        else:
+            aw_st["mng_awarded"] = "Y"
+        aw_st["mng_end_date"] = str(Appliance.objects.all().filter(startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+        ap_set.append(copy.deepcopy(aw_st))
+    result["mng_ap_set"] = ap_set
+    return JsonResponse(result)
+
+
+@csrf_exempt
+def vue_get_channel_static(request):
+    id= request.GET.get("id")
+    result={}
+    if request.GET.get("channel")=="1":  # 강좌 인 경우..
+
+        date_arr = []
+        favorite_by_date = []
+        for date_dict in Favoritelog.objects.all().filter(favorite_clip_id=id).values("favorite_date").order_by(
+                "-favorite_date").distinct():
+            if date_dict["favorite_date"] not in date_arr:
+                date_arr.append(date_dict["favorite_date"])
+        print(date_arr)
+        for date in date_arr:
+            favorite_by_date.append(
+                {
+                    "date": date, "number": len(
+                    Favoritelog.objects.all().filter(favorite_clip_id=id).filter(favorite_date=date))
+                }
+            )
+        result["favorite_by_date"] = favorite_by_date
+        print(result)
+        startup_list = []
+        for favored_startup in Favoritelog.objects.all().filter(
+                favorite_clip_id=id).values("favorite_user_id").distinct():
+            print(favored_startup)
+            startup_list.append(
+                Startup.objects.get(user=AdditionalUserInfo.objects.get(id=favored_startup["favorite_user_id"]).user))
+        favored_comtype_filter = []
+        favored_location_filter = []
+        favored_genre_filter = []
+        favored_area_filter = []
+        result["favored_startup_list"] = []
+        k = 1
+        # 작업중
+        for startup in startup_list:
+            filter_list = startup.selected_company_filter_list.all()
+            company_kind = ""
+            local = []
+            for filter in filter_list:
+                if filter.cat_1 == "기업형태":
+                    favored_comtype_filter.append(filter.filter_name)
+                    company_kind = filter.filter_name
+                if filter.cat_1 == "소재지":
+                    favored_location_filter.append(filter.filter_name)
+                    local.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    favored_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    favored_area_filter.append(filter.filter_name)
+            result["favored_startup_list"].append({
+                "startup_id": startup.id,
+                "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+                "company_kind": company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+            })
+            k = k + 1
+        result["favored_comtype_filter"] = (organize(favored_comtype_filter))
+        result["favored_location_filter"] = (organize(favored_location_filter))
+        result["favored_genre_filter"] = (organize(favored_genre_filter))
+        result["favored_area_filter"] = (organize(favored_area_filter))
+
+
+
+
+        date_arr = []
+        hit_by_date = []
+        for date_dict in HitClipLog.objects.all().filter(hit_clip_id=id).values("hit_clip_date").order_by(
+                "-hit_clip_date").distinct():
+            if date_dict["hit_clip_date"] not in date_arr:
+                date_arr.append(date_dict["hit_clip_date"])
+        print(date_arr)
+        for date in date_arr:
+            hit_by_date.append(
+                {
+                    "date": date, "number": len(
+                    HitClipLog.objects.all().filter(hit_clip_id=id).filter(hit_clip_date=date))
+                }
+            )
+        result["hit_by_date"] = hit_by_date
+        print(result)
+        startup_list = []
+        for target_startup in HitClipLog.objects.all().filter(
+                hit_clip_id=id).values("hit_clip_user_id").distinct():
+            print(target_startup)
+            startup_list.append(
+                Startup.objects.get(user=AdditionalUserInfo.objects.get(id=target_startup["hit_clip_user_id"]).user))
+        hit_comtype_filter = []
+        hit_location_filter = []
+        hit_genre_filter = []
+        hit_area_filter = []
+        result["hit_startip_list"] = []
+        k = 1
+        # 작업중
+        for startup in startup_list:
+            filter_list = startup.selected_company_filter_list.all()
+            company_kind = ""
+            local = []
+            for filter in filter_list:
+                if filter.cat_1 == "기업형태":
+                    hit_comtype_filter.append(filter.filter_name)
+                    company_kind = filter.filter_name
+                if filter.cat_1 == "소재지":
+                    hit_location_filter.append(filter.filter_name)
+                    local.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    hit_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    hit_area_filter.append(filter.filter_name)
+            result["favored_startup_list"].append({
+                "startup_id": startup.id,
+                "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+                "company_kind": company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+            })
+            k = k + 1
+        result["hit_comtype_filter"] = (organize(hit_comtype_filter))
+        result["hit_location_filter"] = (organize(hit_location_filter))
+        result["hit_genre_filter"] = (organize(hit_genre_filter))
+        result["hit_area_filter"] = (organize(hit_area_filter))
+
+        print(result)
+
+@csrf_exempt
+def vue_get_course_all(request):
+    result = []
+    print("course on check!!!!!!!")
+    for c in Course.objects.all().order_by("-id"):
+        temp={}
+        temp["id"] = c.id
+        try:
+            print(0)
+            temp["course_entry_point"] = "/channel/course/view/"+ str(c.id)+"/" + str(c.course_clips.all().first().id)
+        except Exception as e:
+            print(e)
+            print(c.course_clips.all())
+            print(c.course_clips.all().first())
+            temp["course_entry_point"]=""
+        try:
+            temp["course_user"]=c.course_user.user.startup.repre_name
+        except:
+            temp["course_user"] = c.course_user.mng_name
+        temp["course_thumb"]=c.course_thumb
+        temp["course_id"] = c.id
+        temp["label"] = c.course_title
+        temp["value"] = c.id
+        temp["is_favored"] = is_in_favor_list("course", c.id, request.GET.get("gca_id"))
+
+        temp["course_title"]=c.course_title
+        temp["course_rec_dur"]=c.course_rec_dur
+        temp["course_created_at"]=c.course_created_at
+        temp["course_info"] = c.course_info
+        temp["course_tag"] =[]
+        temp["course_total_play"] = c.course_total_play
+        for t in c.course_filter.all():
+            temp["course_tag"].append(t.name)
+        result.append(copy.deepcopy(temp))
+    return JsonResponse(result, safe=False)
+
+
+# -------[[모든 패스리스트 가지고 오기]]----------
+@csrf_exempt
+def vue_get_path_all(request):
+    result = []
+    for c in Path.objects.all().order_by("-id"):
+        temp={}
+        temp["id"] = c.id
+        try:
+            temp["path_entry_point"] = "/channel/path/view/"+ str(c.id)+"/"+ str(c.path_course.all().first().id) + "/"+ str(c.path_course.first().course_clips.all().first().id)
+        except Exception as e:
+            print(e)
+            temp["path_entry_point"]=""
+        try:
+            temp["path_user"]=c.path_user.user.startup.repre_name
+        except:
+            temp["path_user"] = c.path_user.mng_name
+        temp["path_thumb"]=c.path_thumb
+        temp["path_title"]=c.path_title
+        temp["path_rec_dur"]=c.path_rec_dur
+        temp["label"] = c.path_title
+        temp["value"] = c.id
+
+        temp["is_favored"] = is_in_favor_list("path", c.id, request.GET.get("gca_id"))
+
+        temp["path_total_play"] = c.path_total_play
+        temp["path_id"] = c.id
+        temp["path_created_at"]=c.path_created_at
+        temp["path_info"] = c.path_info
+        temp["path_tag"] =[]
+        for t in c.path_filter.all():
+            temp["path_tag"].append(t.name)
+        result.append(copy.deepcopy(temp))
+    return JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def get_favorite_startup(request):
+    usr_id= request.GET.get("gca_id")
+    add  = AdditionalUserInfo.objects.get(id=usr_id)
+    result=[]
+    for a in add.favorite_startup.all():
+
+        filter=[]
+        for t in a.selected_company_filter_list.all():
+            filter.append(t.filter_name)
+        is_favored=""
+        try:
+            is_favored =  is_in_favor_list("startup",a.id, usr_id)
+        except  Exception as e:
+            print(e)
+            is_favored =  False
+
+        result.append({
+            "company_name": a.company_name,
+            "company_short_desc": a.company_short_desc,
+            "filter":filter, "logo": a.logo, "is_favored" : is_favored,
+            "id":a.id
+        })
+    return JsonResponse(result, safe=False, )
+
+
+
+@csrf_exempt
+def vue_get_startup_list_sample(request):
+    startup = Startup.objects.all().order_by("?")[:3]
+    result = []
+    for s in startup:
+        temp_obj = {}
+        temp_obj["company_name"] = s.company_name
+        temp_obj["company_short_desc"] = s.company_short_desc
+        temp_obj["logo"] = s.logo
+
+
+        temp_obj["is_favored"] = is_in_favor_list("startup", s.id, request.GET.get("gca_id"))
+
+        temp_obj["tag"] = []
+        temp_obj["id"] = s.id
+        temp_obj["filter"] = []
+        temp_obj["filter"] = []
+
+        for t in s.selected_company_filter_list.all():
+            temp_obj["filter"].append(t.filter_name)
+
+        result.append(copy.deepcopy(temp_obj))
+    return JsonResponse(list(result), safe=False)
+
+
+@csrf_exempt
+def vue_get_clip_all(request):
+    print("print clip")
+    result = []
+    for c in Clip.objects.all().order_by("-id"):
+        temp={}
+        temp["clip_id"] = c.id
+        try:
+            temp["clip_user"]=c.clip_user.user.startup.repre_name
+        except:
+            temp["clip_user"] = c.clip_user.mng_name
+        temp["clip_thumb"]=c.clip_thumb
+        temp["clip_title"]=c.clip_title
+        temp["clip_play"]=c.clip_play
+        temp["clip_created_at"]=c.clip_created_at
+        temp["clip_info"] = c.clip_info
+        temp["clip_tag"] =[]
+        temp["is_favored"] = is_in_favor_list( "clip", c.id  , request.GET.get("gca_id") )
+        temp["clip_entry_point"] ="/channel/clip/view/"+str(c.id)
+        # 채널 통계에서 사용되는 레이블과 value
+        temp["label"] = c.clip_title
+        temp["value"] = c.id
+
+        temp["tag"]=[]
+        for t in c.clip_filter.all()  :
+            temp["tag"].append(t.name)
+        result.append(copy.deepcopy(temp))
+    return JsonResponse(result, safe=False)
+@csrf_exempt
+def toggle_favorite_startup(request):
+    # if gca_check_session(request)== False:
+    #     return HttpResponse("{}")
+    user_id = request.GET.get("gca_id")
+    ad = AdditionalUserInfo.objects.get(id=user_id)
+    startup_id = request.GET.get("startup_id")
+    startup = Startup.objects.get(id=startup_id)
+    if startup in ad.favorite_startup.all():
+        ad.favorite_startup.remove(startup)
+        FavoriteLog.objects.filter(startup=startup).filter(user=ad).delete()
+    else:
+        ad.favorite_startup.add(startup)
+        FavoriteLog(user_id=user_id, startup=startup, date=timezone.now()).save()
+    return JsonResponse({"":""})
+# --------[[코스 샘플 듣기]-------
+
+@csrf_exempt
+def vue_login_check(request):
+
+    return JsonResponse({"result":gca_check_session(request)})
+
+
+from PIL import Image
+
+# -*- coding: utf-8 -*-
+from io import BytesIO
+from PyPDF2 import PdfFileWriter, PdfFileReader
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+
+from decimal import Decimal
+@csrf_exempt
+def make_pdf(request):
+
+
+    imgdata =request.POST.get("data")
+    binary_data = a2b_base64(imgdata.split(",")[1])
+    filename = 'media/test.png'  # I assume you have a way of picking unique filenames
+    with open(filename, 'wb') as f:
+        f.write(binary_data)
+    im = Image.open(filename)
+    imgwidth, imgheight = im.size
+
+    k=0
+    print(request.POST.get("height_array"))
+    height_arr = request.POST.get("height_array").split(",")
+
+    for i in range(0,9):
+        print(sum(int(j) for j in height_arr[:i+1]))
+        box = ( 100, sum(int(j) for j in height_arr[:i]), imgwidth,sum(int(j) for j in height_arr[:i+1]))
+        percent=0.6
+        a = im.crop(box)
+        print(i)
+
+        try:
+            a = a.resize((int(imgwidth * percent), int(int(height_arr[(i + 1)]) * percent)))
+            a.save(os.path.join("TESTIMG-%s.png" % k))
+            k=k+1
+        except:
+
+            box = (0, i, imgwidth, imgheight)
+            a = im.crop(box)
+            a = a.resize((int(imgwidth * percent), int(int(height_arr[(8)]) * percent)))
+            a.save(os.path.join("TESTIMG-%s.png" % k))
+
+
+    path = os.path.join('TESTIMG-{0}.png')
+    pdf = PdfFileWriter()
+
+
+    # Using ReportLab Canvas to insert image into PDF
+
+
+    # Draw image on Canvas and save PDF in buffer
+    inner=True
+    start_img_num = 0
+    HEIGHT = 800
+    height_sum=HEIGHT
+    num=0
+    imgTemp = BytesIO()
+    imgDoc = canvas.Canvas(imgTemp, pagesize=A4)
+    while inner:
+
+        try:
+            height_sum  = height_sum - int( (int(height_arr[num+1])*percent))
+        except:
+            inner=False
+            break;
+
+        if height_sum > 0:
+            imgDoc.drawImage(path.format(num), 20, height_sum, width=imgwidth, height= int(int(height_arr[num+1])*percent),)
+            num=num+1
+
+        else:
+            height_sum=HEIGHT
+            imgDoc.save()
+            pdf.addPage(PdfFileReader(BytesIO(imgTemp.getvalue())).getPage(0))
+            imgTemp = BytesIO()
+            imgDoc = canvas.Canvas(imgTemp, pagesize=A4)
+
+
+
+    pdf.write(open("output.pdf", "wb"))

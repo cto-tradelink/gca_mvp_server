@@ -1,3 +1,5 @@
+
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -5,45 +7,75 @@ from django.core.urlresolvers import reverse
 from datetime import date
 import datetime
 
-class InterestLog(models.Model):
+
+class FavoriteLog(models.Model):
     user = models.ForeignKey("AdditionalUserInfo")
-    sb = models.ForeignKey("SupportBusiness")
-    date = models.DateField()
+    support_business = models.ForeignKey("SupportBusiness", blank=True, null=True)
+    startup =models.ForeignKey("Startup", blank=True, null=True)
+    clip =models.ForeignKey("Clip", blank=True, null=True)
+    course =models.ForeignKey("Course", blank=True, null=True)
+    path =models.ForeignKey("Path", blank=True, null=True)
+    date = models.DateField(auto_now_add=True)
     up_down = models.IntegerField(max_length=1)
 
 
 class AdditionalUserInfo(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL)
     auth = models.CharField(max_length=10, blank=True, null=True, default="")
-    category = models.CharField(max_length=100, blank=True, null=True, default="")
-    name = models.CharField(max_length=30, blank=True, null=True, default="")
     avatar = models.ImageField(upload_to='uploads/user/avatar', null=True, blank=True, default="")
     startup = models.CharField(max_length=30, blank=True, null=True, default="")
     agreement = models.BooleanField(default=True)
-    position = models.CharField(max_length=20, blank=True, null=True, default="")
-    tel = models.CharField(max_length=30, blank=True, null=True, default="")
-    web = models.CharField(max_length=30, blank=True, null=True, default="")
-    additional_email = models.CharField(max_length=100, blank=True, null=True, default="없음")
-    department = models.CharField(max_length=30, blank=True, null=True, default="")
-    belong_to = models.CharField(max_length=30, blank=True, null=True, default="")
-    interest = models.ManyToManyField("SupportBusiness", blank=True, null=True)
-    interest_startup = models.ManyToManyField("Startup", blank=True, null=True)
-    interest_clip = models.ManyToManyField("Clip", blank=True, null=True)
-    interest_course = models.ManyToManyField("Course", blank=True, null=True)
-    interest_path = models.ManyToManyField("Path", blank=True, null=True)
+
+    repre_name = models.CharField(max_length=30, blank=True, null=True, default="")
+    repre_tel = models.CharField(max_length=30, blank=True, null=True, default="")
+    repre_email = models.CharField(max_length=100, default="", blank=True, null=True, )
+
+    mng_name = models.CharField(max_length=30, blank=True, null=True, default="")
+    mng_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
+    mng_phone = models.CharField(max_length=100, default="", blank=True, null=True, )
+    mng_email = models.CharField(max_length=100, default="", blank=True, null=True, )
+
+    mng_position = models.CharField(max_length=20, blank=True, null=True, default="")
+    mng_bonbu = models.CharField(max_length=20, blank=True, null=True)
+    mng_kikwan = models.CharField(max_length=20, blank=True, null=True)
+    mng_team = models.CharField(max_length=20, blank=True, null=True)
+    # mng_department = models.CharField(max_length=30, blank=True, null=True, default="")
+    # mng_belong_to = models.CharField(max_length=30, blank=True, null=True, default="")
+    mng_boss = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
+    mng_date_joined_ymd = models.DateTimeField(auto_now_add=True)
+    mng_website = models.CharField(max_length=100, blank=True, null=True)
+
+    favorite = models.ManyToManyField("SupportBusiness", blank=True, null=True)
+    favorite_startup = models.ManyToManyField("Startup", blank=True, null=True)
+    favorite_clip = models.ManyToManyField("Clip", blank=True, null=True)
+    favorite_course = models.ManyToManyField("Course", blank=True, null=True)
+    favorite_path = models.ManyToManyField("Path", blank=True, null=True)
     sns = models.CharField(max_length=100, blank=True, null=True)
 
-    phone = models.CharField(max_length=100, blank=True, null=True, default="")
-    boss = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
 
     facebook = models.CharField(max_length=1, blank=True, null=True)
     twitter = models.CharField(max_length=1, blank=True, null=True)
 
+    class Meta:
+        verbose_name="회원 관리"
+        verbose_name_plural="회원 관리"
     def __str__(self):
         return self.user.username
 
+    def get_user_id(self):
+        return self.user.username
+    def get_user_mng_name(self):
+        print(self.mng_name)
+        if self.mng_name !="" or self.mng_name != None :
+            return self.mng_name
+        else:
+            print(self.user.startup.repre_name)
+            return self.user.startup.repre_name
+
+
     def last_login(self):
         return self.user.last_login
+
     def account_stage(self):
         depth = self.get_depth()
         if depth == 0 :
@@ -54,6 +86,9 @@ class AdditionalUserInfo(models.Model):
             return '기관장'
         elif depth == 3:
             return '실무 매니저'
+
+
+
 
     def has_boss(self):
         if self.boss is not None:
@@ -69,21 +104,6 @@ class AdditionalUserInfo(models.Model):
             target = target.boss
 
         return dep
-
-    def lowest_manager(self):
-        if len(self.additionaluserinfo_set.all()) == 0:
-            return self
-        else:
-            result = []
-            for obj in self.additionaluserinfo_set.all():
-                result.append(obj.lowest_manager())
-            return result
-
-    def highest_manager(self):
-        if self.boss == None :
-            return self
-        else:
-            return AdditionalUserInfo.objects.filter(pk=self.boss.id)[0].highest_manager()
 
     def has_child(self):
         if len(self.additionaluserinfo_set.all()) == 0:
@@ -119,47 +139,43 @@ class AdditionalUserInfo(models.Model):
 # 기업 정보에 대한 데이터베이스 항목
 class Startup(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL)
-    name = models.CharField(max_length=100, blank=True, null=True, )
-    desc = models.TextField(blank=True, null=True, default="")
-    short_desc = models.TextField(blank=True, null=True, default="")
-    fund_status = models.TextField(blank=True, null=True, default="")
-    service_products = models.TextField(blank=True, null=True, default="")
-    employee_number = models.CharField(max_length=5, blank=True, null=True, default="")
+    company_name = models.CharField(max_length=100, blank=True, null=True, )
+    company_intro = models.TextField(blank=True, null=True, default="")
     established_date = models.DateField(blank=True, null=True, )
-    intro_text = models.TextField()
-    logo = models.CharField(max_length=1000, blank=True, null=True)
-    back_img = models.CharField(max_length=1000, blank=True, null=True)
-    tag_string = models.CharField(max_length=1000, blank=True, null=True)
-    youtube = models.CharField(max_length=300, blank=True, null=True)
-    facebook = models.CharField(max_length=300, blank=True, null=True)
-    insta = models.CharField(max_length=300, blank=True, null=True)
+    logo = models.CharField(max_length=1000, blank=True, null=True) #파일
+    back_img = models.CharField(max_length=1000, blank=True, null=True)#파일
+
+    company_short_desc = models.CharField(max_length=1000, blank=True, null=True)
+    company_intro = models.CharField(max_length=1000, blank=True, null=True)
+
+    company_youtube = models.CharField(max_length=300, blank=True, null=True)
+    company_facebook = models.CharField(max_length=300, blank=True, null=True)
+    company_instagram = models.CharField(max_length=300, blank=True, null=True)
+    company_website = models.CharField(max_length=300, default="", blank=True, null=True, )
 
     address_0 = models.CharField(max_length=400, default="", blank=True, null=True, )
     address_1 = models.CharField(max_length=400, default="", blank=True, null=True, )
-    address_2 = models.CharField(max_length=400, default="", blank=True, null=True, )
-    address_detail_0 = models.CharField(max_length=400, default="", blank=True, null=True, )
-    address_detail_1 = models.CharField(max_length=400, default="", blank=True, null=True, )
-    address_detail_2 = models.CharField(max_length=400, default="", blank=True, null=True, )
-    address_0_title = models.CharField(max_length=30, default="", blank=True, null=True, )
-    address_1_title = models.CharField(max_length=30, default="", blank=True, null=True, )
-    address_2_title = models.CharField(max_length=30, default="", blank=True, null=True, )
-    business_file = models.CharField(max_length=300, default="", blank=True, null=True)
-    website = models.CharField(max_length=300, default="", blank=True, null=True, )
-    email = models.CharField(max_length=100, default="", blank=True, null=True, )
-    category = models.CharField(max_length=200, default="", blank=True, null=True, )
-    thumbnail = models.ImageField(upload_to='uploads/user/company', null=True, blank=True)
-    # thumbnail =ProcessedImageField(
-    #     upload_to='uploads/user/company',
-    #     processors=[Thumbnail(121, 121)],  # 처리할 작업 목룍
-    #     format='JPEG',  # 최종 저장 포맷
-    #     options={'quality': 100})
 
-    filter = models.ManyToManyField("Filter", blank=True, null=True)
-    tag = models.ManyToManyField("Tag", blank=True, null=True)
+
+    repre_name = models.CharField(max_length=100, default="", blank=True, null=True, )
+    repre_email = models.CharField(max_length=100, default="", blank=True, null=True, )
+    repre_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
+
+    mark_name = models.CharField(max_length=100, default="", blank=True, null=True, )
+    mark_email = models.CharField(max_length=100, default="", blank=True, null=True, )
+    mark_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
+
+    selected_company_filter_list = models.ManyToManyField("SupportBusinessFilter", blank=True, null=True, db_table='company_filter_with_startup'  )
+    company_keyword =  models.CharField(max_length=300, default="", blank=True, null=True, )
+
+    company_total_employee  =  models.CharField(max_length=20, blank=True, null=True, default="")
+    company_hold_employee =  models.CharField(max_length=20, blank=True, null=True, default="")
+    company_assurance_employee  = models.CharField(max_length=20, blank=True, null=True, default="")
 
     revenue_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
     revenue_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
     revenue_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+
     revenue_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
     revenue_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     revenue_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
@@ -167,427 +183,369 @@ class Startup(models.Model):
     export_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
     export_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
     export_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+
     export_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_year_0 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_1 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_2 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_3 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_4 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_5 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_6 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_7 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_8 = models.CharField(max_length=13, blank=True, null=True, default="")
-    fund_before_year_9 = models.CharField(max_length=13, blank=True, null=True, default="")
 
-    fund_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_3 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_4 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_5 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_6 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_7 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_8 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_9 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_0 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_1 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_3 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_4 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_5 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_6 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_7 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_8 = models.CharField(max_length=20, blank=True, null=True, default="")
-    fund_before_agent_9 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_2 = models.CharField(max_length=20, blank=True, null=True, default="")
 
-    def __str__(self):
-        return "회사이름:" + self.name
-
-    def get_absolute_url(self):
-        return reverse('startup_detail', args=[self.id])
-
-
-
-class Revenue(models.Model):
-    startup = models.ForeignKey(Startup)
-    year = models.CharField(max_length=5, blank=True, null=True)
-    size = models.CharField(max_length=10, blank=True, null=True)
+    ip_chk =models.BooleanField(default=True)
+    revenue_chk = models.BooleanField(default=True)
+    export_chk = models.BooleanField(default=True)
+    company_invest_chk = models.BooleanField(default=True)
+    company_kind = models.CharField(max_length=10, blank=True, null=True)
+    attached_ip_file = models.CharField(max_length=500, null=True, blank=True)  # 파일
+    attached_ir_file= models.CharField(max_length=500, null=True, blank=True)#파일
+    attached_cert_file = models.CharField(max_length=500, null=True, blank=True)#파일
+    attached_tax_file = models.CharField(max_length=500, null=True, blank=True)#파일
+    attached_fund_file = models.CharField(max_length=500, null=True, blank=True)#파일
+    attached_ppt_file = models.CharField(max_length=500, null=True, blank=True)#파일
+    attached_etc_file = models.CharField(max_length=500, null=True, blank=True)#파일
+    #tag_string = models.CharField(max_length=1000, blank=True, null=True)
+    
+    class Meta:
+        verbose_name="스타트업 관리"
+        verbose_name_plural="스타트업 관리"
 
 class Service(models.Model):
     startup = models.ForeignKey(Startup)
-    img = models.CharField(max_length=300, null=True, blank=True, default="")
-    intro = models.TextField()
-    file = models.CharField(max_length=300, null=True, blank=True, default="")
-    name = models.CharField(max_length=200, blank=True, null=True)
-    show = models.CharField(max_length=10, blank=True, null=True)
+    service_img = models.CharField(max_length=300, null=True, blank=True, default="")#파일
+    service_intro = models.TextField()
 
-class Fund(models.Model):
+    service_file = models.CharField(max_length=300, null=True, blank=True, default="")#파일
+    service_name = models.CharField(max_length=200, blank=True, null=True)
+
+
+class CompanyInvest(models.Model):
     startup = models.ForeignKey(Startup)
-    year = models.CharField(max_length=5, blank=True, null=True)
-    size = models.CharField(max_length=10, blank=True, null=True)
-    agency = models.CharField(max_length=100, blank=True, null=True)
-    step = models.CharField(max_length=100, blank=True, null= True)
-    currency = models.CharField(max_length=4 , blank=True, null=True)
-
-class TradeInfo(models.Model):
-    startup = models.ForeignKey(Startup)
-    year = models.CharField(max_length=5, blank=True, null=True)
-
-    size = models.CharField(max_length=10, blank=True, null=True)
+    company_invest_year = models.DateField(max_length=5, blank=True, null=True)
+    company_invest_size = models.CharField(max_length=10, blank=True, null=True)
+    company_invest_agency = models.CharField(max_length=100, blank=True, null=True)
 
 class Activity(models.Model):
     startup = models.ForeignKey(Startup)
-    kind = models.CharField(max_length=100, blank=True, null= True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    text = models.TextField()
-    img = models.CharField(max_length=300, blank=True, null=True)
-    youtube = models.CharField(max_length=300, blank=True, null=True)
+    company_activity_created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    company_activity_text = models.TextField(max_length=1000)
+    company_activity_img = models.CharField(max_length=300, blank=True, null=True)#파일
+    company_activity_youtube = models.CharField(max_length=300, blank=True, null=True)
 
 class ActivityLike(models.Model):
     activity = models.ForeignKey(Activity)
-    user = models.ForeignKey(AdditionalUserInfo)
-    like_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    company_activity_user = models.ForeignKey(AdditionalUserInfo)
+    company_activity_like_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 class Reply(models.Model):
     activity = models.ForeignKey(Activity)
-    text = models.TextField()
-    author = models.ForeignKey(Startup)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    company_activity_text = models.TextField()
+    company_activity_author = models.ForeignKey(Startup)
+    company_activity_created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 class History(models.Model):
     startup = models.ForeignKey(Startup)
-    year = models.CharField(max_length=4, blank=True, null=True)
-    month = models.CharField(max_length=2, blank=True, null= True)
-    content = models.TextField()
+    company_history_year = models.CharField(max_length=10, blank=True, null=True)
+    company_history_month = models.CharField(max_length=2, blank=True, null= True)
+    company_history_content = models.TextField()
 
 
-
-class SupportBusiness(models.Model):
-    user = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
-    title = models.CharField(max_length=300, blank=True, null=True, default="")
-    title_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    title_sub = models.CharField(max_length=300, blank=True, null=True, default="")
-    title_sub_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    business_period_start = models.DateField(blank=True, null=True)
-    business_period_end = models.DateField(blank=True, null=True)
-    poster = models.CharField(max_length=1000, blank=True, null=True)
-    relate_sb=models.ForeignKey("SupportBusiness",blank=True, null=True)
-    short_desc = models.CharField(max_length=14, blank=True, null=True, default="")
-    place = models.TextField(blank=True, null=True, default="")
-    place_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    subject = models.TextField(blank=True, null=True, default="")
-    subject_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    business_detail = models.TextField(blank=True, null=True, default="")
-    business_detail_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    apply_start = models.DateTimeField(blank=True, null=True, )
-    apply_end = models.DateTimeField(blank=True, null=True, )
-    object = models.TextField(blank=True, null=True, default="")
-    employee_num = models.IntegerField(blank=True, null=True, default=0)
-    employee_lt_gt = models.CharField(blank=True, null=True, default="제한없음", max_length=4)
-    object_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    condition = models.TextField(blank=True, null=True, default="")
-    condition_tag = models.CharField(max_length=500, null=True, blank=True, default="")
-    condition_etc = models.TextField(blank=True, null=True, default="")
-    condition_etc_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    object_span = models.TextField(blank=True, null=True, default="")
-    object_span_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    recruit_size = models.CharField(max_length=30, blank=True, null=True, default="")
-    prefer = models.TextField(blank=True, null=True, default="")
-    prefer_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    constraint = models.TextField(blank=True, null=True, default="")
-    constraint_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    choose_method = models.TextField(blank=True, null=True, default="")
-    icon_set = models.CharField(max_length=2, blank=True, null=True, default="")
-    pro_0_choose = models.TextField(blank=True, null=True, default="")
-    pro_0_choose_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    pro_0_start = models.DateField(blank=True, null=True)
-    pro_0_end = models.DateField(blank=True, null=True)
-    pro_0_open = models.DateField(blank=True, null=True)
-    pro_0_criterion = models.TextField(blank=True, null=True, default="")
-    pro_0_criterion_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    pro_1_choose = models.TextField(blank=True, null=True, default="")
-    pro_1_choose_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    pro_1_start = models.DateField(blank=True, null=True)
-    pro_1_end = models.DateField(blank=True, null=True)
-    pro_1_open = models.DateField(blank=True, null=True)
-    pro_1_criterion = models.TextField(blank=True, null=True, default="")
-    pro_1_criterion_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    pro_2_choose = models.TextField(blank=True, null=True, default="")
-    pro_2_choose_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    pro_2_start = models.DateField(blank=True, null=True)
-    pro_2_end = models.DateField(blank=True, null=True)
-    pro_2_open = models.DateField(blank=True, null=True)
-    pro_2_criterion = models.TextField(blank=True, null=True, default="")
-    pro_2_criterion_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    supply_content = models.TextField(blank=True, null=True, default="")
-    supply_content_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    supply_condition = models.TextField(blank=True, null=True, default="")
-    supply_condition_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    open_method= models.CharField(max_length=500, blank=True,null=True)
-    ceremony = models.TextField( blank=True, null=True )
-    etc = models.TextField()
-    ceremony_start = models.DateField(blank=True, null=True)
-    ceremony_end = models.DateField(blank=True, null=True)
-    faq = models.TextField(blank=True, null=True, default="")
-    faq_tag = models.CharField(max_length=500, blank=True, null=True, default="")
-    additional_faq = models.TextField(blank=True, null=True, default="")
-    etc = models.TextField(blank=True, null=True, default="")
-    etc_file_title = models.CharField(max_length=1000, blank=True, null=True, default="")
-    kind2_text = models.TextField(blank=True, null=True, default="")
-    meta = models.CharField(max_length=1000, blank=True, null=True, default="")
-    meta_file_info = models.CharField(max_length=1000, blank=True, null=True, default="")
-    filter = models.ManyToManyField("Filter")
-    due_status = models.CharField(max_length=2, blank=True, null=True)
-    open_status = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    update_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    hit = models.IntegerField(default=0)
-    finance_amount = models.IntegerField(default=0)
-    complete = models.BooleanField(default=False)
-    confirm = models.BooleanField(default=True)
-    is_blind = models.BooleanField(default=False)
-    confirm_count = models.IntegerField(default=0, blank=True, null=True)
-    confirm_list = models.ManyToManyField( "AdditionalUserInfo",  blank=True, null=True, related_name="confirm_list")
-    pick_date = models.DateField(blank=True, null=True)
-    step = models.CharField(blank=True, null=True, max_length=2)
-    additional_file=models.CharField(blank=True, null=True, max_length=500)
-    def __str__(self):
-        return self.title
-    def get_absolute_url(self):
-        return reverse('support', args=[self.id])
-    def get_absolute_url_manage(self):
-        return reverse('manage_support_detail', args=[self.id])
-    def is_past_due(self):
-
-        try:
-            if self.apply_end > datetime.datetime.now():
-                return "모집중"
-            else:
-                return "모집 마감"
-        except:
-            return ""
-
-    def is_past(self):
-        try:
-            if datetime.datetime.now() < self.apply_end:
-                return False
-            else:
-                return True
-        except:
-            return False
-
-    def is_pre(self):
-        try:
-            if datetime.datetime.now() < self.apply_start:
-                return True
-            else:
-                return False
-        except:
-            return False
-
-
-    def manage_status(self):
-
-        time_min = datetime.datetime.now()
-        if self.confirm == True :
-            return "승인대기중"
-
-        if self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min:
-            return "공고중"
-        if self.apply_end < datetime.datetime.now() and  self.confirm == False and self.open_status == True and self.complete == False :
-            return "모집 마감"
-        if self.confirm == False and self.open_status == False and self.complete == True :
-            return "공고 종료"
-        if self.confirm == False and self.open_status == False and self.complete == False:
-            return "작성중"
-        if self.apply_start > datetime.datetime.now():
-            return  "공고 대기중"
-
-    def is_blind_state(self):
-        time_min = datetime.datetime.now()
-        if self.is_blind == 1:
-            return "블라인드"
-        elif self.confirm==1:
-            return ""
-        elif self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min and self.is_blind==False:
-            return "노출"
-        else:
-            return ""
-
-
-
-class Filter(models.Model):
+class SupportBusinessFilter(models.Model):
     cat_0 = models.CharField(max_length=100)
     cat_1 = models.CharField(max_length=100, blank=True, null=True)
-    name = models.CharField(max_length=100)
+    filter_name = models.CharField(max_length=100)
 
+#
+# class IntellectualProperty(models.Model):
+#     startup = models.ForeignKey("Startup")
+#     ip_file = models.CharField(max_length=200, blank=True, null=True)#파일
+#     name = models.CharField(max_length=200, blank=True, null=True)
+
+#공고문
+class SupportBusiness(models.Model):
+    support_business_author = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
+    selected_support_business_filter_list = models.ManyToManyField("SupportBusinessFilter", db_table='company_filter_with_supportbusiness')
+    support_business_created_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    support_business_name = models.CharField(max_length=300, blank=True, null=True, default="")
+    support_business_name_tag = models.CharField(max_length=300, blank=True, null=True, default="")
+    support_business_name_sub = models.CharField(max_length=300, blank=True, null=True, default="")
+    support_business_poster = models.CharField(max_length=1000, blank=True, null=True)#파일
+    support_business_relate_support_business=models.ForeignKey("SupportBusiness",blank=True, null=True)
+    support_business_short_desc = models.CharField(max_length=14, blank=True, null=True, default="")
+    support_business_subject = models.TextField(blank=True, null=True, )
+    support_business_detail = models.TextField(blank=True, null=True, )
+    support_business_apply_start_ymd = models.DateTimeField(blank=True, null=True, )
+    support_business_apply_end_ymdt = models.DateTimeField(blank=True, null=True, )
+    support_business_object = models.TextField(blank=True, null=True, default="")
+    support_business_recruit_size = models.CharField(max_length=30, blank=True, null=True, default="")
+    support_business_prefer = models.TextField(blank=True, null=True, default="")
+    support_business_constraint = models.TextField(blank=True, null=True, default="")
+    support_business_choose_method = models.TextField(blank=True, null=True, default="")
+    support_business_pro_0_choose = models.TextField(blank=True, null=True, default="")
+    support_business_pro_0_start_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_0_end_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_0_open_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_0_criterion = models.TextField(blank=True, null=True, default="")
+    support_business_pro_1_choose = models.TextField(blank=True, null=True, default="")
+    support_business_pro_1_start_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_1_end_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_1_open_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_1_criterion = models.TextField(blank=True, null=True, default="")
+    support_business_pro_2_choose = models.TextField(blank=True, null=True, default="")
+    support_business_pro_2_start_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_2_end_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_2_open_ymd = models.DateField(blank=True, null=True)
+    support_business_pro_2_criterion = models.TextField(blank=True, null=True, default="")
+    support_business_supply_content = models.TextField(blank=True, null=True, default="")
+
+
+    mng_support_business_step_6_etc_input = models.TextField()
+    support_business_ceremony_start_ymd = models.DateField(blank=True, null=True)
+    support_business_ceremony_end_ymd = models.DateField(blank=True, null=True)
+    support_business_faq = models.TextField(blank=True, null=True, default="")
+    support_business_additional_faq = models.TextField(blank=True, null=True, default="")
+
+    mng_support_business_step_6_etc_input_chk = models.BooleanField(default=False)
+    support_business_ceremony_chk = models.BooleanField(default=False)
+    support_business_faq_chk = models.BooleanField(default=False)
+    support_business_additional_faq_chk = models.BooleanField(default=False)
+    support_business_etc_input_chk=models.CharField(blank=True, null=True, max_length=100)
+
+
+
+    support_business_meta = models.CharField(max_length=1000, blank=True, null=True, default="")
+
+    support_business_update_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    support_business_hit = models.IntegerField(default=0)
+    support_business_complete = models.BooleanField(default=False)
+    support_business_award_date_ymd = models.DateField(blank=True, null=True)
+    support_business_meta_0=models.CharField(blank=True, null=True, max_length=100)
+    mng_support_business_step_3_etc_input_mojipjogun = models.CharField(max_length=100, blank=True, null=True)
+    mng_support_business_step_3_etc_input_mojipgenre = models.CharField(max_length=100, blank=True, null=True)
+    support_business_status = models.CharField(max_length=10, blank=True, null=True)
+    support_business_prefer_chk = models.BooleanField(default=False)
+    support_business_constraint_chk = models.BooleanField(default=False)#파일
+    support_business_etc_file_title_mng = models.CharField(max_length=1000, blank=True, null=True, default="")
+    support_business_appliance_form = models.CharField(max_length=100, blank=True, null=True, default="")
+    support_business_poster_data_url = models.TextField( blank=True, null=True, default="")
+    class Meta:
+        verbose_name="지원사업 관리"
+        verbose_name_plural="지원사업 관리"
     def __str__(self):
-        if self.cat_1 is not None:
-            return self.cat_0 + "/" + self.cat_1 + "/" + self.name
-        else:
-            return self.cat_0 + "/" + self.name
+        return self.support_business_name
+
+    def get_author(self):
+        return self.support_business_author
+
+    def get_name(self):
+        return self.support_business_name
+
+    #2018 08 18 첨부파일 정보들.
+    # 1 : 작성중
+    # 2 : 승인대기중
+    # 3 : 노출중
+    # 4 : 블라인드중
+    #   모집종료 -> 3번 상태에서 마감이 지난것
+    # 6 : 공고 종료
+
+    # def __str__(self):
+    #     return self.title
+    # def get_absolute_url(self):
+    #     return reverse('support', args=[self.id])
+    # def get_absolute_url_manage(self):
+    #     return reverse('manage_support_detail', args=[self.id])
+    # def is_past_due(self):
+    #
+    #     try:
+    #         if self.apply_end > datetime.datetime.now():
+    #             return "모집중"
+    #         else:
+    #             return "모집 마감"
+    #     except:
+    #         return ""
+    #
+    # def is_past(self):
+    #     try:
+    #         if datetime.datetime.now() < self.apply_end:
+    #             return False
+    #         else:
+    #             return True
+    #     except:
+    #         return False
+    #
+    # def is_pre(self):
+    #     try:
+    #         if datetime.datetime.now() < self.apply_start:
+    #             return True
+    #         else:
+    #             return False
+    #     except:
+    #         return False
+
+    # def manage_status(self):
+    #
+    #     time_min = datetime.datetime.now()
+    #     if self.confirm == True :
+    #         return "승인대기중"
+    #
+    #     if self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min:
+    #         return "공고중"
+    #     if self.apply_end < datetime.datetime.now() and  self.confirm == False and self.open_status == True and self.complete == False :
+    #         return "모집 마감"
+    #     if self.confirm == False and self.open_status == False and self.complete == True :
+    #         return "공고 종료"
+    #     if self.confirm == False and self.open_status == False and self.complete == False:
+    #         return "작성중"
+    #     if self.apply_start > datetime.datetime.now():
+    #         return  "공고 대기중"
+    #
+    # def is_blind_state(self):
+    #     time_min = datetime.datetime.now()
+    #     if self.is_blind == 1:
+    #         return "블라인드"
+    #     elif self.confirm==1:
+    #         return ""
+    #     elif self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min and self.is_blind==False:
+    #         return "노출"
+    #     else:
+    #         return ""
 
 
-class Tag(models.Model):
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
+    #
+    # def __str__(self):
+    #     return self.support_business_name
 
 
-class BusinessTag(models.Model):
-    name = models.CharField(max_length=100)
+# class Tag(models.Model):
+#     name = models.CharField(max_length=100)
+#
+#     def __str__(self):
+#         return self.name
 
-    def __str__(self):
-        return self.name
 
-
+#지원서
 class Appliance(models.Model):
-    sb = models.ForeignKey(SupportBusiness, blank=True, null=True)
+    support_business = models.ForeignKey(SupportBusiness, blank=True, null=True)
     startup = models.ForeignKey(Startup, blank=True, null=True)
-    name = models.CharField(max_length=100, blank=True, null=True, default="")
-    business_number = models.CharField(max_length=20, blank=True, null=True, default="")
-    industry_category = models.CharField(max_length=100, blank=True, null=True, default="")
-    found_date = models.DateField(blank=True, null=True)
-    address = models.CharField(max_length=400, blank=True, null=True, default="")
+    company_name = models.CharField(max_length=100, blank=True, null=True, default="")
+    established_date = models.DateField(blank=True, null=True)
+    address_0 = models.CharField(max_length=400, blank=True, null=True, default="")
+    address_1 = models.CharField(max_length=400, blank=True, null=True, default="")
     repre_name = models.CharField(max_length=100, blank=True, null=True, default="")
     repre_tel = models.CharField(max_length=100, blank=True, null=True, default="")
     repre_email = models.CharField(max_length=100, blank=True, null=True, default="")
     mark_name = models.CharField(max_length=100, blank=True, null=True, default="")
     mark_tel = models.CharField(max_length=100, blank=True, null=True, default="")
     mark_email = models.CharField(max_length=100, blank=True, null=True, default="")
-    keyword = models.CharField(max_length=1000, blank=True, null=True, default="")
-
-    sns= models.CharField(max_length=300, blank=True, null=True, default="")
-    total_employee = models.CharField(max_length=20, blank=True, null=True, default="")
-    hold_employee = models.CharField(max_length=20, blank=True, null=True, default="")
-    assurance_employee = models.CharField(max_length=20, blank=True, null=True, default="")
-    filter = models.ManyToManyField("Filter")
-
+    company_keyword = models.CharField(max_length=1000, blank=True, null=True, default="")
+    company_total_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    company_hold_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    company_assurance_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    selected_company_filter_list = models.ManyToManyField("SupportBusinessFilter" , db_table='company_filter_with_appliance' )
     company_intro = models.TextField()
-    business_intro = models.TextField()
-    exp = models.TextField()
-
-    kind = models.CharField(max_length=10, blank=True, null=True)
-    keyword = models.CharField(max_length=1000, blank=True, null=True)
-    homepage = models.CharField(max_length=100, blank=True, null=True)
-    patent_file  = models.CharField(max_length=1000, blank=True, null=True, default="")
-    trade_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-    sub_patent_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-    design_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-
-    service_category = models.CharField(max_length=200, blank=True, null=True, default="")
-    service_name = models.CharField(max_length=100, blank=True, null=True, default="")
-    service_intro = models.TextField(blank=True, null=True, default="")
-
-    oversea = models.CharField(max_length=300, blank=True, null=True, default="")
-    oversea_status = models.TextField(blank=True, null=True, default="")
-
-    specification = models.TextField(blank=True, null=True, default="")
-    intro = models.TextField(blank=True, null=True, default="")
-    detail = models.TextField(blank=True, null=True, default="")
-
-    patent_2_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-    ppt_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-    service_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-    cert_file = models.CharField(max_length=1000, blank=True, null=True, default="")
-
-    ir_file = models.FileField(upload_to="gca/ir", blank=True, null=True, max_length=1000)
-    business_file = models.FileField(upload_to="gca/business", blank=True, null=True, max_length=1000)
-    tax_file = models.FileField(upload_to="gca/tax", blank=True, null=True, max_length=1000)
-    fund_file = models.FileField(upload_to="gca/fund", blank=True, null=True, max_length=1000)
-    ppt_file = models.FileField(upload_to="gca/ppt", blank=True, null=True, max_length=1000)
-    etc_file = models.FileField(upload_to="gca/etc", blank=True, null=True, max_length=1000)
-    etc_file_title = models.TextField(blank=True, null=True)
-
-
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    update_at = models.DateField(auto_now_add=True, blank=True, null=True)
+    raw_filter_list = models.CharField(max_length=3000, blank=True, null=True)
+    revenue_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
+    revenue_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
+    revenue_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+    company_kind = models.CharField(max_length=10, blank=True, null=True)
+    company_keyword = models.CharField(max_length=1000, blank=True, null=True)
+    company_website = models.CharField(max_length=100, blank=True, null=True)
+    company_intro = models.TextField(blank=True, null=True, default="")
+    attached_ppt_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_cert_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_ir_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_tax_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_fund_file =  models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_ip_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_etc_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    etc_file_title_by_mng = models.TextField(blank=True, null=True)
+    company_instagram = models.CharField(max_length=200, blank=True, null=True)
+    company_youtube = models.CharField(max_length=300, blank=True, null=True)
+    company_facebook = models.CharField(max_length=300, blank=True, null=True)
+    appliance_created_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    appliance_update_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     is_submit = models.BooleanField(default=False)
-    pick_date = models.DateField(blank=True, null=True) # 선정일 = 게시일
-    up_date = models.DateField(blank=True, null=True) # 승인 요청일
-    writing_step = models.CharField(max_length=3, blank=True, null=True)
+    img_data_url = models.TextField()
 
     class meta:
         get_latest_by = "updated_at"
 
-    def is_awarded(self):
-        if len(Award.objects.all().filter(sb=self.sb).filter(startup=self.startup)) > 0:
-            return True
-        else:
-            return False
 
-class RevenueInApplication(models.Model):
-    application = models.ForeignKey(Appliance)
-    year = models.CharField(max_length=5, blank=True, null=True)
-    size = models.CharField(max_length=10, blank=True, null=True)
+class ApplianceInvest(models.Model):
+    applicance = models.ForeignKey("Appliance")
+    company_invest_year = models.DateField(max_length=5, blank=True, null=True)
+    company_invest_size = models.CharField(max_length=10, blank=True, null=True)
+    company_invest_agency = models.CharField(max_length=100, blank=True, null=True)
+class ApplianceHistory(models.Model):
+    appliance = models.ForeignKey("Appliance")
+    company_history_year = models.CharField(max_length=10, blank=True, null=True)
+    company_history_month = models.CharField(max_length=2, blank=True, null= True)
+    company_history_content = models.TextField()
 
-class TradeInApplication(models.Model):
-    application = models.ForeignKey(Appliance)
-    year = models.CharField(max_length=5, blank=True, null=True)
-    size = models.CharField(max_length=10, blank=True, null=True)
 
-class OverseaInApplication(models.Model):
-    application = models.ForeignKey(Appliance)
-    nation = models.CharField(max_length=100, blank=True, null=True)
-    content = models.TextField(0)
-
+#선정자
 class Award(models.Model):
-    sb = models.ForeignKey(SupportBusiness)
+    support_business = models.ForeignKey(SupportBusiness)
     startup = models.ForeignKey(Startup)
-    name = models.CharField(max_length=100, blank=True, null=True)
-    prize = models.CharField(max_length=100, blank=True, null=True)
-    update_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-
-
-class PageRate(models.Model):
-    page = models.CharField(max_length=1000, blank=True, null=True)
-    user = models.CharField(max_length=10, blank=True, null=True)
-    rate = models.CharField(max_length=10, blank=True, null=True)
+    award_update_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 
 class Alarm(models.Model):
     user = models.ForeignKey(AdditionalUserInfo)
-    content = models.CharField(max_length=500, blank=True, null=True)
-    origin_sb = models.ForeignKey(SupportBusiness, blank=True, null=True)
-    origin_st = models.ForeignKey(Startup, blank=True, null=True)
-    category = models.CharField(max_length=2, blank=True, null=True)
-    read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    alarm_content = models.CharField(max_length=500, blank=True, null=True)
+    alarm_origin_support_business = models.ForeignKey(SupportBusiness, blank=True, null=True)
+    alarm_origin_st = models.ForeignKey(Startup, blank=True, null=True)
+    alarm_category = models.CharField(max_length=2, blank=True, null=True)
+    alarm_read = models.BooleanField(default=False)
+    alarm_created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 
-class DayUser(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
+# class DayUser(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
+#
+#
+# class NewUser(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
+#
+#
+# class Session(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
 
 
-class NewUser(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
+class ApplianceService(models.Model):
+    startup = models.ForeignKey(Startup)
+    appliance = models.ForeignKey(Appliance)
+    service_name = models.CharField(max_length=300, blank=True, null=True)
+    service_intro = models.TextField()
 
-
-class Session(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
-
-
-class SessionPerUser(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
-
-
-class PageView(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
-
-
-class PagePerSession(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
-
-
-class AvgTimePerSession(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
-
-
-class ExpireTime(models.Model):
-    count = models.IntegerField(default=0, blank=None, null=None)
+#
+# class SessionPerUser(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
+#
+#
+# class PageView(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
+#
+#
+# class PagePerSession(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
+#
+#
+#
+# class ExpireTime(models.Model):
+#     count = models.IntegerField(default=0, blank=None, null=None)
 
 
 class EmailConfirmation(models.Model):
@@ -596,125 +554,278 @@ class EmailConfirmation(models.Model):
     confirm = models.BooleanField(default=False)
     
 class HitLog(models.Model):
-    sb = models.ForeignKey(SupportBusiness)
+    support_business = models.ForeignKey(SupportBusiness)
     user = models.ForeignKey("AdditionalUserInfo", blank=True, null=True )
-    date = models.DateField(blank=True, null=True, default=datetime.datetime.now())
-
-class startup_found(models.Model):
-    year = models.CharField(max_length=4, blank=True, null=True)
-    number = models.CharField(max_length=10, blank=True, null=True)
-
-class startup_found_gg(models.Model):
-    year = models.CharField(max_length=4, blank=True, null=True)
-    number = models.CharField(max_length=10, blank=True, null=True)
-
-class avg_employee(models.Model):
-    year = models.CharField(max_length=4, blank=True, null=True)
-    number = models.CharField(max_length=10, blank=True, null=True)
-
-class avg_employee_gg(models.Model):
-    year = models.CharField(max_length=4, blank=True, null=True)
-    number = models.CharField(max_length=10, blank=True, null=True)
+    date = models.DateField(auto_now_add=True)
 
 
 class EduFilter(models.Model):
     name= models.CharField(max_length=100, blank=True, null=True)
 
+
 class Clip(models.Model):
-    user= models.ForeignKey(AdditionalUserInfo)
-    title = models.CharField(max_length=200, null=True, blank=True)
-    youtube = models.CharField(max_length=100, null=True, blank=True)
-    mov_address = models.CharField(max_length=200, null=True, blank=True)
-    thumb = models.CharField(max_length=400, null=True, blank=True)
-    filter = models.ManyToManyField(EduFilter)
-    object = models.CharField(max_length=300, blank=True, null=True)
-    info = models.TextField()
-    play = models.IntegerField(blank=True, null=True)
-    created_at = models.DateField(auto_now_add=True, blank=True, null=True)
+    clip_user = models.ForeignKey(AdditionalUserInfo)
+    clip_title = models.CharField(max_length=200, null=True, blank=True)
+    clip_youtube = models.CharField(max_length=100, null=True, blank=True)
+    clip_mov_url = models.CharField(max_length=200, null=True, blank=True)
+    clip_thumb = models.CharField(max_length=400, null=True, blank=True)
+    clip_filter = models.ManyToManyField(EduFilter)
+    clip_object = models.CharField(max_length=300, blank=True, null=True)
+    clip_info = models.TextField()
+    clip_play = models.IntegerField(blank=True, null=True)
+    clip_created_at = models.DateField(auto_now_add=True, blank=True, null=True)
+
     def __str__(self):
-        return self.title
+        return self.clip_title
+
+    def get_title(self):
+        if self.clip_title == None or self.clip_title == "":
+            return "제목이 없습니다."
+        else:
+            return self.clip_title
+
+    def get_author(self):
+        try:
+            return self.clip_user.user.startup.repre_name
+        except:
+            return self.clip_user.mng_name
+    def get_created_date(self):
+        return self.clip_created_at
+
 
 class Course(models.Model):
-    user = models.ForeignKey(AdditionalUserInfo)
-    title = models.CharField(max_length=200, null=True, blank=True)
-    filter = models.ManyToManyField(EduFilter, blank=True, null=True)
-    thumb = models.CharField(max_length=400, null=True, blank=True)
-    rec_dur = models.CharField(max_length=300, blank=True, null=True)
-    object = models.CharField(max_length=300, blank=True, null=True)
-    info = models.TextField()
-    clips = models.ManyToManyField(Clip)
-    total_play = models.IntegerField( blank=True, null=True)
-    created_at = models.DateField(auto_now_add=True, blank=True, null=True)
+    course_user = models.ForeignKey(AdditionalUserInfo)
+    course_title = models.CharField(max_length=200, null=True, blank=True)
+    course_filter = models.ManyToManyField(EduFilter, blank=True, null=True)
+    course_thumb = models.CharField(max_length=400, null=True, blank=True)
+    course_rec_dur = models.CharField(max_length=300, blank=True, null=True)
+    course_object = models.CharField(max_length=300, blank=True, null=True)
+    course_info = models.TextField()
+    course_clips = models.ManyToManyField(Clip)
+    course_total_play = models.IntegerField( blank=True, null=True)
+    course_created_at = models.DateField(auto_now_add=True, blank=True, null=True)
     def __str__(self):
-        return self.title
+        return self.course_title
+
 
 class Path(models.Model):
-    user = models.ForeignKey(AdditionalUserInfo)
-    title = models.CharField(max_length=200, null=True, blank=True)
-    filter = models.ManyToManyField(EduFilter, blank=True, null=True)
-    thumb = models.CharField(max_length=400, null=True, blank=True)
-    rec_dur = models.CharField(max_length=300, blank=True, null=True)
-    object = models.CharField(max_length=300, blank=True, null=True)
-    info = models.TextField()
-    course = models.ManyToManyField(Course)
-    total_play = models.IntegerField( blank=True, null=True)
-    created_at = models.DateField(auto_now_add=True, blank=True, null=True)
+    path_user = models.ForeignKey(AdditionalUserInfo)
+    path_title = models.CharField(max_length=200, null=True, blank=True)
+    path_filter = models.ManyToManyField(EduFilter, blank=True, null=True)
+    path_thumb = models.CharField(max_length=400, null=True, blank=True)
+    path_rec_dur = models.CharField(max_length=300, blank=True, null=True)
+    path_object = models.CharField(max_length=300, blank=True, null=True)
+    path_info = models.TextField()
+    path_course = models.ManyToManyField(Course)
+    path_total_play = models.IntegerField( blank=True, null=True)
+    path_created_at = models.DateField(auto_now_add=True, blank=True, null=True)
 
     def __str__(self):
-        return self.title
+        return self.path_title
 
 class HitClipLog(models.Model):
-    clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
+    hit_clip = models.ForeignKey(Clip)
+    hit_clip_user = models.ForeignKey(AdditionalUserInfo)
+    hit_clip_date = models.DateField(auto_now_add=True)
+
 
 class HitCourseLog(models.Model):
-    course = models.ForeignKey(Course)
-    clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
+    hit_course = models.ForeignKey(Course)
+    hit_course_clip = models.ForeignKey(Clip)
+    hit_course_user = models.ForeignKey(AdditionalUserInfo)
+    hit_course_date = models.DateField(auto_now_add=True)
 
 class HitPathLog(models.Model):
-    path = models.ForeignKey(Path)
-    clip = models.ForeignKey(Clip)
-    course = models.ForeignKey(Course)
-    user = models.ForeignKey(AdditionalUserInfo)
+    hit_path = models.ForeignKey(Path)
+    hit_path_clip = models.ForeignKey(Clip)
+    hit_path_course = models.ForeignKey(Course)
+    hit_path_user = models.ForeignKey(AdditionalUserInfo)
+    hit_path_date = models.DateField(auto_now_add=True)
+#
+#
+# class  WatchClipHistory(models.Model):
+#     watch_clip_clip = models.ForeignKey(Clip)
+#     watch_clip_user = models.ForeignKey(AdditionalUserInfo)
+#     watch_clip_date = models.DateField(auto_now_add=True)
+#
+# class  WatchCourseHistory(models.Model):
+#     watch_course_course = models.ForeignKey(Course)
+#     watch_course_clip = models.ForeignKey(Clip)
+#     watch_course_user = models.ForeignKey(AdditionalUserInfo)
+#     watch_course_date = models.DateField(auto_now_add=True)
+#
+# class  WatchPathHistory(models.Model):
+#     watch_path_path = models.ForeignKey(Path)
+#     watch_path_course = models.ForeignKey(Course)
+#     watch_path_clip = models.ForeignKey(Clip)
+#     watch_path_user = models.ForeignKey(AdditionalUserInfo)
+#     watch_path_date = models.DateField(auto_now_add=True)
 
 
+class  WatchHistory(models.Model):
+    watch_path = models.ForeignKey(Path, null=True, blank=True)
+    watch_course = models.ForeignKey(Course, null=True, blank=True)
+    watch_clip = models.ForeignKey(Clip, null=True, blank=True)
+    watch_user = models.ForeignKey(AdditionalUserInfo)
+    watch_date = models.DateField(auto_now_add=True)
 
-class  WatchClipHistory(models.Model):
-    clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
 
-class  WatchCourseHistory(models.Model):
-    course = models.ForeignKey(Course)
-    clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
+'''
+class FavoritePathLog(models.Model):
+    favorite_path = models.ForeignKey(Path)
+    favorite_user = models.ForeignKey(AdditionalUserInfo)
+    favorite_path_up_down = models.IntegerField(default=0)
+    favorite_date = models.DateField(auto_now_add=True)
 
-class  WatchPathHistory(models.Model):
-    Path = models.ForeignKey(Path)
-    course = models.ForeignKey(Course)
-    clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
 
-class FavPathLog(models.Model):
-    Path = models.ForeignKey(Path)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
+class FavoriteCourseLog(models.Model):
+    favorite_course = models.ForeignKey(Course)
+    favorite_course_up_down = models.IntegerField(default=0)
+    favorite_user = models.ForeignKey(AdditionalUserInfo)
+    favorite_date = models.DateField(auto_now_add=True)
 
-class FavCourseLog(models.Model):
-    Course = models.ForeignKey(Course)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
-
-class FavClipLog(models.Model):
-    Clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
-    date = models.DateField(auto_now_add=True)
+class FavoriteClipLog(models.Model):
+    favorite_clip = models.ForeignKey(Clip)
+    favorite_clip_up_down = models.IntegerField(default=0)
+    favorite_user = models.ForeignKey(AdditionalUserInfo)
+    favorite_date = models.DateField(auto_now_add=True)
+'''
 
 
 class CompletedClip(models.Model):
-    Clip = models.ForeignKey(Clip)
-    user = models.ForeignKey(AdditionalUserInfo)
+    complete_clip = models.ForeignKey(Clip)
+    complete_user = models.ForeignKey(AdditionalUserInfo)
+    complete_date = models.DateField(auto_now_add=True)
+class CompletedCourse(models.Model):
+    complete_course = models.ForeignKey(Course)
+    complete_user = models.ForeignKey(AdditionalUserInfo)
+    complete_date = models.DateField(auto_now_add=True)
+class CompletedPath(models.Model):
+    complete_path = models.ForeignKey(Path)
+    complete_user = models.ForeignKey(AdditionalUserInfo)
+    complete_date = models.DateField(auto_now_add=True)
+
+
+
+
+
+
+class ApplianceSnapShot(models.Model):
+    support_business = models.ForeignKey(SupportBusiness, blank=True, null=True)
+    startup = models.ForeignKey(Startup, blank=True, null=True)
+    companay_name = models.CharField(max_length=100, blank=True, null=True, default="")
+    established_date = models.DateField(blank=True, null=True)
+    address_0 = models.CharField(max_length=400, blank=True, null=True, default="")
+    address_1 = models.CharField(max_length=400, blank=True, null=True, default="")
+    repre_name = models.CharField(max_length=100, blank=True, null=True, default="")
+    repre_tel = models.CharField(max_length=100, blank=True, null=True, default="")
+    repre_email = models.CharField(max_length=100, blank=True, null=True, default="")
+    mark_name = models.CharField(max_length=100, blank=True, null=True, default="")
+    mark_tel = models.CharField(max_length=100, blank=True, null=True, default="")
+    mark_email = models.CharField(max_length=100, blank=True, null=True, default="")
+    company_keyword = models.CharField(max_length=1000, blank=True, null=True, default="")
+    company_total_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    company_hold_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    company_assurance_employee = models.CharField(max_length=20, blank=True, null=True, default="")
+    selected_company_filter_list = models.ManyToManyField("SupportBusinessFilter",db_table='company_filter_with_appliance_snapshot')
+    company_intro = models.TextField()
+    raw_filter_list = models.CharField(max_length=3000, blank=True, null=True)
+    revenue_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+    revenue_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
+    revenue_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
+    revenue_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+
+    export_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
+    export_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_0 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_1 = models.CharField(max_length=20, blank=True, null=True, default="")
+    export_before_nation_2 = models.CharField(max_length=20, blank=True, null=True, default="")
+
+    company_kind = models.CharField(max_length=10, blank=True, null=True)
+    company_keyword = models.CharField(max_length=1000, blank=True, null=True)
+    company_website = models.CharField(max_length=100, blank=True, null=True)
+    company_intro = models.TextField(blank=True, null=True, default="")
+
+    attached_ppt_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_cert_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_ir_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_tax_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_fund_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_ip_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    attached_etc_file = models.CharField(max_length=1000, blank=True, null=True, default="")
+    etc_file_title_by_mng = models.TextField(blank=True, null=True)
+    company_instagram = models.CharField(max_length=200, blank=True, null=True)
+    company_youtube = models.CharField(max_length=300, blank=True, null=True)
+    company_facebook = models.CharField(max_length=300, blank=True, null=True)
+    appliance_created_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    appliance_update_at_ymdt = models.DateField(auto_now_add=True, blank=True, null=True)
+    is_submit = models.BooleanField(default=False)
+
+
+
+class StatTable(models.Model):
+    stat_user =  models.ForeignKey("AdditionalUserInfo")
+    stat_name =  models.CharField(max_length=32, null=True,blank=True)
+    stat_json = models.TextField()
+    stat_timestamp = models.DateTimeField(auto_now_add=True)
+
+class RegisteredChannel(models.Model):
+    clip = models.ForeignKey("Clip", null=True, blank=True)
+    course = models.ForeignKey("Course", null=True, blank=True)
+    path = models.ForeignKey("Path", null=True, blank=True)
+    channel_user= models.ForeignKey("AdditionalUserInfo")
     date = models.DateField(auto_now_add=True)
+
+
+
+
+class VisitedSupportBusiness(models.Model):
+    visited_timestamp = models.DateField(auto_now_add=True)
+    visited_support_business = models.ForeignKey("SupportBusiness")
+    visited_usr = models.ForeignKey("AdditionalUserInfo", null=True, blank=True)
+    visited_usr_filter = models.ManyToManyField("FilterForStatics")
+
+class FavoredSupportBusiness(models.Model):
+    favored_support_business = models.ForeignKey("SupportBusiness")
+    favored_usr = models.ForeignKey("AdditionalUserInfo")
+    favored_timestamp = models.DateField(auto_now_add=True)
+    favored_usr_filter = models.ManyToManyField("FilterForStatics")
+
+class SupportBusinessApplicant(models.Model):
+    applicant_timestamp = models.DateField(auto_now_add=True)
+    applicant_support_business = models.ForeignKey("SupportBusiness")
+    applicant_usr = models.ForeignKey("AdditionalUserInfo")
+    applicant_usr_filter = models.ManyToManyField("FilterForStatics")
+
+class SupportBusinessAwarded(models.Model):
+    awarded_timestamp = models.DateField(auto_now_add=True)
+    awarded_support_business = models.ForeignKey("SupportBusiness")
+    awarded_usr = models.ForeignKey("AdditionalUserInfo")
+    awarded_usr_filter = models.ManyToManyField("FilterForStatics")
+
+class LineGraphTable(models.Model):
+    linegraph_support_business = models.ForeignKey("SupportBusiness")
+    linegraph_date = models.DateField(auto_now_add=True)
+    linegraph_visitied = models.IntegerField(default=0)
+    linegraph_favored = models.IntegerField(default=0)
+    linegraph_applicant = models.IntegerField(default=0)
+    linegraph_user_id_list = models.CharField(max_length=30, blank=True, null=True)
+
+
+class FilterForStatics(models.Model):
+    cat_0 = models.CharField(max_length=100)
+    cat_1 = models.CharField(max_length=100, blank=True, null=True)
+    filter_name = models.CharField(max_length=100)
+
+
+class QuaterTableSupportBusiness(models.Model):
+    qt_support_business_author = models.ForeignKey(AdditionalUserInfo)
+    qt_support_business = models.ForeignKey(SupportBusiness)
+    qt_support_business_status = models.IntegerField()
+    qt_support_business_approved_date_ymd= models.DateField(auto_now_add=True)

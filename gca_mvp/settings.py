@@ -100,8 +100,8 @@ WSGI_APPLICATION = 'gca_mvp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'gca_db_dev',
-        'USER': 'gca_admin',
+            'NAME': 'gca_db_dev_2',
+                        'USER': 'gca_admin',
         'PASSWORD': 'gca1234!',
         'HOST': 'gca-db.ccol6zg20myn.ap-northeast-2.rds.amazonaws.com',
         'PORT': '3306',
@@ -127,7 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-
     'django.contrib.auth.backends.ModelBackend',  # 기본 인증 백엔드
     'allauth.account.auth_backends.AuthenticationBackend',  # 추가
 ]
@@ -135,20 +134,18 @@ AUTHENTICATION_BACKENDS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Seoul'
+# USE_TZ = True
+# USE_L10N = True
+# 타임존 설정 찾아보기 = > 프론트에서 자바스크립트로 현지화 하는게 서버에서 문제없는지
 
-USE_I18N = True
-
-USE_L10N = True
-
-USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
 
 TEMPLATE_DIRS = (os.path.join(BASE_DIR, 'templates'),)
 
@@ -180,7 +177,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'neogelon@gmail.com'
-EMAIL_HOST_PASSWORD = 'dltpgus86'
+EMAIL_HOST_PASSWORD = 'ruedwiaeqwqlbezn'
 EMAIL_USE_TLS = True
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -224,3 +221,9 @@ CORS_EXPOSE_HEADERS = (
     'Access-Control-Allow-Origin: *',
 )
 
+SESSION_COOKIE_AGE =  60 *60 *3 #60 * 60  * 3
+
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True
+LOGIN_REDIRECT_URL = "/facebook_login.php"
+ACCOUNT_AUTHENTICATED_LOGOUT_REDIRECTS = True
+ACCOUNT_LOGOUT_REDIRECT_URL = "/facebook_logout.php"
