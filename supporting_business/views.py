@@ -154,7 +154,7 @@ def gca_check_session(request):
         backend = load_backend(backend_path)
         user = backend.get_user(session_user_id) or AnonymousUser()
     except KeyError:
-        print(e)
+
         user = AnonymousUser()
 
     sk_user_id= str(AdditionalUserInfo.objects.get(id=my_id).user.id)
