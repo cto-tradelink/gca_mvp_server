@@ -117,7 +117,7 @@ url(r'^get_support_business_favorite_startup/', views.get_support_business_favor
     url(r'^vue_get_startup_detail/', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
     # url(r'^vue_get_support_business_detail/', views.vue_get_support_business_detail, name='vue_get_support_business_detail', ),
     url(r'^vue_get_mng_list/', views.vue_get_mng_list, name='vue_get_mng_list', ),
-    url(r'^vue_set_mng_acc/', views.vue_set_mng_acc, name='vue_set_mng_acc', ),
+    url(r'^vue_set_opr_acc/', views.vue_set_opr_acc, name='vue_set_opr_acc', ),
     url(r'^vue_submit_application/', views.vue_submit_application, name='vue_submit_application', ),
 
 

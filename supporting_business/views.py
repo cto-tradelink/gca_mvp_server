@@ -157,6 +157,7 @@ def gca_check_session(request):
 
         user = AnonymousUser()
 
+
     sk_user_id= str(AdditionalUserInfo.objects.get(id=my_id).user.id)
 
     print("sk check")
@@ -730,16 +731,17 @@ def vue_get_opr_acc(request):
     id = request.GET.get("id")
     mng_acc = AdditionalUserInfo.objects.get(id=id)
     temp={}
+    temp["opr_additional_user_id"] = mng_acc.id
     temp["opr_id"] = mng_acc.user.username
-    temp["opr_mng_name"] = mng_acc.mng_name
-    temp["opr_mng_kikwan"] = mng_acc.mng_kikwan
-    temp["opr_mng_bonbu"] = mng_acc.mng_bonbu
-    temp["opr_mng_team"] = mng_acc.mng_team
-    temp["opr_mng_position"] = mng_acc.mng_position
-    temp["opr_mng_tel"] = mng_acc.mng_tel
-    temp["opr_mng_phone"] = mng_acc.mng_phone
-    temp["opr_mng_email"] = mng_acc.mng_email
-    temp["opr_mng_website"] = mng_acc.mng_website
+    temp["opr_name"] = mng_acc.mng_name
+    temp["opr_kikwan"] = mng_acc.mng_kikwan
+    temp["opr_bonbu"] = mng_acc.mng_bonbu
+    temp["opr_team"] = mng_acc.mng_team
+    temp["opr_position"] = mng_acc.mng_position
+    temp["opr_tel"] = mng_acc.mng_tel
+    temp["opr_phone"] = mng_acc.mng_phone
+    temp["opr_email"] = mng_acc.mng_email
+    temp["opr_website"] = mng_acc.mng_website
 
     return JsonResponse((temp), safe = False)
 
@@ -753,21 +755,29 @@ def vue_get_opr_acc(request):
 # 변수 체크 여부 : py(), VS(), mysql()
 #-----------------------------------------------------------------------------------------------------------------------
 @csrf_exempt
-def vue_set_mng_acc(request):
+def vue_set_opr_acc(request):
     if gca_check_session(request)== False:
             return HttpResponse("{}")
-    id = request.POST.get("id")
-    mng_acc = AdditionalUserInfo.objects.get(id=id)
-    mng_acc.mng_name = request.POST.get("mng_name")
-    mng_acc.mng_kikwan = request.POST.get("mng_kikwan")
-    mng_acc.mng_bonbu= request.POST.get("mng_bonbu")
-    mng_acc.mng_team= request.POST.get("mng_team")
-    mng_acc.mng_position= request.POST.get("mng_position")
-    mng_acc.mng_tel= request.POST.get("mng_tel")
-    mng_acc.mng_phone = request.POST.get("mng_phone")
-    mng_acc.mng_email = request.POST.get("mng_email")
-    mng_acc.mng_website = request.POST.get("mng_website")
+    username = request.POST.get("opr_id")
+    additional_user_info_id = request.POST.get("opr_additional_user_id")
+    mng_acc = AdditionalUserInfo.objects.get(id=additional_user_info_id)
+    if request.POST.get("opr_pw0") ==  request.POST.get("opr_pw1"):
+        AdditionalUserInfo.objects.get(id=additional_user_info_id).user.set_password(request.POST.get("opr_pw1"))
+
+    mng_acc.mng_name = request.POST.get("opr_name")
+    # mng_acc.mng_kikwan = request.POST.get("opr_kikwan")
+    # mng_acc.mng_bonbu= request.POST.get("opr_bonbu")
+    # mng_acc.mng_team= request.POST.get("opr_team")
+    # mng_acc.mng_position= request.POST.get("opr_position")
+    mng_acc.mng_tel= request.POST.get("opr_tel")
+    mng_acc.mng_phone = request.POST.get("opr_phone")
+    # mng_acc.mng_email = request.POST.get("opr_email")
+    # mng_acc.mng_website = request.POST.get("opr_website")
     mng_acc.save()
+
+
+
+
     return JsonResponse({"result":"ok"}, safe = False)
 
 
