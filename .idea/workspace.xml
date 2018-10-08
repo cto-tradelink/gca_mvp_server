@@ -1,172 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/utils.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0001_initial.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0002_auto_20180512_1042.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0003_auto_20180607_1204.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0004_auto_20180607_1306.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0005_auto_20180607_1325.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0006_auto_20180607_1325.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0007_auto_20180627_0959.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0008_auto_20180627_1001.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0009_auto_20180627_1017.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0010_auto_20180627_1017.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0011_auto_20180627_1044.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0012_auto_20180701_2111.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0013_auto_20180701_2118.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0014_auto_20180701_2123.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0015_auto_20180701_2136.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0016_auto_20180702_1627.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0017_auto_20180702_1639.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0018_auto_20180702_1656.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0019_auto_20180702_1900.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0020_auto_20180702_1912.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0021_auto_20180702_2009.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0022_auto_20180703_0130.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0023_auto_20180703_0134.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0024_auto_20180703_0135.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0025_auto_20180703_0135.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0026_auto_20180704_1538.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0027_auto_20180704_1809.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0028_auto_20180704_2252.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0029_auto_20180708_1915.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0030_auto_20180710_0052.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0031_auto_20180711_0909.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0032_auto_20180711_0910.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0033_auto_20180712_1429.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0034_auto_20180712_1626.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0035_auto_20180712_1706.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0036_auto_20180712_1706.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0037_auto_20180712_1743.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0038_auto_20180712_1836.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0039_auto_20180712_1913.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0040_auto_20180712_1918.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0041_auto_20180712_1920.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0042_auto_20180713_1301.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0043_auto_20180713_1848.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0044_auto_20180714_0942.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0045_auto_20180714_1253.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0046_auto_20180715_1804.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0047_auto_20180717_0118.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0048_auto_20180717_0207.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0049_auto_20180717_0947.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0050_auto_20180717_1027.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0051_auto_20180718_2330.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0052_auto_20180719_0610.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0053_auto_20180719_0950.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0054_auto_20180719_1401.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0055_auto_20180720_1652.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0056_auto_20180722_1942.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/0057_auto_20180726_2037.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0002_auto_20180213_1532.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0003_auto_20180214_0157.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0004_supportbusiness_author.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0005_auto_20180214_0924.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0006_supportbusiness_createdate.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0007_auto_20180214_1036.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0008_auto_20180215_1230.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0009_auto_20180219_1740.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0010_additionaluserinfo_avatar.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0011_additionaluserinfo_additional_email.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0012_auto_20180225_1313.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0013_auto_20180225_1724.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0014_auto_20180225_1736.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0015_startup_thumbnail.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0016_auto_20180227_1348.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0017_startup_fund_status.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0018_auto_20180227_1930.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0019_auto_20180227_1930.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0020_supportbusiness_interest.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0021_auto_20180227_2237.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0022_auto_20180228_0301.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0023_supportbusiness_user.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0024_appliance.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0025_appliance_address.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0026_auto_20180302_0152.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0027_auto_20180302_0246.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0028_auto_20180302_0317.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0029_auto_20180302_0339.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0030_auto_20180302_0347.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0031_auto_20180302_0442.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0032_auto_20180302_0500.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0033_auto_20180302_0503.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0034_auto_20180302_0656.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0035_auto_20180302_0658.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0036_supportbusiness_complete.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0037_auto_20180303_1449.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0038_auto_20180303_1906.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0039_auto_20180303_1958.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0040_appliance_keyword.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0041_auto_20180304_1507.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0042_auto_20180304_1508.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0043_auto_20180305_2255.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0044_auto_20180306_0148.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0045_auto_20180306_0150.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0046_pagerate.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0047_auto_20180306_0338.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0048_auto_20180306_2257.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0049_auto_20180306_2303.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0050_auto_20180306_2304.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0051_auto_20180307_2221.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0052_auto_20180308_0538.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0053_auto_20180311_1822.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0054_alarm.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0055_supportbusiness_due_status.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0056_auto_20180312_0549.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0057_auto_20180312_1139.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0058_auto_20180313_0912.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0059_alarm_read.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0060_auto_20180314_0419.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0061_auto_20180314_1050.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0062_auto_20180314_1051.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0063_auto_20180314_1426.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0064_auto_20180316_1857.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0065_auto_20180317_1222.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0066_auto_20180318_0049.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0067_auto_20180318_0956.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0068_auto_20180319_0021.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0069_supportbusiness_confirm.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0070_additionaluserinfo_phone.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0071_auto_20180319_0751.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0072_supportbusiness_is_blind.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0073_auto_20180321_1110.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0074_emailconirmation.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0075_hitlog.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0076_auto_20180324_1319.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0077_auto_20180324_1321.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0078_auto_20180328_0431.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0079_auto_20180329_1007.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0080_auto_20180405_2157.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0081_auto_20180406_0114.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0082_auto_20180406_0114.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0083_auto_20180406_1649.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0084_auto_20180406_1659.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0085_auto_20180407_2020.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0086_auto_20180410_1013.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0087_auto_20180410_1013.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0088_auto_20180410_1013.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0089_auto_20180410_1028.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/0090_auto_20180410_1610.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/tes11t.pdf" afterPath="" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/supporting_business/migrations/migrations/__init__.py" afterPath="$PROJECT_DIR$/supporting_business/annotation.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.pdf" afterPath="$PROJECT_DIR$/test.pdf" />
+    <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="스타트업 소식 잘게 나누기">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Untitled.ipynb" afterPath="$PROJECT_DIR$/Untitled.ipynb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gca_mvp/settings.py" afterPath="$PROJECT_DIR$/gca_mvp/settings.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gca_mvp/urls.py" afterPath="$PROJECT_DIR$/gca_mvp/urls.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/admin.py" afterPath="$PROJECT_DIR$/supporting_business/admin.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/forms.py" afterPath="$PROJECT_DIR$/supporting_business/forms.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/models.py" afterPath="$PROJECT_DIR$/supporting_business/models.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/static/css/example.css" afterPath="$PROJECT_DIR$/supporting_business/static/css/example.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/static/css/preview.css" afterPath="$PROJECT_DIR$/supporting_business/static/css/preview.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/tests.py" afterPath="$PROJECT_DIR$/supporting_business/tests.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/urls.py" afterPath="$PROJECT_DIR$/supporting_business/urls.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/templates/pc/accounts/login.html" afterPath="$PROJECT_DIR$/templates/pc/accounts/login.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/templates/pc/common/base_d.html" afterPath="$PROJECT_DIR$/templates/pc/common/base_d.html" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -224,8 +60,8 @@
           <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="475">
-                  <caret line="2161" column="56" lean-forward="true" selection-start-line="2161" selection-start-column="56" selection-end-line="2161" selection-end-column="56" />
+                <state relative-caret-position="779">
+                  <caret line="2189" column="0" lean-forward="true" selection-start-line="2189" selection-start-column="0" selection-end-line="2189" selection-end-column="0" />
                   <folding>
                     <element signature="e#24#59#0" expanded="true" />
                   </folding>
@@ -259,7 +95,7 @@
             <entry file="file://$PROJECT_DIR$/supporting_business/tests.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="2394">
-                  <caret line="126" column="17" lean-forward="true" selection-start-line="126" selection-start-column="17" selection-end-line="126" selection-end-column="17" />
+                  <caret line="126" column="17" lean-forward="false" selection-start-line="126" selection-start-column="17" selection-end-line="126" selection-end-column="17" />
                   <folding />
                 </state>
               </provider>
@@ -727,14 +563,13 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32899022" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.13369565" sideWeight="0.4824094" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2423913" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32934782" sideWeight="0.49573562" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32934782" sideWeight="0.49573562" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32608697" sideWeight="0.4978678" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18043478" sideWeight="0.51759064" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2804348" sideWeight="0.51759064" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.021855012" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2468017" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.08635394" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -1090,7 +925,7 @@
     <entry file="file://$PROJECT_DIR$/supporting_business/tests.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2394">
-          <caret line="126" column="17" lean-forward="true" selection-start-line="126" selection-start-column="17" selection-end-line="126" selection-end-column="17" />
+          <caret line="126" column="17" lean-forward="false" selection-start-line="126" selection-start-column="17" selection-end-line="126" selection-end-column="17" />
           <folding />
         </state>
       </provider>
@@ -1107,8 +942,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="475">
-          <caret line="2161" column="56" lean-forward="true" selection-start-line="2161" selection-start-column="56" selection-end-line="2161" selection-end-column="56" />
+        <state relative-caret-position="779">
+          <caret line="2189" column="0" lean-forward="true" selection-start-line="2189" selection-start-column="0" selection-end-line="2189" selection-end-column="0" />
           <folding>
             <element signature="e#24#59#0" expanded="true" />
           </folding>
