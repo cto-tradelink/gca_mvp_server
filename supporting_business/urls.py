@@ -157,7 +157,7 @@ urlpatterns = [
     url(r'vue_get_support_business_name', views.vue_get_support_business_name, name='vue_get_support_business_name', ),
     url(r'veu_del_history', views.veu_del_history, name='veu_del_history', ),
     url(r'set_alarm_read', views.set_alarm_read, name='set_alarm_read', ),
-
+ ]
 import debug_toolbar
 
 urlpatterns.append(url(r'^__debug__/', include(debug_toolbar.urls)))
