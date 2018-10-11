@@ -5860,31 +5860,33 @@ def vue_upload_clip(request):
 
 @csrf_exempt
 def vue_get_channel_statics_path(request):
-    # if gca_check_session(request)== False:
-    #     return HttpResponse("{}")
     path = Path.objects.get(id=request.GET.get("path_id"))
     hit_date_list = HitPathLog.objects.all().filter(hit_path=path).values("hit_path_date").distinct()
     result = {}
-    result["hit_static"] = []
+    result["hit_static"] = {}
+    result["all_static"] = {}
+    result["hit_static"]["line_data"] = []
     for hd in hit_date_list:
         temp = {}
         temp["date"] = hd["hit_path_date"]
         temp["hit_num"] = len(HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"]))
-        result["hit_static"].append(copy.deepcopy(temp))
+        result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(path=path).values("date").distinct()
-    result["favorite_static"] = []
+    result["favorite_static"] = {}
+    result["favorite_static"]["line_data"] = []
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = fd["date"]
         temp["favorite_num"] = len(FavoriteLog.objects.filter(path=path).filter(date=fd["date"]))
-        result["favorite_static"].append(copy.deepcopy(temp))
+        result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(path=path).values("date").distinct()
-    result["registered_static"] = []
+    result["reg_static"] = {}
+    result["reg_static"]["line_data"] = []
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["registered_num"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
-        result["registered_static"].append(copy.deepcopy(temp))
+        temp["reg_gum"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
+        result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
@@ -5892,7 +5894,7 @@ def vue_get_channel_statics_path(request):
     hit_user_list = []
     favorite_usr_list = []
     registered_usr_list = []
-
+    result["all_static"]["all_usr_num"] = ""
     for hit_row in HitPathLog.objects.all().filter(hit_path=path):
         try:
             hit_user_list.append(hit_row.hit_path_user.user.startup)
@@ -5908,22 +5910,30 @@ def vue_get_channel_statics_path(request):
             registered_usr_list.append(reg_row.channel_user.user.startup)
         except:
             pass
-    all_usr_list = list(set(hit_user_list + favorite_usr_list + registered_usr_list))
-    result["all_usr_num"] = len(all_user_list)
-    result["hit_usr_num"] = len(hit_user_list)
-    result["favorite_usr_num"] = len(favorite_usr_list)
-    result["registered_usr_num"] = len(registered_usr_list)
+    all_user_list = list(set(hit_user_list + favorite_usr_list + registered_usr_list))
+
+    hit_user_list = list(set(hit_user_list))
+    favorite_usr_list = list(set(favorite_usr_list))
+    registered_usr_list = list(set(registered_usr_list))
+
+    result["all_static"]["all_usr_num"] = len(all_user_list)
+    result["hit_static"]["hit_usr_num"] = len(hit_user_list)
+    result["favorite_static"]["favorite_usr_num"] = len(favorite_usr_list)
+    result["reg_static"]["reg_usr_num"] = len(registered_usr_list)
     # 전체
     all_comtype_filter = []
     all_location_filter = []
     all_genre_filter = []
     all_area_filter = []
-    result["all_startup_list"] = []
+
     k = 1
     com_kind = ""
     local = ""
-    for startup in all_usr_list:
 
+    result["all_static"]["all_startup_list"] = []
+
+    result["all_static"]["all_comtype_filter"] = []
+    for startup in all_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -5934,10 +5944,9 @@ def vue_get_channel_statics_path(request):
                 local = filter.filter_name
             if filter.cat_0 == "기본장르":
                 all_genre_filter.append(filter.filter_name)
-
             if filter.cat_0 == "영역":
                 all_area_filter.append(filter.filter_name)
-        result["all_startup_list"].append({
+        result["all_static"]["all_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -5945,15 +5954,21 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["all_static"]["all_comtype_filter"] = all_comtype_filter
+    result["all_static"]["all_location_filter"] = all_location_filter
+    result["all_static"]["all_genre_filter"] = all_genre_filter
+    result["all_static"]["all_area_filter"] = all_area_filter
+
     # 방문자
     hit_comtype_filter = []
     hit_location_filter = []
     hit_genre_filter = []
     hit_area_filter = []
-    result["hit_startup_list"] = []
+    result["hit_static"]["hit_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
+    result["hit_static"]["hit_startup_list"] = []
     for startup in hit_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
@@ -5968,7 +5983,7 @@ def vue_get_channel_statics_path(request):
 
             if filter.cat_0 == "영역":
                 hit_area_filter.append(filter.filter_name)
-        result["hit_startup_list"].append({
+        result["hit_static"]["hit_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -5976,12 +5991,17 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-        # 등록자
+    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
+    result["hit_static"]["hit_location_filter"] = hit_location_filter
+    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
+    result["hit_static"]["hit_area_filter"] = hit_area_filter
+
+    # 등록자
     reg_comtype_filter = []
     reg_location_filter = []
     reg_genre_filter = []
     reg_area_filter = []
-    result["reg_startup_list"] = []
+    result["reg_static"]["reg_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
@@ -5999,7 +6019,7 @@ def vue_get_channel_statics_path(request):
             if filter.cat_0 == "영역":
                 reg_area_filter.append(filter.filter_name)
 
-        result["reg_startup_list"].append({
+        result["reg_static"]["reg_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6007,16 +6027,22 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-        # 좋아요
+
+    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
+    result["reg_static"]["reg_location_filter"] = reg_location_filter
+    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
+    result["reg_static"]["reg_area_filter"] = reg_area_filter
+
+    # 좋아요
     fav_comtype_filter = []
     fav_location_filter = []
     fav_genre_filter = []
     fav_area_filter = []
-    result["fav_startup_list"] = []
+    result["favorite_static"]["fav_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
-    for startup in hit_user_list:
+    for startup in favorite_usr_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -6030,7 +6056,7 @@ def vue_get_channel_statics_path(request):
 
             if filter.cat_0 == "영역":
                 fav_area_filter.append(filter.filter_name)
-        result["fav_startup_list"].append({
+        result["favorite_static"]["fav_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6038,6 +6064,11 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
+    result["favorite_static"]["fav_location_filter"] = fav_location_filter
+    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
+    result["favorite_static"]["fav_area_filter"] = fav_area_filter
+
     return JsonResponse({"data": result, })
 
 

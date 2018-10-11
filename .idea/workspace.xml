@@ -659,7 +659,14 @@
       <option name="project" value="LOCAL" />
       <updated>1539258402351</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="패스 백단 개발">
+      <created>1539259236103</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1539259236103</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TodoView">
@@ -745,7 +752,8 @@
     <MESSAGE value="division by zero 오류 수정" />
     <MESSAGE value="예외처리 수정" />
     <MESSAGE value="강의 코스 백단 개발" />
-    <option name="LAST_COMMIT_MESSAGE" value="강의 코스 백단 개발" />
+    <MESSAGE value="패스 백단 개발" />
+    <option name="LAST_COMMIT_MESSAGE" value="패스 백단 개발" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
