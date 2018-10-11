@@ -104,7 +104,7 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
 
 
  #세션 인증
- #TODO : 인증 이수복 선생님께 여쭤보기 : 클라이언트에서 ID 가 넘어오지 않음.
+
 def gca_check_session(request):
     my_session_key= request.GET.get("session_key")
     my_id = request.GET.get("gca_id")
@@ -1794,18 +1794,18 @@ def vue_set_mng_support_business_step_1(request):
         return HttpResponse("{}")
     rjd = json.loads(request.POST.get("json_data"))
     if rjd["id"] != "new":
-        support_business = SupportBusiness.objects.get(id=rjd["id"])
+        support_business = SupportBusiness.objects.get(id=rjd.get("id"))
     else:
         support_business = SupportBusiness()
     print(rjd)
-    support_business.support_business_name = rjd["support_business_name"]
-    support_business.support_business_author_id = rjd["support_business_author_id"]
+    support_business.support_business_name = rjd.get("support_business_name")
+    support_business.support_business_author_id = rjd.get("support_business_author_id")
     try:
-        support_business.support_business_name_tag = rjd["support_business_name_tag"]
+        support_business.support_business_name_tag = rjd.get("support_business_name_tag")
     except:
         pass
     try:
-        support_business.support_business_short_desc = rjd["support_business_short_desc"]
+        support_business.support_business_short_desc = rjd.get("support_business_short_desc")
     except:
         pass
         support_business.support_business_status = "1"
@@ -1822,20 +1822,20 @@ def vue_set_mng_support_business_step_1(request):
         print(encoded_string.decode('utf-8'))
         support_business.support_business_poster_data_url ="data:image/"+support_business.support_business_poster.split(".")[-1]+";base64,"+ encoded_string.decode('utf-8')
     try:
-        support_business.support_business_meta_0= rjd["support_business_meta_0"]
+        support_business.support_business_meta_0= rjd.get("support_business_meta_0")
     except:
         pass
     try:
-        support_business.support_business_subject = rjd["support_business_subject"]
+        support_business.support_business_subject = rjd.get("support_business_subject")
     except:
         pass
     try:
-        support_business.support_business_detail = rjd["support_business_detail"]
+        support_business.support_business_detail = rjd.get("support_business_detail")
     except:
         pass
     print(support_business.support_business_detail)
     try:
-        support_business.support_business_name_sub = rjd["support_business_name_sub"]
+        support_business.support_business_name_sub = rjd.get("support_business_name_sub")
     except:
         pass
     support_business.save()
@@ -1850,8 +1850,8 @@ def vue_set_mng_support_business_step_2(request):
         return HttpResponse("{}")
     rjd = json.loads(request.POST.get("json_data"))
     print(rjd)
-    support_business = SupportBusiness.objects.get(id=rjd["id"])
-    tag = rjd["supply_tag"]
+    support_business = SupportBusiness.objects.get(id=rjd.get("id"))
+    tag = rjd.get("supply_tag")
     support_business.support_business_status = "1"
     for t in support_business.selected_support_business_filter_list.all():
         if t.cat_0 == "지원형태":
@@ -1859,7 +1859,7 @@ def vue_set_mng_support_business_step_2(request):
     for t in tag:
         support_business.selected_support_business_filter_list.add(SupportBusinessFilter.objects.all().get(filter_name=t))
     try:
-        support_business.support_business_supply_content = rjd["support_business_supply_content"]
+        support_business.support_business_supply_content = rjd.get("support_business_supply_content")
     except:
         pass
     support_business.save()
@@ -1877,8 +1877,8 @@ def vue_set_mng_support_business_step_3(request):
         return HttpResponse("{}")
     rjd = json.loads(request.POST.get("json_data"))
     print(rjd)
-    support_business = SupportBusiness.objects.get(id=rjd["id"])
-    tag = rjd["recruit_tag"]
+    support_business = SupportBusiness.objects.get(id=rjd.get("id"))
+    tag = rjd.get("recruit_tag")
 
     support_business.support_business_status = "1"
     # 모집 분야 필터
@@ -1899,50 +1899,19 @@ def vue_set_mng_support_business_step_3(request):
 
     if rjd["support_business_apply_start_ymd"] !="":
         if rjd["support_business_apply_start_ymd"].split("T")[0] != "":
-            support_business.support_business_apply_start_ymd = rjd["support_business_apply_start_ymd"].split("T")[0]
+            support_business.support_business_apply_start_ymd = rjd.get("support_business_apply_start_ymd").split("T")[0]
             support_business.save()
     if rjd["support_business_apply_end_ymdt"] !="":
-        support_business.support_business_apply_end_ymdt = rjd["support_business_apply_end_ymdt"].split(".")[0]
-    print("=================================================================")
-    print(support_business.support_business_apply_start_ymd)
-    print(support_business.support_business_apply_end_ymdt)
-    print("-----------")
-
-    print(rjd["support_business_apply_start_ymd"])
-    print( rjd["support_business_apply_start_ymd"].split("T")[0])
-    print( rjd["support_business_apply_start_ymd"].split("T")[1])
-    print( rjd["support_business_apply_end_ymdt"].split("T")[0])
-    print( rjd["support_business_apply_end_ymdt"].split("T")[1])
-
-
-    print("===================================================================")
+        support_business.support_business_apply_end_ymdt = rjd.get("support_business_apply_end_ymdt").split(".")[0]
     support_business.save()
-    try:
-        support_business.support_business_recruit_size = rjd["support_business_recruit_size"]
-    except:
-        pass
-    try:
-        support_business.support_business_prefer = rjd["support_business_prefer"]
-    except:
-        pass
-    try:
-        support_business.support_business_constraint = rjd["support_business_constraint"]
-    except:
-        pass
 
-
-
+    support_business.support_business_recruit_size = rjd.get("support_business_recruit_size")
+    support_business.support_business_prefer = rjd.get("support_business_prefer")
+    support_business.support_business_constraint = rjd.get("support_business_constraint")
+    support_business.mng_support_business_step_3_etc_input_mojipjogun = rjd.get("mng_support_business_step_3_etc_input_mojipjogun")
+    support_business.mng_support_business_step_3_etc_input_mojipgenre = rjd.get("mng_support_business_step_3_etc_input_mojipgenre")
     try:
-        support_business.mng_support_business_step_3_etc_input_mojipjogun = rjd["mng_support_business_step_3_etc_input_mojipjogun"]
-    except:
-        pass
-    try:
-        support_business.mng_support_business_step_3_etc_input_mojipgenre = rjd["mng_support_business_step_3_etc_input_mojipgenre"]
-    except:
-        pass
-
-    try:
-        if rjd["support_business_prefer_chk"] == True:
+        if rjd.get("support_business_prefer_chk") == True:
             support_business.support_business_prefer_chk = True
         else :
             support_business.support_business_prefer_chk = False
@@ -1951,7 +1920,7 @@ def vue_set_mng_support_business_step_3(request):
         support_business.support_business_prefer_chk = False
 
     try:
-        if rjd["support_business_constraint_chk"] == True:
+        if rjd.get("support_business_constraint_chk") == True:
             support_business.support_business_constraint_chk = True
         else :
             support_business.support_business_constraint_chk = False
@@ -1972,72 +1941,72 @@ def vue_set_mng_support_business_step_4(request):
     if gca_check_session(request)== False:
         return HttpResponse("{}")
     rjd = json.loads(request.POST.get("json_data"))
-    support_business = SupportBusiness.objects.get(id=rjd["id"])
+    support_business = SupportBusiness.objects.get(id=rjd.get("id"))
     support_business.support_business_status = "1"
-    support_business.support_business_pro_0_choose = rjd["support_business_pro_0_choose"]
+    support_business.support_business_pro_0_choose = rjd.get("support_business_pro_0_choose")
     try:
-        if rjd["support_business_pro_0_start_ymd"] !="":
-            support_business.support_business_pro_0_start_ymd = rjd["support_business_pro_0_start_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_0_start_ymd") !="":
+            support_business.support_business_pro_0_start_ymd = rjd.get("support_business_pro_0_start_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_0_end_ymd"].split("T")[0] !="":
-            support_business.support_business_pro_0_end_ymd = rjd["support_business_pro_0_end_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_0_end_ymd").split("T")[0] !="":
+            support_business.support_business_pro_0_end_ymd = rjd.get("support_business_pro_0_end_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_0_open_ymd"] != "":
-            support_business.support_business_pro_0_open_ymd = rjd["support_business_pro_0_open_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_0_open_ymd") != "":
+            support_business.support_business_pro_0_open_ymd = rjd.get("support_business_pro_0_open_ymd").split("T")[0]
     except:
         pass
     try:
-        support_business.support_business_pro_0_criterion = rjd["support_business_pro_0_criterion"]
+        support_business.support_business_pro_0_criterion = rjd.get("support_business_pro_0_criterion")
     except:
         pass
     try:
-        support_business.support_business_pro_1_choose = rjd["support_business_pro_1_choose"]
+        support_business.support_business_pro_1_choose = rjd.get("support_business_pro_1_choose")
     except:
         pass
     try:
-        if rjd["support_business_pro_1_start_ymd"] != "":
-            support_business.support_business_pro_1_start_ymd = rjd["support_business_pro_1_start_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_1_start_ymd") != "":
+            support_business.support_business_pro_1_start_ymd = rjd.get("support_business_pro_1_start_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_1_end_ymd"].split("T")[0] != "":
-            support_business.support_business_pro_1_end_ymd = rjd["support_business_pro_1_end_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_1_end_ymd").split("T")[0] != "":
+            support_business.support_business_pro_1_end_ymd = rjd.get("support_business_pro_1_end_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_1_open_ymd"] != "":
-            support_business.support_business_pro_1_open_ymd = rjd["support_business_pro_1_open_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_1_open_ymd") != "":
+            support_business.support_business_pro_1_open_ymd = rjd.get("support_business_pro_1_open_ymd").split("T")[0]
     except:
         pass
     try:
-        support_business.support_business_pro_1_criterion = rjd["support_business_pro_1_criterion"]
+        support_business.support_business_pro_1_criterion = rjd.get("support_business_pro_1_criterion")
     except:
         pass
     try:
-        support_business.support_business_pro_2_choose = rjd["support_business_pro_2_choose"]
+        support_business.support_business_pro_2_choose = rjd.get("support_business_pro_2_choose")
     except:
         pass
     try:
-        if rjd["support_business_pro_2_start_ymd"] != "":
-            support_business.support_business_pro_2_start_ymd = rjd["support_business_pro_2_start_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_2_start_ymd") != "":
+            support_business.support_business_pro_2_start_ymd = rjd.get("support_business_pro_2_start_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_2_end_ymd"].split("T")[0] != "":
-            support_business.support_business_pro_2_end_ymd = rjd["support_business_pro_2_end_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_2_end_ymd").split("T")[0] != "":
+            support_business.support_business_pro_2_end_ymd = rjd.get("support_business_pro_2_end_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_pro_2_open_ymd"] != "":
-            support_business.support_business_pro_2_open_ymd = rjd["support_business_pro_2_open_ymd"].split("T")[0]
+        if rjd.get("support_business_pro_2_open_ymd") != "":
+            support_business.support_business_pro_2_open_ymd = rjd.get("support_business_pro_2_open_ymd").split("T")[0]
     except:
         pass
     try:
-        support_business.support_business_pro_2_criterion = rjd["support_business_pro_2_criterion"]
+        support_business.support_business_pro_2_criterion = rjd.get("support_business_pro_2_criterion")
     except:
         pass
 
@@ -2054,19 +2023,15 @@ def vue_set_mng_support_business_step_5(request):
     support_business = SupportBusiness.objects.get(id=rjd["id"])
     support_business.support_business_status = "1"
     try:
-        support_business.support_business_meta = rjd["support_business_meta"]
+        support_business.support_business_meta = rjd.get("support_business_meta")
     except:
         pass
     try:
-
-        support_business.support_business_etc_file_title_mng = rjd["support_business_etc_file_title_mng"]
+        support_business.support_business_etc_file_title_mng = rjd.get("support_business_etc_file_title_mng")
     except:
         pass
-
     support_business.save();
     return JsonResponse({"result":"ok"})
-
-
 
     # --------[공고문 내용 업데이트 기능 (지원서 작성 여섯번째 페이지) 6 페이지 : 공고문 수정하기]------- (매니저)
 @csrf_exempt
@@ -2078,51 +2043,50 @@ def vue_set_mng_support_business_step_6(request):
     support_business = SupportBusiness.objects.get(id=rjd["id"])
     support_business.support_business_status = "1"
     try:
-        if rjd["support_business_ceremony_start_ymd"] != '':
-            support_business.support_business_ceremony_start_ymd = rjd["support_business_ceremony_start_ymd"].split("T")[0]
+        if rjd.get("support_business_ceremony_start_ymd") != '':
+            support_business.support_business_ceremony_start_ymd = rjd.get("support_business_ceremony_start_ymd").split("T")[0]
     except:
         pass
     try:
-        if rjd["support_business_ceremony_end_ymd"] != '':
-            support_business.support_business_ceremony_end_ymd = rjd["support_business_ceremony_end_ymd"].split("T")[0]
+        if rjd.get("support_business_ceremony_end_ymd") != '':
+            support_business.support_business_ceremony_end_ymd = rjd.get("support_business_ceremony_end_ymd").split("T")[0]
     except:
         pass
-
     try:
-        support_business.support_business_faq = rjd["support_business_faq"]
+        support_business.support_business_faq = rjd.get("support_business_faq")
     except Exception as e:
         print(e)
     try:
-        support_business.support_business_additional_faq = rjd["support_business_additional_faq"]
+        support_business.support_business_additional_faq = rjd.get("support_business_additional_faq")
     except Exception as e:
         print(e)
     try:
-        support_business.mng_support_business_step_6_etc_input = rjd["mng_support_business_step_6_etc_input"]
+        support_business.mng_support_business_step_6_etc_input = rjd.get("mng_support_business_step_6_etc_input")
     except Exception as e:
         print(e)
     try:
-        if rjd["mng_support_business_step_6_etc_input_chk"] == True:
+        if rjd.get("mng_support_business_step_6_etc_input_chk")== True:
             support_business.mng_support_business_step_6_etc_input_chk = True
         else:
             support_business.mng_support_business_step_6_etc_input_chk = False
     except Exception as e:
         print(e)
     try:
-        if rjd["support_business_ceremony_chk"] == True:
+        if rjd.get("support_business_ceremony_chk") == True:
             support_business.support_business_ceremony_chk = True
         else:
             support_business.support_business_ceremony_chk = False
     except Exception as e:
         print(e)
     try:
-        if  rjd["support_business_faq_chk"] == True:
+        if  rjd.get("support_business_faq_chk") == True:
             support_business.support_business_faq_chk = True
         else:
             support_business.support_business_faq_chk = False
     except Exception as e:
         print(e)
     try:
-        if rjd["support_business_additional_faq_chk"]== True:
+        if rjd.get("support_business_additional_faq_chk")== True:
             support_business.support_business_additional_faq_chk = True
         else:
             support_business.support_business_additional_faq_chk = False
@@ -4931,12 +4895,9 @@ def vue_static_usr(request):
         apply_num_arr.append(len(Award.objects.all().filter(startup_id=startup["startup_id"])))
     if len(apply_num_arr) > 0:
         avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
-    else:
-        avg_apply_num_per_awarded = 0
-    if  len(apply_num_arr) > 0:
-        avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
-    else:
-        avg_award_num_per_awarded = 0
+
+    avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
+
 
     #경기지역 모아보기
     total_startup_gg = (Startup.objects.all().filter(  selected_company_filter_list__filter_name__contains="경기"))
@@ -4990,6 +4951,12 @@ def vue_static_usr(request):
 def vue_get_short_title(request):
     support_business_name = SupportBusiness.objects.get(id=request.GET.get("id")).support_business_name
     return JsonResponse({"support_business_name":support_business_name})
+
+
+
+
+
+
 
 
 
@@ -6078,29 +6045,34 @@ def vue_get_channel_statics_path(request):
 def vue_get_channel_statics_course(request):
     # if gca_check_session(request)== False:
     #     return HttpResponse("{}")
+
     course = Course.objects.get(id=request.GET.get("course_id"))
     hit_date_list = HitCourseLog.objects.all().filter(hit_course=course).values("hit_course_date").distinct()
     result = {}
-    result["hit_static"] = []
+    result["hit_static"] = {}
+    result["all_static"] = {}
+    result["hit_static"]["line_data"] = []
     for hd in hit_date_list:
         temp = {}
         temp["date"] = hd["hit_course_date"]
         temp["hit_num"] = len(HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"]))
-        result["hit_static"].append(copy.deepcopy(temp))
+        result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(course=course).values("date").distinct()
-    result["favorite_static"] = []
+    result["favorite_static"] = {}
+    result["favorite_static"]["line_data"] = []
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = fd["date"]
         temp["favorite_num"] = len(FavoriteLog.objects.filter(course=course).filter(date=fd["date"]))
-        result["favorite_static"].append(copy.deepcopy(temp))
+        result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(course=course).values("date").distinct()
-    result["registered_static"] = []
+    result["reg_static"] = {}
+    result["reg_static"]["line_data"] = []
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["registered_num"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
-        result["registered_static"].append(copy.deepcopy(temp))
+        temp["reg_gum"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
+        result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
@@ -6108,7 +6080,7 @@ def vue_get_channel_statics_course(request):
     hit_user_list = []
     favorite_usr_list = []
     registered_usr_list = []
-
+    result["all_static"]["all_usr_num"] = ""
     for hit_row in HitCourseLog.objects.all().filter(hit_course=course):
         try:
             hit_user_list.append(hit_row.hit_course_user.user.startup)
@@ -6125,21 +6097,29 @@ def vue_get_channel_statics_course(request):
         except:
             pass
     all_user_list = list(set(hit_user_list + favorite_usr_list + registered_usr_list))
-    result["all_usr_num"] = len(all_user_list)
-    result["hit_usr_num"] = len(hit_user_list)
-    result["favorite_usr_num"] = len(favorite_usr_list)
-    result["registered_usr_num"] = len(registered_usr_list)
+
+    hit_user_list = list(set(hit_user_list))
+    favorite_usr_list = list(set(favorite_usr_list))
+    registered_usr_list = list(set(registered_usr_list))
+
+    result["all_static"]["all_usr_num"] = len(list(set(all_user_list)))
+    result["hit_static"]["hit_usr_num"] = len(hit_user_list)
+    result["favorite_static"]["favorite_usr_num"] = len(favorite_usr_list)
+    result["reg_static"]["reg_usr_num"] = len(registered_usr_list)
+
     # 전체
     all_comtype_filter = []
     all_location_filter = []
     all_genre_filter = []
     all_area_filter = []
-    result["all_startup_list"] = []
+
     k = 1
     com_kind = ""
     local = ""
-    for startup in all_user_list:
 
+    result["all_static"]["all_startup_list"] = []
+    result["all_static"]["all_comtype_filter"] = []
+    for startup in all_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -6150,10 +6130,9 @@ def vue_get_channel_statics_course(request):
                 local = filter.filter_name
             if filter.cat_0 == "기본장르":
                 all_genre_filter.append(filter.filter_name)
-
             if filter.cat_0 == "영역":
                 all_area_filter.append(filter.filter_name)
-        result["all_startup_list"].append({
+        result["all_static"]["all_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6161,15 +6140,21 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["all_static"]["all_comtype_filter"] = all_comtype_filter
+    result["all_static"]["all_location_filter"] = all_location_filter
+    result["all_static"]["all_genre_filter"] = all_genre_filter
+    result["all_static"]["all_area_filter"] = all_area_filter
+
     # 방문자
     hit_comtype_filter = []
     hit_location_filter = []
     hit_genre_filter = []
     hit_area_filter = []
-    result["hit_startup_list"] = []
+    result["hit_static"]["hit_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
+    result["hit_static"]["hit_startup_list"] = []
     for startup in hit_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
@@ -6181,10 +6166,9 @@ def vue_get_channel_statics_course(request):
                 local = filter.filter_name
             if filter.cat_0 == "기본장르":
                 hit_genre_filter.append(filter.filter_name)
-
             if filter.cat_0 == "영역":
                 hit_area_filter.append(filter.filter_name)
-        result["hit_startup_list"].append({
+        result["hit_static"]["hit_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6192,12 +6176,17 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-        # 등록자
+    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
+    result["hit_static"]["hit_location_filter"] = hit_location_filter
+    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
+    result["hit_static"]["hit_area_filter"] = hit_area_filter
+
+    # 등록자
     reg_comtype_filter = []
     reg_location_filter = []
     reg_genre_filter = []
     reg_area_filter = []
-    result["reg_startup_list"] = []
+    result["reg_static"]["reg_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
@@ -6215,7 +6204,7 @@ def vue_get_channel_statics_course(request):
             if filter.cat_0 == "영역":
                 reg_area_filter.append(filter.filter_name)
 
-        result["reg_startup_list"].append({
+        result["reg_static"]["reg_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6223,16 +6212,22 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-        # 좋아요
+
+    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
+    result["reg_static"]["reg_location_filter"] = reg_location_filter
+    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
+    result["reg_static"]["reg_area_filter"] = reg_area_filter
+
+    # 좋아요
     fav_comtype_filter = []
     fav_location_filter = []
     fav_genre_filter = []
     fav_area_filter = []
-    result["fav_startup_list"] = []
+    result["favorite_static"]["fav_startup_list"] = []
     k = 1
     com_kind = ""
     local = ""
-    for startup in hit_user_list:
+    for startup in favorite_usr_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -6246,7 +6241,7 @@ def vue_get_channel_statics_course(request):
 
             if filter.cat_0 == "영역":
                 fav_area_filter.append(filter.filter_name)
-        result["fav_startup_list"].append({
+        result["favorite_static"]["fav_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6254,6 +6249,11 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
+    result["favorite_static"]["fav_location_filter"] = fav_location_filter
+    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
+    result["favorite_static"]["fav_area_filter"] = fav_area_filter
+
     return JsonResponse({"data": result, })
 
 
@@ -6261,29 +6261,34 @@ def vue_get_channel_statics_course(request):
 def vue_get_channel_statics_clip(request):
     # if gca_check_session(request)== False:
     #     return HttpResponse("{}")
+
     clip = Clip.objects.get(id=request.GET.get("clip_id"))
     hit_date_list  =  HitClipLog.objects.all().filter(hit_clip=clip).values("hit_clip_date").distinct()
     result = {}
-    result["hit_static"] = []
+    result["hit_static"] = {}
+    result["all_static"]= {}
+    result["hit_static"]["line_data"] = []
     for hd in hit_date_list:
         temp={}
         temp["date"] = hd["hit_clip_date"]
         temp["hit_num"] = len(HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"]))
-        result["hit_static"].append(copy.deepcopy(temp))
+        result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(clip=clip).values("date").distinct()
-    result["favorite_static"]=[]
+    result["favorite_static"]={}
+    result["favorite_static"]["line_data"]=[]
     for fd in favorite_date_list:
         temp={}
         temp["date"] = fd["date"]
         temp["favorite_num"] = len(FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"]))
-        result["favorite_static"].append(copy.deepcopy(temp))
+        result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(clip=clip).values("date").distinct()
-    result["registered_static"] = []
+    result["reg_static"] = {}
+    result["reg_static"]["line_data"] = []
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["registered_num"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
-        result["registered_static"].append(copy.deepcopy(temp))
+        temp["reg_gum"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
+        result["reg_static"]["line_data"].append(copy.deepcopy(temp))
 # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
 
@@ -6291,7 +6296,7 @@ def vue_get_channel_statics_clip(request):
     hit_user_list = []
     favorite_usr_list=[]
     registered_usr_list=[]
-
+    result["all_static"]["all_usr_num"]=""
     for hit_row  in HitClipLog.objects.all().filter(hit_clip=clip ):
         try:
             hit_user_list.append( hit_row.hit_clip_user.user.startup)
@@ -6308,21 +6313,29 @@ def vue_get_channel_statics_clip(request):
         except:
             pass
     all_user_list =  list(set( hit_user_list + favorite_usr_list + registered_usr_list ) )
-    result["all_usr_num"] = len(all_user_list)
-    result["hit_usr_num"] = len(hit_user_list)
-    result["favorite_usr_num"] = len(favorite_usr_list)
-    result["registered_usr_num"] = len(registered_usr_list)
+
+    hit_user_list = list(set(hit_user_list))
+    favorite_usr_list = list(set(favorite_usr_list))
+    registered_usr_list = list(set(registered_usr_list))
+
+    result["all_static"]["all_usr_num"] = len(all_user_list)
+    result["hit_static"]["hit_usr_num"] = len(hit_user_list)
+    result["favorite_static"]["favorite_usr_num"] = len(favorite_usr_list)
+    result["reg_static"]["reg_usr_num"] = len(registered_usr_list)
     # 전체
     all_comtype_filter = []
     all_location_filter = []
     all_genre_filter = []
     all_area_filter = []
-    result["all_startup_list"] = []
+
     k = 1
     com_kind=""
     local=""
-    for startup in all_user_list:
 
+    result["all_static"]["all_startup_list"] = []
+
+    result["all_static"]["all_comtype_filter"]=[]
+    for startup in all_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -6333,26 +6346,32 @@ def vue_get_channel_statics_clip(request):
                 local=filter.filter_name
             if filter.cat_0 == "기본장르":
                 all_genre_filter.append(filter.filter_name)
-
             if filter.cat_0 == "영역":
                 all_area_filter.append(filter.filter_name)
-        result["all_startup_list"].append({
-            "startup_id": startup.id,
-            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
-            "company_kind": com_kind,
-            "local": local,
-            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
-        })
+        result["all_static"]["all_startup_list"].append({
+                "startup_id": startup.id,
+                "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
+                "company_kind": com_kind,
+                "local": local,
+                "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
+            })
         k = k + 1
+    result["all_static"]["all_comtype_filter"] = all_comtype_filter
+    result["all_static"]["all_location_filter"] = all_location_filter
+    result["all_static"]["all_genre_filter"] = all_genre_filter
+    result["all_static"]["all_area_filter"] = all_area_filter
+
+
     # 방문자
     hit_comtype_filter = []
     hit_location_filter = []
     hit_genre_filter = []
     hit_area_filter = []
-    result["hit_startup_list"] = []
+    result["hit_static"]["hit_startup_list"] = []
     k = 1
     com_kind=""
     local=""
+    result["hit_static"]["hit_startup_list"]=[]
     for startup in hit_user_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
@@ -6367,7 +6386,7 @@ def vue_get_channel_statics_clip(request):
 
             if filter.cat_0 == "영역":
                 hit_area_filter.append(filter.filter_name)
-        result["hit_startup_list"].append({
+        result["hit_static"]["hit_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6375,12 +6394,20 @@ def vue_get_channel_statics_clip(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
+    result["hit_static"]["hit_location_filter"] = hit_location_filter
+    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
+    result["hit_static"]["hit_area_filter"] = hit_area_filter
+
+
+
+
 # 등록자
     reg_comtype_filter = []
     reg_location_filter = []
     reg_genre_filter = []
     reg_area_filter = []
-    result["reg_startup_list"] = []
+    result["reg_static"]["reg_startup_list"] = []
     k = 1
     com_kind=""
     local=""
@@ -6398,7 +6425,7 @@ def vue_get_channel_statics_clip(request):
             if filter.cat_0 == "영역":
                 reg_area_filter.append(filter.filter_name)
 
-        result["reg_startup_list"].append({
+        result["reg_static"]["reg_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6406,16 +6433,23 @@ def vue_get_channel_statics_clip(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+
+    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
+    result["reg_static"]["reg_location_filter"] = reg_location_filter
+    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
+    result["reg_static"]["reg_area_filter"] = reg_area_filter
+
+
 # 좋아요
     fav_comtype_filter = []
     fav_location_filter = []
     fav_genre_filter = []
     fav_area_filter = []
-    result["fav_startup_list"] = []
+    result["favorite_static"]["fav_startup_list"] = []
     k = 1
     com_kind=""
     local=""
-    for startup in hit_user_list:
+    for startup in favorite_usr_list:
         filter_list = startup.selected_company_filter_list.all()
         for filter in filter_list:
             if filter.cat_1 == "기업형태":
@@ -6429,7 +6463,7 @@ def vue_get_channel_statics_clip(request):
 
             if filter.cat_0 == "영역":
                 fav_area_filter.append(filter.filter_name)
-        result["fav_startup_list"].append({
+        result["favorite_static"]["fav_startup_list"].append({
             "startup_id": startup.id,
             "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
             "company_kind": com_kind,
@@ -6437,6 +6471,11 @@ def vue_get_channel_statics_clip(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
+    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
+    result["favorite_static"]["fav_location_filter"] = fav_location_filter
+    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
+    result["favorite_static"]["fav_area_filter"] = fav_area_filter
+
     return JsonResponse({"data":result,})
 
 
@@ -7059,7 +7098,7 @@ def vue_get_path(request):
 
 #TODO: 통계 페이지 아이디 각각 정의할것
 @csrf_exempt
-def veu_del_history(request):
+def vue_del_history(request):
     id= request.GET.get("id")
     try:
         History.objects.get(id=id).delete()
@@ -9522,7 +9561,7 @@ def vue_get_channel_static(request):
         result["favorite_by_date"] = favorite_by_date
         print(result)
         startup_list = []
-        for favored_startup in Favoritelog.objects.all().filter(
+        for favored_startup in FavoriteLog.objects.all().filter(
                 favorite_clip_id=id).values("favorite_user_id").distinct():
             print(favored_startup)
             startup_list.append(
