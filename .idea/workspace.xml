@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -36,8 +37,8 @@
             <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
               <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
                 <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="298">
-                    <caret line="751" column="19" lean-forward="false" selection-start-line="751" selection-start-column="4" selection-end-line="751" selection-end-column="19" />
+                  <state relative-caret-position="216">
+                    <caret line="387" column="24" lean-forward="false" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="24" />
                     <folding>
                       <element signature="e#24#59#0" expanded="true" />
                     </folding>
@@ -124,8 +125,8 @@
           <file leaf-file-name="urls.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="567">
-                  <caret line="163" column="0" lean-forward="true" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
+                <state relative-caret-position="273">
+                  <caret line="142" column="0" lean-forward="false" selection-start-line="142" selection-start-column="0" selection-end-line="142" selection-end-column="0" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -185,12 +186,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>ef gca_check_session</find>
-      <find>gca_check_session</find>
-      <find>_static</find>
-      <find>----------------</find>
-      <find>------------------------------------------------</find>
-      <find>----------------------------------------------------------------</find>
       <find>opr_app</find>
       <find>get_realtime_support_business_appliance</find>
       <find>writing_set</find>
@@ -215,6 +210,12 @@
       <find>support_business_open</find>
       <find>download_appliance</find>
       <find>vue_get_path_all</find>
+      <find>is_in_favor_list</find>
+      <find>cert_email</find>
+      <find>vue_login_user</find>
+      <find>vue_get_sns_auth</find>
+      <find>vue_get_all_favorite</find>
+      <find>hit_support_business</find>
     </findStrings>
     <replaceStrings>
       <replace>apply_end|date:&quot; Y m d &quot;</replace>
@@ -304,8 +305,8 @@
         <option value="$PROJECT_DIR$/supporting_business/annotation.py" />
         <option value="$PROJECT_DIR$/gca_mvp/settings.py" />
         <option value="$PROJECT_DIR$/supporting_business/tests.py" />
-        <option value="$PROJECT_DIR$/supporting_business/views.py" />
         <option value="$PROJECT_DIR$/supporting_business/urls.py" />
+        <option value="$PROJECT_DIR$/supporting_business/views.py" />
       </list>
     </option>
   </component>
@@ -611,7 +612,14 @@
       <option name="project" value="LOCAL" />
       <updated>1539223482280</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary=".">
+      <created>1539223487104</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1539223487104</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TodoView">
@@ -972,8 +980,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="298">
-          <caret line="751" column="19" lean-forward="false" selection-start-line="751" selection-start-column="4" selection-end-line="751" selection-end-column="19" />
+        <state relative-caret-position="216">
+          <caret line="387" column="24" lean-forward="false" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="24" />
           <folding>
             <element signature="e#24#59#0" expanded="true" />
           </folding>
@@ -982,8 +990,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="567">
-          <caret line="163" column="0" lean-forward="true" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
+        <state relative-caret-position="273">
+          <caret line="142" column="0" lean-forward="false" selection-start-line="142" selection-start-column="0" selection-end-line="142" selection-end-column="0" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
           </folding>

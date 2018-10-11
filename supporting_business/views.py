@@ -214,7 +214,7 @@ def vue_login_user(request):
 
             try:
                 if str(user.additionaluserinfo.auth) == "MNG" or (user.additionaluserinfo.auth) == "OPR":
-                    print(("dklasdfl121212k"))
+
                     if  (user.additionaluserinfo.auth) == "OPR":
                         return JsonResponse({"result":"success", "code":"OPR","id":user.additionaluserinfo.id, "session_key": request.session.session_key  })
                     else:
@@ -330,10 +330,6 @@ def vue_get_sns_auth(request):
     session[BACKEND_SESSION_KEY] = 'django.contrib.auth.backends.ModelBackend'
     #session[HASH_SESSION_KEY] = user.get_session_auth_hash()
     session.save()
-
-
-
-
     return JsonResponse({"name": name, "code":"USR" , "user_id": user.additionaluserinfo.id, "session_key":session.session_key}, safe=False)
 
 
@@ -8254,48 +8250,6 @@ def vue_get_startup_public_detail_news(request):
         result["news"].append(copy.deepcopy(obj))
     print("end")
     return JsonResponse(result)
-@csrf_exempt
-def hit_support_business(request):
-    target = request.POST.get("target")
-    try:
-        id= request.POST.get("id")
-        h = HitLog()
-        h.user = AdditionalUserInfo.objects.get(id=id)
-        h.support_business_id = target
-        h.save()
-        vsb = VisitedSupportBusiness()
-        vsb.visited_support_business_id = target
-        vsb.visited_usr = AdditionalUserInfo.objects.get(id=id)
-        vsb.save()
-
-        #필터 넣기 수정 작업 중
-
-        vsb.visited_usr_filter.add(AdditionalUserInfo.objects.get(id=id).user.startup.selected_company_filter_list.all())
-        for filter in AdditionalUserInfo.objects.get(id=id).user.startup.selected_company_filter_list.all():
-            try:
-                vsb.visited_usr_filter.add(  FilterForStatics.objects.get(filter_name=filter.filter_name)  )
-            except:
-                pass
-        tds,flag = LineGraphTable.objects.get_or_create(linegraph_date=datetime.datetime.today())
-        tds.linegraph_visitied = tds.linegraph_visitied + 1
-        tds.save()
-
-
-    except:
-        h = HitLog()
-        h.support_business_id = target
-        h.save()
-        vsb = VisitedSupportBusiness()
-        vsb.visited_support_business_id = target
-        vsb.save()
-        tds, flag = LineGraphTable.objects.get(linegraph_date=datetime.datetime.today())
-        tds.linegraph_visitied = tds.linegraph_visitied + 1
-        tds.save()
-
-
-
-    return JsonResponse({"result":"success"})
-
 
 @csrf_exempt
 def vue_get_kikwan_account(request):
