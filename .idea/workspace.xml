@@ -3,6 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/urls.py" afterPath="$PROJECT_DIR$/supporting_business/urls.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -27,28 +29,6 @@
   </component>
   <component name="DjangoConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)">
     <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)" />
-  </component>
-  <component name="DockManager">
-    <window id="1">
-      <content type="file-editors">
-        <state>
-          <leaf>
-            <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
-              <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="216">
-                    <caret line="387" column="24" lean-forward="false" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="24" />
-                    <folding>
-                      <element signature="e#24#59#0" expanded="true" />
-                    </folding>
-                  </state>
-                </provider>
-              </entry>
-            </file>
-          </leaf>
-        </state>
-      </content>
-    </window>
   </component>
   <component name="FavoritesManager">
     <favorites_list name="gca_mvp" />
@@ -75,6 +55,18 @@
                 <state relative-caret-position="2014">
                   <caret line="107" column="5" lean-forward="false" selection-start-line="107" selection-start-column="5" selection-end-line="107" selection-end-column="5" />
                   <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="197">
+                  <caret line="2374" column="26" lean-forward="true" selection-start-line="2374" selection-start-column="26" selection-end-line="2374" selection-end-column="26" />
+                  <folding>
+                    <element signature="e#24#59#0" expanded="true" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -121,11 +113,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="urls.py" pinned="false" current-in-tab="true">
+          <file leaf-file-name="urls.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="368">
-                  <caret line="147" column="82" lean-forward="true" selection-start-line="147" selection-start-column="82" selection-end-line="147" selection-end-column="82" />
+                <state relative-caret-position="437">
+                  <caret line="50" column="69" lean-forward="false" selection-start-line="50" selection-start-column="69" selection-end-line="50" selection-end-column="69" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -185,36 +177,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>opr_app</find>
-      <find>get_realtime_support_business_appliance</find>
-      <find>writing_set</find>
-      <find>blind_set</find>
-      <find>vue_get_author_lecture</find>
-      <find>movie</find>
-      <find>like</find>
-      <find>object</find>
-      <find>information</find>
-      <find>conte</find>
-      <find>support_business_ad</find>
-      <find>support_business_additional_faq</find>
-      <find>vue_set_manager_acc</find>
-      <find>vue_set_</find>
-      <find>vue_set_mng_acc</find>
-      <find>vue_get_opr_acc</find>
-      <find>vue_set_opr_a</find>
-      <find>vue_get_mng_acc</find>
-      <find>vue_set_opr_acc</find>
-      <find>vue_set_opr</find>
-      <find>vue_get_kikwan_account</find>
-      <find>support_business_open</find>
+      <find>vue_get_course_uploaded</find>
+      <find>vue_upload_path</find>
+      <find>vue_modify_path</find>
+      <find>vue_get_clip</find>
+      <find>vue_get_course</find>
+      <find>excel_down_support_business_gwanri_aw</find>
+      <find>vue_get_support_business_selected_list_excel</find>
+      <find>vue_get_download_usr_account</find>
+      <find>vue_get_download_usr_account_selected</find>
       <find>download_appliance</find>
+      <find>get_realtime_support_business_appliance</find>
+      <find>mng_vue_get_support_business_list</find>
+      <find>mng_vue_get_kikwan_account</find>
+      <find>opr_vue_get_kikwan_account_excel</find>
+      <find>mng_vue_get_kikwan_account_excel</find>
+      <find>mng_vue_get_startup_account</find>
+      <find>vue_get_channel_static</find>
+      <find>vue_get_course_all</find>
       <find>vue_get_path_all</find>
-      <find>is_in_favor_list</find>
-      <find>cert_email</find>
-      <find>vue_login_user</find>
-      <find>vue_get_sns_auth</find>
-      <find>vue_get_all_favorite</find>
-      <find>hit_support_business</find>
+      <find>get_favorite_startup</find>
+      <find>vue_get_startup_list_sample</find>
+      <find>vue_get_clip_all</find>
+      <find>toggle_favorite_startup</find>
+      <find>vue_login_check</find>
+      <find>make_pdf</find>
+      <find>toggle_favorite</find>
+      <find>toggle_favorite_support_business</find>
+      <find>vue_set_mng_support_business_1</find>
+      <find>vue_set_mng_support_business_step_1</find>
+      <find>rjd[</find>
     </findStrings>
     <replaceStrings>
       <replace>apply_end|date:&quot; Y m d &quot;</replace>
@@ -323,7 +315,7 @@
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
+    <navigator currentView="Scope" currentSubView="Project Files" proportions="" version="1">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -412,7 +404,22 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
+      <pane id="Scope">
+        <subPane subId="Project Files">
+          <expand>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+              <item name="supporting_business" type="cbb8eebc:String" user="supporting_business" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
       <pane id="Scratches" />
     </panes>
   </component>
@@ -625,7 +632,21 @@
       <option name="project" value="LOCAL" />
       <updated>1539223898573</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="중복된 함수 hit_support_business 제거">
+      <created>1539223928534</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1539223928534</updated>
+    </task>
+    <task id="LOCAL-00016" summary="division by zero 오류 수정">
+      <created>1539228437645</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1539228437645</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TodoView">
@@ -642,13 +663,13 @@
     <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32899022" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.13369565" sideWeight="0.4824094" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.175" sideWeight="0.49520257" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2423913" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.175" sideWeight="0.49573562" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.175" sideWeight="0.50479746" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32608697" sideWeight="0.4978678" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2804348" sideWeight="0.51759064" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.021855012" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2468017" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.13859275" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.08635394" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24946696" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3989071" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -709,7 +730,8 @@
     <MESSAGE value="routing 중복 제거 &amp; 정리 1차" />
     <MESSAGE value="." />
     <MESSAGE value="중복된 함수 hit_support_business 제거" />
-    <option name="LAST_COMMIT_MESSAGE" value="중복된 함수 hit_support_business 제거" />
+    <MESSAGE value="division by zero 오류 수정" />
+    <option name="LAST_COMMIT_MESSAGE" value="division by zero 오류 수정" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -985,22 +1007,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
+    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="387" column="24" lean-forward="false" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="24" />
+        <state relative-caret-position="437">
+          <caret line="50" column="69" lean-forward="false" selection-start-line="50" selection-start-column="69" selection-end-line="50" selection-end-column="69" />
           <folding>
-            <element signature="e#24#59#0" expanded="true" />
+            <element signature="e#0#41#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
+    <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="147" column="82" lean-forward="true" selection-start-line="147" selection-start-column="82" selection-end-line="147" selection-end-column="82" />
+        <state relative-caret-position="197">
+          <caret line="2374" column="26" lean-forward="true" selection-start-line="2374" selection-start-column="26" selection-end-line="2374" selection-end-column="26" />
           <folding>
-            <element signature="e#0#41#0" expanded="true" />
+            <element signature="e#24#59#0" expanded="true" />
           </folding>
         </state>
       </provider>
