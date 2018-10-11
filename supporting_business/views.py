@@ -1715,56 +1715,6 @@ def get_unread_alarm(request):
 
 
 
-# --------[기관 회원관리 - 매니저 계정 정보 조회 ]------- (기관관리자)
-@csrf_exempt
-def vue_get_opr_account(request):
-    if gca_check_session(request)== False:
-        return HttpResponse("{}")
-    account_set = []
-    k=1
-    all_account_set=[]
-    for ac in  AdditionalUserInfo.objects.all().filter(mng_boss_id=request.POST.get("id")).order_by("-id"):
-        temp={}
-        temp["index"] = k
-        k=k+1
-        temp["id"] = ac.user.username
-        temp["mng_name"] = ac.mng_name
-        temp["mng_position"] = ac.mng_position
-        temp["mng_bonbu"] = ac.mng_bonbu
-        temp["mng_kikwan"] = ac.mng_kikwan
-        temp["mng_team"] = ac.mng_team
-        temp["mng_tel"] = ac.mng_tel
-        temp["mng_phone"] = ac.mng_phone
-        temp["mng_email"] = ac.mng_email
-        temp["mng_date_joined_ymd"] = ac.mng_date_joined_ymd
-        account_set.append(copy.deepcopy(temp))
-    k=1
-    for ac in AdditionalUserInfo.objects.all().filter(Q(auth="MNG")|Q(auth="OPR")|Q(auth="4")).order_by("-id"):
-        temp = {}
-        temp["index"] = k
-        k = k + 1
-        temp["id"] = ac.user.username
-        temp["mng_name"] = ac.mng_name
-        temp["mng_position"] = ac.mng_position
-        temp["mng_bonbu"] = ac.mng_bonbu
-        temp["mng_kikwan"] = ac.mng_kikwan
-        temp["mng_team"] = ac.mng_team
-        try:
-            temp["mng_sangsa"] = ac.mng_boss.mng_name
-        except:
-            temp["mng_sangsa"] = ""
-        temp["mng_tel"] = ac.mng_tel
-        temp["mng_phone"] = ac.mng_phone
-        temp["mng_email"] = ac.mng_email
-        temp["mng_date_joined_ymd"] = ac.mng_date_joined_ymd
-        all_account_set.append(copy.deepcopy(temp))
-    result={}
-    result["account_set"] = account_set
-    result["all_account_set"] = all_account_set
-
-    return  JsonResponse(result, safe=False)
-
-
 #----------------------------------------------------------------------------------------------------------------------
 # 다. 매니저 : 공고문 생성 + 지원서 양식지정
 #       <목표>
@@ -4979,10 +4929,14 @@ def vue_static_usr(request):
     for startup in Award.objects.all().values('startup_id').distinct():
         #k = k + len(Award.objects.all().filter(startup_id=startup["startup_id"]))
         apply_num_arr.append(len(Award.objects.all().filter(startup_id=startup["startup_id"])))
-    avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
-
-    avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
-
+    if len(apply_num_arr) > 0:
+        avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
+    else:
+        avg_apply_num_per_awarded = 0
+    if  len(apply_num_arr) > 0:
+        avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
+    else:
+        avg_award_num_per_awarded = 0
 
     #경기지역 모아보기
     total_startup_gg = (Startup.objects.all().filter(  selected_company_filter_list__filter_name__contains="경기"))
@@ -5000,11 +4954,15 @@ def vue_static_usr(request):
      # 모든 사업의 선정자수
     total_award_num = Award.objects.all()
 
-    # 경기 기업회원 1개당 평균 사업 참가수
-    avg_apply_num_per_startup_gg = round(len(total_appliance_gg)/len(total_startup_gg),2)
-    # 경기 기업 회원 1개당 평균 사업 선정수
-    avg_award_num_per_awarded_gg = round(len(total_award_num)/len(total_startup_gg),2)
+    if len(total_appliance_gg) > 0 :
+        # 경기 기업회원 1개당 평균 사업 참가수
+        avg_apply_num_per_startup_gg = round(len(total_appliance_gg)/len(total_startup_gg),2)
 
+        # 경기 기업 회원 1개당 평균 사업 선정수
+        avg_award_num_per_awarded_gg = round(len(total_award_num)/len(total_startup_gg),2)
+    else:
+        avg_apply_num_per_startup_gg = 0
+        avg_award_num_per_awarded_gg = 0
 
 
 
@@ -5032,12 +4990,6 @@ def vue_static_usr(request):
 def vue_get_short_title(request):
     support_business_name = SupportBusiness.objects.get(id=request.GET.get("id")).support_business_name
     return JsonResponse({"support_business_name":support_business_name})
-
-
-
-
-
-
 
 
 
