@@ -99,42 +99,7 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
                 return False
     except:
         return False
-@csrf_exempt
-def login_user(request):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            # try:
-            #     AdditionalUserInfo(user=request.user).save()
-            # except:
-            #     pass
-            # print("here")
-            try:
 
-                if str(user.additionaluserinfo.auth) == "MNG" or (user.additionaluserinfo.auth) == "OPR":
-                    print(user.additionaluserinfo.name + "매니져님 로그인 하였음.")
-                    return redirect("dashboard")
-                else:
-                    return redirect('index')
-            except:
-                return redirect('index')
-        else:
-            return HttpResponse('로그인 실패. 다시 시도 해보세요.')
-    else:
-        providers = []
-        for provider in get_providers():
-            # social_app속성은 provider에는 없는 속성입니다.
-            try:
-                provider.social_app = SocialApp.objects.get(provider=provider.id, sites=settings.SITE_ID)
-            except SocialApp.DoesNotExist:
-                provider.social_app = None
-        providers.append(provider)
-        login_form = LoginForm()
-    return render(request, 'pc/accounts/login.html', {"form": login_form})
 
 
 
@@ -1045,7 +1010,7 @@ def vue_get_support_business_info(request):
                 support_business.support_business_recruit_size), 1))
             if number =="0.0":
                 number ="0"
-            result_end["comp"] =  number + " : 1"
+            result_end["comp"] = number + " : 1"
             pass
         else:
             result_end["comp"] = str(len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(
