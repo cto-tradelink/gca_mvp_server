@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -125,8 +124,8 @@
           <file leaf-file-name="urls.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="273">
-                  <caret line="142" column="0" lean-forward="false" selection-start-line="142" selection-start-column="0" selection-end-line="142" selection-end-column="0" />
+                <state relative-caret-position="368">
+                  <caret line="147" column="82" lean-forward="true" selection-start-line="147" selection-start-column="82" selection-end-line="147" selection-end-column="82" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -619,7 +618,14 @@
       <option name="project" value="LOCAL" />
       <updated>1539223487104</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="중복된 함수 hit_support_business 제거">
+      <created>1539223898573</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1539223898573</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TodoView">
@@ -702,7 +708,8 @@
     <MESSAGE value="매니저 라우팅 함수 추가" />
     <MESSAGE value="routing 중복 제거 &amp; 정리 1차" />
     <MESSAGE value="." />
-    <option name="LAST_COMMIT_MESSAGE" value="." />
+    <MESSAGE value="중복된 함수 hit_support_business 제거" />
+    <option name="LAST_COMMIT_MESSAGE" value="중복된 함수 hit_support_business 제거" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -990,8 +997,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="273">
-          <caret line="142" column="0" lean-forward="false" selection-start-line="142" selection-start-column="0" selection-end-line="142" selection-end-column="0" />
+        <state relative-caret-position="368">
+          <caret line="147" column="82" lean-forward="true" selection-start-line="147" selection-start-column="82" selection-end-line="147" selection-end-column="82" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
           </folding>
