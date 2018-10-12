@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^vue_get_course_information/', views.vue_get_course_information, name='vue_get_course_information', ),
     url(r'^vue_get_clip_all/', views.vue_get_clip_all, name='vue_get_clip_all', ),
     url(r'get_home_info/', views.get_home_info, name='get_home_info', ),
+    url(r'get_realtime_support_business_appliance/', views.get_realtime_support_business_appliance, name='get_realtime_support_business_appliance', ),
 
     # 기관관리자
     url(r'^vue_get_opr_dashboard/', views.vue_get_opr_dashboard, name='vue_get_opr_dashboard', ),
@@ -86,6 +87,9 @@ urlpatterns = [
     url(r'vue_get_support_business_select_name_4/', views.vue_get_support_business_select_name_4,
         name='vue_get_support_business_select_name_4', ),
     url(r'get_support_business_static/', views.get_support_business_static, name='get_support_business_static', ),
+    url(r'mng_vue_get_startup_account/', views.mng_vue_get_startup_account, name='mng_vue_get_startup_account', ),
+
+
     # 로그인한 스타트업 유저
     url(r'^vue_get_startup_detail/', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
     url(r'^vue_update_startup_detail/', views.vue_update_startup_detail, name='vue_update_startup_detail', ),
@@ -108,7 +112,6 @@ urlpatterns = [
     url(r'^get_favorite_startup/', views.get_favorite_startup, name='get_favorite_startup', ),
     url(r'^get_support_business_favorite_startup/', views.get_support_business_favorite_startup, name='get_support_business_favorite_startup', ),
     url(r'^vue_modify_course/', views.vue_modify_course, name='vue_modify_course', ),
-
     url(r'^vue_get_path/', views.vue_get_path, name='vue_get_path', ),
     url(r'^get_startup_application/', views.get_startup_application, name='get_startup_application', ),
     url(r'^vue_remove_service_product/', views.vue_remove_service_product, name='vue_remove_service_product', ),
@@ -135,8 +138,7 @@ urlpatterns = [
     url(r'^hit_support_business/', views.hit_support_business, name='hit_support_business', ),
     url(r'^vue_set_usr_info/', views.vue_set_usr_info, name='vue_set_usr_info', ),
     url(r'^vue_get_startup_detail_base/', views.vue_get_startup_detail_base, name='vue_get_startup_detail_base', ),
-    url(r'^vue_update_startup_detail_base/', views.vue_update_startup_detail_base,
-        name='vue_update_startup_detail_base', ),
+    url(r'^vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
     url(r'^get_unread_alarm/', views.get_unread_alarm, name='get_unread_alarm', ),
     url(r'save_filter/', views.save_filter, name='save_filter', ),
     url(r'vue_get_course_all/', views.vue_get_course_all, name='vue_get_course_all', ),

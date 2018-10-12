@@ -9232,7 +9232,6 @@ def download_appliance(request):
 
 @csrf_exempt
 def get_realtime_support_business_appliance(request):
-
     support_business_id = request.GET.get("support_business_id")
     print("==========================")
     print(support_business_id)
@@ -9241,8 +9240,6 @@ def get_realtime_support_business_appliance(request):
     support_business_appliance = []
     result={}
     result["support_business_min_date"] =  str(SupportBusiness.objects.get(id=support_business_id).support_business_apply_start_ymd).split(" ")[0]
-
-
     for date_dict in Appliance.objects.all().filter(support_business=support_business).\
             dates("appliance_update_at_ymdt","day").values("appliance_update_at_ymdt").order_by("-appliance_update_at_ymdt").distinct():
         if date_dict["appliance_update_at_ymdt"] not in support_business_appliance_date_ymd:
@@ -9254,11 +9251,7 @@ def get_realtime_support_business_appliance(request):
                 "number": len(Appliance.objects.all().filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
             }
         )
-
-
     result["support_business_appliance"] = support_business_appliance
-    print(result)
-    print("==============")
     return JsonResponse(result)
 
 @csrf_exempt
