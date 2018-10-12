@@ -149,7 +149,7 @@ urlpatterns = [
     url(r'toggle_favorite_support_business/', views.toggle_favorite_support_business, name='toggle_favorite_support_business', ),
     url(r'save_user_appliance_data_url/', views.save_user_appliance_data_url,   name='save_user_appliance_data_url', ),
     url(r'vue_get_channel_statics_clip/', views.vue_get_channel_statics_clip,   name='vue_get_channel_statics_clip', ),
-
+    url(r'vue_get_statics_by_channel/', views.vue_get_statics_by_channel,   name='vue_get_statics_by_channel', ),
 
 
  ]

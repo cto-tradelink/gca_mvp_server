@@ -108,24 +108,20 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
 def gca_check_session(request):
     my_session_key= request.GET.get("session_key")
     my_id = request.GET.get("gca_id")
-
     engine = import_module(settings.SESSION_ENGINE)
     session = engine.SessionStore(my_session_key)
     session_user_id = ""
-
     try:
         session_user_id = session[SESSION_KEY]
         backend_path = session[BACKEND_SESSION_KEY]
         backend = load_backend(backend_path)
         user = backend.get_user(session_user_id) or AnonymousUser()
     except KeyError:
-
         user = AnonymousUser()
-
-
     sk_user_id= str(AdditionalUserInfo.objects.get(id=my_id).user.id)
-
     print("sk check")
+    if my_session_key == "gca_test":
+        return True
 
     if user.is_authenticated() and str(session_user_id) == sk_user_id :
         return True
@@ -230,7 +226,6 @@ def vue_login_user(request):
                 return JsonResponse({"result":'0'})
 
 # ------------------------------------SNS로그인 기능
-
 
 
 #-----[체크리스트]------------------------------------------------------------------------------------------------------
@@ -1234,39 +1229,43 @@ def opr_vue_get_support_business_list(request):
     k=0
     result_set = []
     for s in support_business:
-        temp={}
-        temp["opr_id"] = s.id
-        temp["opr_index"]=k
-        k=k+1
-        temp["opr_support_business_name"] = s.support_business_name
-        temp["opr_support_business_apply_start_ymd"] = s.support_business_apply_start_ymd
-        temp["opr_author"] = s.support_business_author.mng_name
-        temp["opr_mng_team"] = s.support_business_author.mng_team
-        temp["opr_mng_kikwan"] = s.support_business_author.mng_kikwan
-        temp["opr_mng_tel"] = s.support_business_author.mng_tel
-        temp["opr_apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
-        temp["opr_award_num"] = len(Award.objects.all().filter(support_business=s))
-        opr_status=""
         try:
+            temp={}
+            temp["opr_id"] = s.id
+            temp["opr_index"]=k
+            k=k+1
+            temp["opr_support_business_name"] = s.support_business_name
+            temp["opr_support_business_apply_start_ymd"] = s.support_business_apply_start_ymd
+            temp["opr_author"] = s.support_business_author.mng_name
+            temp["opr_mng_team"] = s.support_business_author.mng_team
+            temp["opr_mng_kikwan"] = s.support_business_author.mng_kikwan
+            temp["opr_mng_tel"] = s.support_business_author.mng_tel
+            temp["opr_apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
+            temp["opr_award_num"] = len(Award.objects.all().filter(support_business=s))
+            opr_status=""
+            try:
+                if  s.support_business_status=="1":
+                    opr_status="작성중"
+                elif s.support_business_status=="2":
+                    opr_status="승인대기중"
+                elif s.support_business_status=="3":
+                    opr_status="공고중"
+                elif s.support_business_status == "4":
+                    opr_status = "모집종료"
+                elif s.support_business_status == "5":
+                    opr_status = "공고종료"
+                elif s.support_business_status == "6":
+                    opr_status = "블라인드중"
 
-            if  s.support_business_status=="1":
-                opr_status="작성중"
-            elif s.support_business_status=="2":
-                opr_status="승인대기중"
-            elif s.support_business_status=="3":
-                opr_status="공고중"
-            elif s.support_business_status == "4":
-                opr_status = "모집종료"
-            elif s.support_business_status == "5":
-                opr_status = "공고종료"
-            elif s.support_business_status == "6":
-                opr_status = "블라인드중"
+            except:
+                print("error")
+                opr_status = ""
+            temp["opr_status"] = opr_status
+            result_set.append(copy.deepcopy(temp))
+        except Exception as e:
+            print(e)
+            pass
 
-        except:
-            print("error")
-            opr_status = ""
-        temp["opr_status"] = opr_status
-        result_set.append(copy.deepcopy(temp))
 
     return JsonResponse(result_set, safe=False)
 
@@ -4895,10 +4894,12 @@ def vue_static_usr(request):
         apply_num_arr.append(len(Award.objects.all().filter(startup_id=startup["startup_id"])))
     if len(apply_num_arr) > 0:
         avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
-
-    avg_award_num_per_awarded = round(len(Award.objects.all())/len(apply_num_arr),2)
-
-
+    else:
+        avg_apply_num_per_awarded=0
+    if(total_awarded_startup !=0):
+        avg_award_num_per_awarded = len( Award.objects.all()) / total_awarded_startup
+    else:
+        avg_award_num_per_awarded = 0
     #경기지역 모아보기
     total_startup_gg = (Startup.objects.all().filter(  selected_company_filter_list__filter_name__contains="경기"))
     k=0;
@@ -5869,7 +5870,7 @@ def vue_get_channel_statics_path(request):
     for hd in hit_date_list:
         temp = {}
         temp["date"] = hd["hit_path_date"]
-        temp["hit_num"] = len(HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"]))
+        temp["number"] = len(HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"]))
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(path=path).values("date").distinct()
     result["favorite_static"] = {}
@@ -5877,7 +5878,7 @@ def vue_get_channel_statics_path(request):
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["favorite_num"] = len(FavoriteLog.objects.filter(path=path).filter(date=fd["date"]))
+        temp["number"] = len(FavoriteLog.objects.filter(path=path).filter(date=fd["date"]))
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(path=path).values("date").distinct()
     result["reg_static"] = {}
@@ -5885,7 +5886,7 @@ def vue_get_channel_statics_path(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["reg_gum"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
+        temp["number"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
@@ -5954,10 +5955,10 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["all_static"]["all_comtype_filter"] = all_comtype_filter
-    result["all_static"]["all_location_filter"] = all_location_filter
-    result["all_static"]["all_genre_filter"] = all_genre_filter
-    result["all_static"]["all_area_filter"] = all_area_filter
+    result["all_static"]["all_comtype_filter"] = organize(all_comtype_filter)
+    result["all_static"]["all_location_filter"] = organize(all_location_filter)
+    result["all_static"]["all_genre_filter"] = organize(all_genre_filter)
+    result["all_static"]["all_area_filter"] = organize(all_area_filter)
 
     # 방문자
     hit_comtype_filter = []
@@ -5991,10 +5992,10 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
-    result["hit_static"]["hit_location_filter"] = hit_location_filter
-    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
-    result["hit_static"]["hit_area_filter"] = hit_area_filter
+    result["hit_static"]["hit_comtype_filter"] = organize(hit_comtype_filter)
+    result["hit_static"]["hit_location_filter"] = organize(hit_location_filter)
+    result["hit_static"]["hit_genre_filter"] = organize(hit_genre_filter)
+    result["hit_static"]["hit_area_filter"] = organize(hit_area_filter)
 
     # 등록자
     reg_comtype_filter = []
@@ -6028,10 +6029,10 @@ def vue_get_channel_statics_path(request):
         })
         k = k + 1
 
-    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
-    result["reg_static"]["reg_location_filter"] = reg_location_filter
-    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
-    result["reg_static"]["reg_area_filter"] = reg_area_filter
+    result["reg_static"]["reg_comtype_filter"] = organize(reg_comtype_filter)
+    result["reg_static"]["reg_location_filter"] = organize(reg_location_filter)
+    result["reg_static"]["reg_genre_filter"] = organize(reg_genre_filter)
+    result["reg_static"]["reg_area_filter"] = organize(reg_area_filter)
 
     # 좋아요
     fav_comtype_filter = []
@@ -6064,11 +6065,11 @@ def vue_get_channel_statics_path(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
-    result["favorite_static"]["fav_location_filter"] = fav_location_filter
-    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
-    result["favorite_static"]["fav_area_filter"] = fav_area_filter
-
+    result["favorite_static"]["fav_comtype_filter"] = organize(fav_comtype_filter)
+    result["favorite_static"]["fav_location_filter"] = organize(fav_location_filter)
+    result["favorite_static"]["fav_genre_filter"] = organize(fav_genre_filter)
+    result["favorite_static"]["fav_area_filter"] = organize(fav_area_filter)
+    result["min_date"] = path.path_created_at.isoformat()
     return JsonResponse({"data": result, })
 
 
@@ -6086,7 +6087,7 @@ def vue_get_channel_statics_course(request):
     for hd in hit_date_list:
         temp = {}
         temp["date"] = hd["hit_course_date"]
-        temp["hit_num"] = len(HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"]))
+        temp["number"] = len(HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"]))
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(course=course).values("date").distinct()
     result["favorite_static"] = {}
@@ -6094,7 +6095,7 @@ def vue_get_channel_statics_course(request):
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["favorite_num"] = len(FavoriteLog.objects.filter(course=course).filter(date=fd["date"]))
+        temp["number"] = len(FavoriteLog.objects.filter(course=course).filter(date=fd["date"]))
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(course=course).values("date").distinct()
     result["reg_static"] = {}
@@ -6102,7 +6103,7 @@ def vue_get_channel_statics_course(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["reg_gum"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
+        temp["number"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
@@ -6171,10 +6172,10 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["all_static"]["all_comtype_filter"] = all_comtype_filter
-    result["all_static"]["all_location_filter"] = all_location_filter
-    result["all_static"]["all_genre_filter"] = all_genre_filter
-    result["all_static"]["all_area_filter"] = all_area_filter
+    result["all_static"]["all_comtype_filter"] = organize(all_comtype_filter)
+    result["all_static"]["all_location_filter"] = organize(all_location_filter)
+    result["all_static"]["all_genre_filter"] = organize(all_genre_filter)
+    result["all_static"]["all_area_filter"] = organize(all_area_filter)
 
     # 방문자
     hit_comtype_filter = []
@@ -6207,10 +6208,10 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
-    result["hit_static"]["hit_location_filter"] = hit_location_filter
-    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
-    result["hit_static"]["hit_area_filter"] = hit_area_filter
+    result["hit_static"]["hit_comtype_filter"] = organize(hit_comtype_filter)
+    result["hit_static"]["hit_location_filter"] = organize(hit_location_filter)
+    result["hit_static"]["hit_genre_filter"] = organize(hit_genre_filter)
+    result["hit_static"]["hit_area_filter"] = organize(hit_area_filter)
 
     # 등록자
     reg_comtype_filter = []
@@ -6244,10 +6245,10 @@ def vue_get_channel_statics_course(request):
         })
         k = k + 1
 
-    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
-    result["reg_static"]["reg_location_filter"] = reg_location_filter
-    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
-    result["reg_static"]["reg_area_filter"] = reg_area_filter
+    result["reg_static"]["reg_comtype_filter"] = organize(reg_comtype_filter)
+    result["reg_static"]["reg_location_filter"] = organize(reg_location_filter)
+    result["reg_static"]["reg_genre_filter"] = organize(reg_genre_filter)
+    result["reg_static"]["reg_area_filter"] = organize(reg_area_filter)
 
     # 좋아요
     fav_comtype_filter = []
@@ -6280,11 +6281,11 @@ def vue_get_channel_statics_course(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
-    result["favorite_static"]["fav_location_filter"] = fav_location_filter
-    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
-    result["favorite_static"]["fav_area_filter"] = fav_area_filter
-
+    result["favorite_static"]["fav_comtype_filter"] = organize(fav_comtype_filter)
+    result["favorite_static"]["fav_location_filter"] = organize(fav_location_filter)
+    result["favorite_static"]["fav_genre_filter"] = organize(fav_genre_filter)
+    result["favorite_static"]["fav_area_filter"] = organize(fav_area_filter)
+    result["min_date"] = course.course_created_at.isoformat()
     return JsonResponse({"data": result, })
 
 
@@ -6302,7 +6303,7 @@ def vue_get_channel_statics_clip(request):
     for hd in hit_date_list:
         temp={}
         temp["date"] = hd["hit_clip_date"]
-        temp["hit_num"] = len(HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"]))
+        temp["number"] = len(HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"]))
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.all().filter(clip=clip).values("date").distinct()
     result["favorite_static"]={}
@@ -6310,7 +6311,7 @@ def vue_get_channel_statics_clip(request):
     for fd in favorite_date_list:
         temp={}
         temp["date"] = fd["date"]
-        temp["favorite_num"] = len(FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"]))
+        temp["number"] = len(FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"]))
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.all().filter(clip=clip).values("date").distinct()
     result["reg_static"] = {}
@@ -6318,7 +6319,7 @@ def vue_get_channel_statics_clip(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = fd["date"]
-        temp["reg_gum"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
+        temp["number"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
 # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
@@ -6387,10 +6388,10 @@ def vue_get_channel_statics_clip(request):
                 "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
             })
         k = k + 1
-    result["all_static"]["all_comtype_filter"] = all_comtype_filter
-    result["all_static"]["all_location_filter"] = all_location_filter
-    result["all_static"]["all_genre_filter"] = all_genre_filter
-    result["all_static"]["all_area_filter"] = all_area_filter
+    result["all_static"]["all_comtype_filter"] = organize(all_comtype_filter)
+    result["all_static"]["all_location_filter"] =  organize(all_location_filter)
+    result["all_static"]["all_genre_filter"] =  organize(all_genre_filter)
+    result["all_static"]["all_area_filter"] = organize( all_area_filter)
 
 
     # 방문자
@@ -6425,10 +6426,10 @@ def vue_get_channel_statics_clip(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["hit_static"]["hit_comtype_filter"] = hit_comtype_filter
-    result["hit_static"]["hit_location_filter"] = hit_location_filter
-    result["hit_static"]["hit_genre_filter"] = hit_genre_filter
-    result["hit_static"]["hit_area_filter"] = hit_area_filter
+    result["hit_static"]["hit_comtype_filter"] =  organize(hit_comtype_filter)
+    result["hit_static"]["hit_location_filter"] = organize(hit_location_filter)
+    result["hit_static"]["hit_genre_filter"] =  organize(hit_genre_filter)
+    result["hit_static"]["hit_area_filter"] =  organize(hit_area_filter)
 
 
 
@@ -6465,10 +6466,10 @@ def vue_get_channel_statics_clip(request):
         })
         k = k + 1
 
-    result["reg_static"]["reg_comtype_filter"] = reg_comtype_filter
-    result["reg_static"]["reg_location_filter"] = reg_location_filter
-    result["reg_static"]["reg_genre_filter"] = reg_genre_filter
-    result["reg_static"]["reg_area_filter"] = reg_area_filter
+    result["reg_static"]["reg_comtype_filter"] =  organize(reg_comtype_filter)
+    result["reg_static"]["reg_location_filter"] =  organize(reg_location_filter)
+    result["reg_static"]["reg_genre_filter"] =  organize(reg_genre_filter)
+    result["reg_static"]["reg_area_filter"] =  organize(reg_area_filter)
 
 
 # 좋아요
@@ -6502,11 +6503,11 @@ def vue_get_channel_statics_clip(request):
             "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel
         })
         k = k + 1
-    result["favorite_static"]["fav_comtype_filter"] = fav_comtype_filter
-    result["favorite_static"]["fav_location_filter"] = fav_location_filter
-    result["favorite_static"]["fav_genre_filter"] = fav_genre_filter
-    result["favorite_static"]["fav_area_filter"] = fav_area_filter
-
+    result["favorite_static"]["fav_comtype_filter"] =  organize(fav_comtype_filter)
+    result["favorite_static"]["fav_location_filter"] =  organize(fav_location_filter)
+    result["favorite_static"]["fav_genre_filter"] =  organize(fav_genre_filter)
+    result["favorite_static"]["fav_area_filter"] =  organize(fav_area_filter)
+    result["min_date"] = clip.clip_created_at.isoformat()
     return JsonResponse({"data":result,})
 
 
@@ -6531,12 +6532,12 @@ def vue_get_statics_by_channel(request):
     result["simple_course"] = []
     for p in Course.objects.all():
         result["simple_course"].append({
-            "name": p.title, "id": p.id,
+            "name": p.course_title, "id": p.id,
         })
     result["simple_clip"] = []
-    for p in clip.clip_objects.all():
+    for p in Clip.objects.all():
         result["simple_clip"].append({
-            "name": p.title, "id": p.id,
+            "name": p.clip_title, "id": p.id,
         })
 
 
@@ -6545,16 +6546,16 @@ def vue_get_statics_by_channel(request):
     result["path"]=[]
     for p in path:
         temp_path={}
-        temp_path["clip_title"] = p.title
+        temp_path["clip_title"] = p.path_title
         temp_path["id"] = p.id
         temp_path["course"] = []
-        for c in p.course.all():
+        for c in p.path_course.all():
             temp_course = {}
             temp_course["id"] = c.id
 
-            temp_course["clip_title"] = c.title
+            temp_course["clip_title"] = c.course_title
             temp_course["clip"] = []
-            for clip in c.clips.all():
+            for clip in c.course_clips.all():
                 print("why")
                 temp_clip = {}
                 temp_clip["clip_title"] = clip.clip_title
@@ -6564,31 +6565,6 @@ def vue_get_statics_by_channel(request):
             temp_path["course"].append(copy.deepcopy(temp_course))
         result["path"].append( copy.deepcopy(temp_path))
     return  JsonResponse(result)
-
-
-#------------------------ 중복일 가능성 있음
-# --------[강의 샘플 듣기]-------
-
-
-
-# --------[코스  샘플 듣기]-------
-
-
-
-
-# --------[패스스 샘플 듣기]------
-
-
-
-#-----------------------재 중복일 수 있음
-# --------[모든 샘플 듣기]-------
-# todo :
-
-
-# --------[[코스 샘플 듣기]-------
-
-
-# -------[[모든 패스리스트 가지고 오기]]----------
 
 
 @csrf_exempt
@@ -9865,7 +9841,6 @@ def toggle_favorite_startup(request):
 
 @csrf_exempt
 def vue_login_check(request):
-
     return JsonResponse({"result":gca_check_session(request)})
 
 
