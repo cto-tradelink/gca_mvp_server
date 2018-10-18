@@ -625,7 +625,7 @@ class Path(models.Model):
 
 class HitClipLog(models.Model):
     hit_clip = models.ForeignKey(Clip)
-    hit_clip_user = models.ForeignKey(AdditionalUserInfo)
+    hit_clip_user = models.ForeignKey(AdditionalUserInfo, blank=True, null=True)
     hit_clip_date = models.DateField(auto_now_add=True)
 
 

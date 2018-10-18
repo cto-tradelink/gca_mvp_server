@@ -1,6 +1,7 @@
 from django.conf.urls import url, include
 from django.contrib import admin
 from . import views
+from . import views_paging
 from .views import *
 
 urlpatterns = [
@@ -12,7 +13,7 @@ urlpatterns = [
     url(r'^accounts/', include('allauth.urls')),
     url(r'^vue_get_startup_public_detail/', views.vue_get_startup_public_detail, name='vue_get_startup_public_detail', ),
     url(r'^vue_home_support_business/', views.vue_home_support_business, name='vue_home_support_business', ),
-    url(r'^get_support_business_detail/', views.get_support_business_detail, name='get_support_business_detail', ),
+    url(r'^get_support_business_detail', views.get_support_business_detail, name='get_support_business_detail', ),
     url(r'^vue_get_filter/', views.vue_get_filter, name='vue_get_filter', ),
     url(r'^similar_support_business/', views.similar_support_business, name='similar_support_business', ),
     url(r'^vue_get_startup_list/', views.vue_get_startup_list, name='vue_get_startup_list', ),
@@ -24,6 +25,25 @@ urlpatterns = [
     url(r'^vue_get_clip_all/', views.vue_get_clip_all, name='vue_get_clip_all', ),
     url(r'get_home_info/', views.get_home_info, name='get_home_info', ),
     url(r'get_realtime_support_business_appliance/', views.get_realtime_support_business_appliance, name='get_realtime_support_business_appliance', ),
+    url(r'other_support_business_support_business/', views_paging.other_support_business_support_business,
+        name='other_support_business_support_business', ),
+    url(r'mng_account_kikwan_mng_account/', views_paging.mng_account_kikwan_mng_account,
+        name='mng_account_kikwan_mng_account', ),
+    url(r'user_account_person/', views_paging.user_account_person,
+        name='mng_user_account_person', ),
+    url(r'user_account_person/', views_paging.support_business_detail_appliance,
+        name='support_business_detail_appliance', ),
+    url(r'support_business_detail_favorite/', views_paging.support_business_detail_favorite,
+        name='support_business_detail_favorite', ),
+    url(r'support_business_detail_awarded/', views_paging.support_business_detail_awarded,
+        name='support_business_detail_awarded', ),
+    url(r'statics_my_support_business_ing_hit/', views_paging.statics_my_support_business_ing_hit,
+        name='statics_my_support_business_ing_hit', ),
+    url(r'statics_my_support_business_ing_fav/', views_paging.statics_my_support_business_ing_fav,
+        name='statics_my_support_business_ing_fav', ),
+    url(r'statics_my_support_business_ing_appliance/', views_paging.statics_my_support_business_ing_appliance,
+        name='statics_my_support_business_ing_appliance', ),
+
 
     # 기관관리자
     url(r'^vue_get_opr_dashboard/', views.vue_get_opr_dashboard, name='vue_get_opr_dashboard', ),
@@ -40,6 +60,16 @@ urlpatterns = [
     url(r'^vue_set_opr_acc/', views.vue_set_opr_acc, name='vue_set_opr_acc', ),
     url(r'support_business_open/', views.support_business_open, name='support_business_open', ),
     url(r'support_business_blind/', views.support_business_blind, name='support_business_blind', ),
+    url(r'vue_get_favorite_channel/', views.vue_get_favorite_channel, name='vue_get_favorite_channel', ),
+    url(r'excel_down_support_business_gwanri_ap/', views.excel_down_support_business_gwanri_ap, name='excel_down_support_business_gwanri_ap', ),
+    url(r'excel_down_support_business_gwanri_fav/', views.excel_down_support_business_gwanri_fav,
+        name='excel_down_support_business_gwanri_fav', ),
+    url(r'vue_get_download_usr_account/', views.vue_get_download_usr_account,
+        name='vue_get_download_usr_account', ),
+    url(r'opr_account_kikwan_all_account/', views_paging.opr_account_kikwan_all_account,
+        name='opr_account_kikwan_all_account', ),
+    url(r'opr_account_kikwan_mng_account/', views_paging.opr_account_kikwan_mng_account,
+        name='opr_account_kikwan_mng_account', ),
 
     # 매니저
     url(r'^vue_get_support_business_by_author/', views.vue_get_support_business_by_author, name='vue_get_support_business_by_author', ),
@@ -88,6 +118,11 @@ urlpatterns = [
         name='vue_get_support_business_select_name_4', ),
     url(r'get_support_business_static/', views.get_support_business_static, name='get_support_business_static', ),
     url(r'mng_vue_get_startup_account/', views.mng_vue_get_startup_account, name='mng_vue_get_startup_account', ),
+    url(r'mng_vue_get_kikwan_account_excel/', views.mng_vue_get_kikwan_account_excel, name='mng_vue_get_kikwan_account_excel', ),
+    url(r'vue_get_support_business_select_name_by_kikwan_1/', views.vue_get_support_business_select_name_by_kikwan_1, name='vue_get_support_business_select_name_by_kikwan_1', ),
+    url(r'vue_get_support_business_select_name_by_kikwan_2/', views.vue_get_support_business_select_name_by_kikwan_2, name='vue_get_support_business_select_name_by_kikwan_2', ),
+    url(r'excel_down_statics/', views.excel_down_statics, name='excel_down_statics', ),
+
 
 
     # 로그인한 스타트업 유저
@@ -152,9 +187,12 @@ urlpatterns = [
     url(r'save_user_appliance_data_url/', views.save_user_appliance_data_url,   name='save_user_appliance_data_url', ),
     url(r'vue_get_channel_statics_clip/', views.vue_get_channel_statics_clip,   name='vue_get_channel_statics_clip', ),
     url(r'vue_get_statics_by_channel/', views.vue_get_statics_by_channel,   name='vue_get_statics_by_channel', ),
+    url(r'vue_get_path_information/', views.vue_get_path_information,   name='vue_get_path_information', ),
+    url(r'vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
+    url(r'vue_get_register_channel/', views.vue_get_register_channel,
+        name='vue_get_register_channel', ),
 
-
- ]
+]
 import debug_toolbar
 
 urlpatterns.append(url(r'^__debug__/', include(debug_toolbar.urls)))
