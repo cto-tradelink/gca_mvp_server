@@ -31,7 +31,7 @@ urlpatterns = [
         name='mng_account_kikwan_mng_account', ),
     url(r'user_account_person/', views_paging.user_account_person,
         name='mng_user_account_person', ),
-    url(r'user_account_person/', views_paging.support_business_detail_appliance,
+    url(r'support_business_detail_appliance/', views_paging.support_business_detail_appliance,
         name='support_business_detail_appliance', ),
     url(r'support_business_detail_favorite/', views_paging.support_business_detail_favorite,
         name='support_business_detail_favorite', ),

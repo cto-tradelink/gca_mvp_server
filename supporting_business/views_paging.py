@@ -214,7 +214,7 @@ def user_account_person(request):
     return JsonResponse(result, safe=False)
 
 @csrf_exempt
-def msupport_business_detail_appliance(request):
+def support_business_detail_appliance(request):
     start_index = int(request.POST.get("start_index"))
     size = int(request.POST.get("size"))
     support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
