@@ -412,10 +412,23 @@ def hit_support_business(request):
 #-----------------------------------------------------------------------------------------------------------------------
 @csrf_exempt
 def save_filter(request):
-    if gca_check_session(request)== False:
-        return HttpResponse("login_required")
-    print(request.POST)
-    id = json.loads(request.POST.get("gca_id"))
+
+    # if gca_check_session(request) == False:
+    #     return HttpResponse(status=401)
+
+    id=request.POST.get("id")
+
+    startup = Startup.objects.all().get(user=AdditionalUserInfo.objects.get(id=id).user)
+    startup.selected_company_filter_list.remove()
+    for filter in request.POST.get("filter").split(","):
+        if  '명' in filter:
+            filter = filter.replace("명","").replace(" ","")
+            startup.company_total_employee = filter
+            startup.save()
+        else:
+            startup.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=filter))
+    print(id)
+    print(startup.selected_company_filter_list)
 
     return JsonResponse({"result":"success"})
 #----------------------------------------------------------------------------------------------------------------------
@@ -986,7 +999,7 @@ def vue_get_support_business_info(request):
         waiting_set.append(copy.deepcopy(result_end))
 
     # #작성중인 공고
-    writing_support_business = SupportBusiness.objects.all().filter(support_business_status="1").filter(support_business_author_id=support_business_author_id)
+    writing_support_business = SupportBusiness.objects.all().filter(Q(support_business_status="1")|Q(support_business_status=None)).filter(support_business_author_id=support_business_author_id)
     writing_set = []
     for support_business in writing_support_business:
         result_end = {}
@@ -1290,12 +1303,15 @@ def opr_vue_get_support_business_list(request):
 @csrf_exempt
 #--------postman정상작동
 def vue_get_startup_detail(request):
-    print(request.GET.get("id"))
+
     # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    if(request.GET.get("area")=="pub"):
-        startup = Startup.objects.get(id=request.GET.get("id"))
+
+
+    if (request.POST.get("area") == "pub"):
+        startup = Startup.objects.get(id=request.POST.get("id"))
     else:
-        startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
+        print(AdditionalUserInfo.objects.get(id=request.POST.get("id")))
+        startup = Startup.objects.get(user =AdditionalUserInfo.objects.get(id=request.POST.get("id")).user)
     result = {}
     result["back_img"] = startup.back_img
     result["logo"] = startup.logo
@@ -1418,7 +1434,9 @@ def vue_get_startup_detail(request):
             # temp["logo"] = rep.activity.startup.clip_thumbnail
             temp["company_activity_text"] = rep.company_activity_text
             temp["company_activity_created_at"] = rep.company_activity_created_at
+            temp["rep_author"] = rep.company_activity_author.user.username
             temp["id"] = rep.id
+
             obj["rep"].append(copy.deepcopy(temp))
         result["news"].append(copy.deepcopy(obj))
     print("end")
@@ -1440,61 +1458,61 @@ def vue_get_startup_detail(request):
 #-----------------------------------------------------------------------------------------------------------------------
 @csrf_exempt
 
-#----------postman 정상작동
 def vue_get_startup_detail_base(request):
-
-    # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-    result = {}
-
-    result["back_img"] = startup.back_img
-    result["logo"] = startup.logo
-    result["company_website"] = startup.company_website
-    result["company_youtube"] = startup.company_youtube
-    result["company_instagram"] = startup.company_instagram
-    result["company_facebook"] = startup.company_facebook
-    result["established_date"]= str(startup.established_date).split("T")[0]
-    result["select_tag"]= ""
-    result["repre_tel"] =startup.repre_tel
-    result["repre_email"] = startup.user.username
-    result["startup_id"] = startup.id
-    result["company_name"] = startup.company_name
-    result["repre_name"] = startup.repre_name
-    result["company_keyword"] = startup.company_keyword
-    result["company_kind"] = startup.company_kind
-
-    result["address_0"] = startup.address_0
-    result["address_1"] = startup.address_1
-    result["company_intro"] = startup.company_intro
-    result["information"] = {}
-    result["information"]["id"] = startup.id
-    result["information"]["tag"] = []
-    result['information']["company_website"] = startup.company_website
-    result['information']["repre_email"] = startup.user.username
-    try:
-        result["location"] = startup.address_0 + startup.address_1
-    except:
-        pass
-    result["service"] = []
-    result["tag"] = []
-    for f in startup.selected_company_filter_list.all():
-        result['information']["tag"].append(f.filter_name)
-    result["company_history"] = []
-    for history in startup.history_set.all():
-        obj = {}
-        obj["company_history_year"] = history.company_history_year
-        obj["company_history_month"] = history.company_history_month
-        obj["company_history_content"] = history.company_history_content
-        obj["id"] = history.id
-        result["company_history"].append(copy.deepcopy(obj))
-    result["intro_tag"] = []
-    result["select_tag"] = []
-    for f in startup.selected_company_filter_list.all():
-        if f.cat_0=="기본장르" or f.cat_0 =="영역" or f.cat_0=="조건":
-            result["intro_tag"].append(f.filter_name)
-            result["select_tag"].append(f.filter_name)
-
-    return JsonResponse(result)
+    print("hello")
+    #
+    # startup = AdditionalUserInfo.objects.get(id=request.POST.get("id")).user.startup
+    # result = {}
+    # print("왜 안되는 것인가!!!!!!!!!!!")
+    # result["back_img"] = startup.back_img
+    # result["logo"] = startup.logo
+    # result["company_website"] = startup.company_website
+    # result["company_youtube"] = startup.company_youtube
+    # result["company_instagram"] = startup.company_instagram
+    # result["company_facebook"] = startup.company_facebook
+    # result["established_date"]= str(startup.established_date).split("T")[0]
+    # result["select_tag"]= ""
+    # result["repre_tel"] =startup.repre_tel
+    # result["repre_email"] = startup.user.username
+    # result["startup_id"] = startup.id
+    # result["company_name"] = startup.company_name
+    # result["repre_name"] = startup.repre_name
+    # result["company_keyword"] = startup.company_keyword
+    # result["company_kind"] = startup.company_kind
+    #
+    # result["address_0"] = startup.address_0
+    # result["address_1"] = startup.address_1
+    # result["company_intro"] = startup.company_intro
+    # result["information"] = {}
+    # result["information"]["id"] = startup.id
+    # result["information"]["tag"] = []
+    # result['information']["company_website"] = startup.company_website
+    # result['information']["repre_email"] = startup.user.username
+    # try:
+    #     result["location"] = startup.address_0 + startup.address_1
+    # except:
+    #     pass
+    # result["service"] = []
+    # result["tag"] = []
+    # result["intro_tag"] = []
+    # result["select_tag"] = []
+    # for f in startup.selected_company_filter_list.all():
+    #     result['information']["tag"].append(f.filter_name)
+    #     if f.cat_0 == "기본장르" or f.cat_0 == "영역" or f.cat_0 == "조건":
+    #         print("필터를 넣습니다.")
+    #         result["intro_tag"].append(f.filter_name)
+    #         result["select_tag"].append(f.filter_name)
+    # result["company_history"] = []
+    # for history in startup.history_set.all():
+    #     obj = {}
+    #     obj["company_history_year"] = history.company_history_year
+    #     obj["company_history_month"] = history.company_history_month
+    #     obj["company_history_content"] = history.company_history_content
+    #     obj["id"] = history.id
+    #     result["company_history"].append(copy.deepcopy(obj))
+    #
+    #
+    # return JsonResponse(result)
 
 
 
@@ -1510,7 +1528,7 @@ def vue_get_startup_detail_base(request):
 
 @csrf_exempt
 def vue_signup(request):
-    form = LoginForm(request.POST)
+
     if request.method == "POST":
         form = LoginForm(request.POST)
         if form.is_valid() and \
@@ -1551,7 +1569,11 @@ def vue_signup(request):
         else:
             return JsonResponse({"result": "false","message":"유효하지 않은폼"})
 
-
+@csrf_exempt
+def token_check(request):
+    form = LoginForm(request.POST)
+    num = len(EmailConfirmation.objects.all().filter(email=form.cleaned_data["username"]).order_by("-id")[
+        0].confirmation_code == request.POST.get("confirmation_code"))
 
 
 # ---- (스타트업) 계정정보 ---------------------------------------------------------------------------------------------
@@ -2250,23 +2272,23 @@ def vue_update_startup_detail_base(request):
     startup.user.additionaluserinfo.save()
     startup.save()
     try:
-        History.objects.all().filter(startup=startup).delete()
+
         for history in rjd["company_history"]:
             if history.get("id"):
                 his = History.objects.get(id=history.get("id"))
             else:
                 his = History()
-            try:
-                his.company_history_month = history["company_history_month"]
-            except:
-                pass
-            if history["company_history_year"] !="" or  history["company_history_content"] !="":
+
+            print(history["company_history_year"])
+            print(history["company_history_content"])
+            if history["company_history_year"] !="" and  history["company_history_content"] !="":
                 his.company_history_year = history["company_history_year"]
                 his.company_history_content = history["company_history_content"]
                 his.startup = startup
 
                 his.save()
-    except:
+    except Exception as e:
+        print(e)
         pass
 
     startup.save()
@@ -2310,6 +2332,7 @@ def vue_update_startup_news_detail(request):
 
 
     for act in rjd["news"]:
+        print(act)
         if act.get("id"):
             activity = Activity.objects.get(id=act.get("id"))
         else:
@@ -2327,11 +2350,15 @@ def vue_update_startup_news_detail(request):
         activity_id = activity.id
         try:
             for rep in act["rep"]:
+                print(rep)
                 if rep.get("id"):
                     reply = Reply.objects.get(id=rep.get("id"))
                 else:
                     reply = Reply()
-                    reply.company_activity_author = Startup.objects.get(id=rjd["startup_id"])
+                try:
+                    reply.company_activity_author = Startup.objects.get(user=AdditionalUserInfo.objects.get(id=rep["user_id"]).user)
+                except:
+                    print("")
                 reply.company_activity_text = rep["company_activity_text"]
                 reply.activity_id = activity_id
                 reply.save()
@@ -2339,7 +2366,7 @@ def vue_update_startup_news_detail(request):
             print(e)
             pass
     vue_get_follow_startup(rjd["startup_id"])
-    return JsonResponse({"result":"ok"})
+    return JsonResponse({"result":"ok","email":AdditionalUserInfo.objects.get(id=rep["user_id"]).user.username})
 
 @csrf_exempt
 def vue_update_startup_detail(request):
@@ -3230,7 +3257,7 @@ def vue_set_activity_like(request):
         return HttpResponse(status=401)
     id = request.POST.get("id")
     target = request.POST.get("k")
-    ta = ActivityLike.objects.get_or_create(user=AdditionalUserInfo.objects.get(id=id), activity=Activity.objects.get(id=target))
+    ta = ActivityLike.objects.get_or_create(company_activity_user=AdditionalUserInfo.objects.get(id=id), activity=Activity.objects.get(id=target))
     return JsonResponse({"result":"ok"})
 
 
@@ -3592,6 +3619,8 @@ def handle_uploaded_file_right(file, filename, user_id):
 # --------[스타트업 지원서 불러오기 기능]-----------------------------------------------------------------------------
 @csrf_exempt
 def vue_get_application(request):
+    if gca_check_session(request)== False:
+        return HttpResponse(status=401)
     startup = AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
     support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
     app, created = Appliance.objects.get_or_create(startup=startup, support_business=support_business)
@@ -3795,7 +3824,7 @@ def vue_submit_support_business(request):
         return HttpResponse(status=401)
     support_business = SupportBusiness.objects.get(id=request.POST.get("id"))
     support_business.support_business_appliance_form = request.POST.get("meta")
-
+    support_business.support_business_update_at_ymdt = timezone.now()
     support_business.support_business_status=2
     support_business.save();
     return JsonResponse({"result":"ok"})
@@ -3843,13 +3872,14 @@ def get_startup_application(request):
                         temp["status"]= "승인대기"
                     if ap.support_business.support_business_status == "3":
                         temp["status"] = "공고중"
-                    if ap.support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+                    if ap.support_business.support_business_apply_end_ymdt < timezone.now() and ap.support_business.support_business_status == "3":  # 모집 종료 된 공고문
                         temp["status"] = "모집종료"
                     if ap.support_business.support_business_status == "5":  # 공고 종료 된 공고문
                         temp["status"] = "공고종료"
                     if ap.support_business.support_business_status == "6":  # 블라인드 공고문
                         temp["status"]= "블라인드"
-                except:
+                except Exception as e:
+                    print(e)
                     temp["status"] = "작성중"
 
                 temp["date"] = str(ap.support_business.support_business_pro_0_end_ymd).split(" ")[0]
@@ -3890,18 +3920,19 @@ def get_startup_application(request):
                 temp["status"] = "승인대기"
             if ap.support_business.support_business_status == "3":
                 temp["status"] = "공고중"
-            if ap.support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+            if ap.support_business.support_business_apply_end_ymdt < timezone.now() and ap.support_business.support_business_status == "3":  # 모집 종료 된 공고문
                 temp["status"] = "모집종료"
             if ap.support_business.support_business_status == "5":  # 공고 종료 된 공고문
                 temp["status"] = "공고종료"
             if ap.support_business.support_business_status == "6":  # 블라인드 공고문
                 temp["status"] = "블라인드"
-        except:
+        except Exception as e:
+            print(e)
             temp["status"] = "작성중"
         result["comp"].append(copy.deepcopy(temp))
 
     result["end"] = []
-    for ap in Appliance.objects.all().filter(startup=startup).filter(is_submit=True).filter(Q(support_business__support_business_status="4")|Q(support_business__support_business_apply_end_ymdt__lte=timezone.now())):
+    for ap in Appliance.objects.all().filter(startup=startup).filter(is_submit=True).filter(Q(support_business__support_business_status="5")):
 
         temp = {}
         temp["support_business_name"] = ap.support_business.support_business_name
@@ -3932,15 +3963,15 @@ def get_startup_application(request):
                 temp["status"] = "승인대기"
             if ap.support_business.support_business_status == "3":
                 temp["status"] = "공고중"
-            if ap.support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+            if ap.support_business.support_business_apply_end_ymdt < timezone.now() and ap.support_business.support_business_status == "3":  # 모집 종료 된 공고문
                 temp["status"] = "모집종료"
             if ap.support_business.support_business_status == "5":  # 공고 종료 된 공고문
                 temp["status"] = "공고종료"
             if ap.support_business.support_business_status == "6":  # 블라인드 공고문
                 temp["status"] = "블라인드"
-        except:
+        except Exception as e:
+            print(e)
             temp["status"] = "작성중"
-
         result["end"].append(copy.deepcopy(temp))
 
 
@@ -4661,16 +4692,16 @@ def get_support_business_static(request):
         company_kind=""
         local=[]
         for f in filter:
-            if filter.cat_1 == "기업형태":
-                aw_comtype_filter.append(filter.filter_name)
-                company_kind = filter.filter_name
-            if filter.cat_1 == "소재지":
-                aw_location_filter.append(filter.filter_name)
-                local.append(filter.filter_name)
-            if filter.cat_0 == "기본장르":
-                aw_genre_filter.append(filter.filter_name)
-            if filter.cat_0 == "영역":
-                aw_area_filter.append(filter.filter_name)
+            if f.cat_1 == "기업형태":
+                aw_comtype_filter.append(f.filter_name)
+                company_kind = f.filter_name
+            if f.cat_1 == "소재지":
+                aw_location_filter.append(f.filter_name)
+                local.append(f.filter_name)
+            if f.cat_0 == "기본장르":
+                aw_genre_filter.append(f.filter_name)
+            if f.cat_0 == "영역":
+                aw_area_filter.append(f.filter_name)
 
         startup = Startup.objects.get(id=aw["startup"])
         result["aw_startup_list"].append({
@@ -5610,6 +5641,7 @@ def vue_hit_path_log(request):
     course = Course.objects.get(id=request.POST.get("course"))
     path = Path.objects.get(id=request.POST.get("path"))
     HitPathLog.objects.get_or_create(hit_path_clip=clip, hit_path_user=ad, hit_path_course= course,hit_path=path)
+    return JsonResponse({"result":"ok"})
 
 
 @csrf_exempt
@@ -5691,7 +5723,6 @@ def vue_get_favorite_channel(request):
             t["path_user"] = p.path_user.mng_name
         t["path_total_play"] = p.path_total_play
         t["path_thumb"] = p.path_thumb
-        t["path_entry_point"] = "/channel/path/view/"+str(p.id) + "/" + str(p.path_course.all().first().id) + "/" + str(p.path_course.all().first().course_clips.all().first().id)
         result["path_list"].append(copy.deepcopy(t))
 
     for p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_course.all():
@@ -5707,10 +5738,6 @@ def vue_get_favorite_channel(request):
 
         t["course_total_play"] = p.course_total_play
         t["course_thumb"] = p.course_thumb
-        try:
-            t["course_entry_point"] = "/channel/course/view/"+str(p.id) + "/" + str(p.course_clips.all().first().id)
-        except:
-            pass
         result["course_list"].append(copy.deepcopy(t))
 
     for p in AdditionalUserInfo.objects.get(id=request.GET.get("gca_id")).favorite_clip.all():
@@ -5847,7 +5874,7 @@ def vue_upload_clip(request):
             path = handle_uploaded_file_movie(request.FILES['clip_file'], str(request.FILES['clip_file']),
                                                       rjd["user_id"])
             print("step 2")
-            clip.mov_address = path
+            clip.clip_mov_url = path
             print("path")
             #generate_thumbnail(path, "thumnail.png", 0,"128")
             print(getLength(path))
@@ -6692,7 +6719,7 @@ def vue_modify_clip(request):
             path = handle_uploaded_file_movie(request.FILES['clip_file'], str(request.FILES['clip_file']),
                                               rjd["user_id"])
             print("step 2")
-            clip.mov_address = path
+            clip.clip_mov_url = path
             print("path")
             # generate_thumbnail(path, "thumnail.png", 0,"128")
             print(getLength(path))
@@ -7084,14 +7111,17 @@ def vue_get_course(request):
 @csrf_exempt
 def vue_get_path(request):
     result={}
+    path_url_list = []
     try:
         clip= Clip.objects.get(id=request.POST.get("clip"))
         result["clip_title"] = clip.clip_title
         result["clip_youtube"] = clip.clip_youtube
-        result["mov_address"] = clip.mov_address
+        result["clip_mov_url"] = clip.clip_mov_url
         result["object"] = clip.clip_object
         result["course_info"] = clip.course_info
-
+        result["tag"] = []
+        for t in clip.clip_filter.all():
+            result["tag"].append(t.name)
         result["clip_id"] = clip.id
         result["int"] = len(clip.additionaluserinfo_set.all())
         result["clip_play"] = clip.clip_play
@@ -7152,7 +7182,7 @@ def vue_get_path(request):
                 temp["course_filter"].append(f.name)
 
             temp["clips"] = []
-            # 코스 항목 => 패스 항목 //
+            # 코스 항목 => 강좌 항목 //
             for clip in c.course_clips.all():
                 ttem = {}
                 ttem["index"] = k
@@ -7168,8 +7198,23 @@ def vue_get_path(request):
                 ttem["clip_info"] = clip.clip_info
                 ttem["clip_object"] = clip.clip_object
                 temp["clips"].append(copy.deepcopy(ttem))
+                path_url_list.append(str(p.id)+"/"+str(c.id)+"/"+str(clip.id))
+
             result["course"].append(copy.deepcopy(temp))
             result["another_course"].append(copy.deepcopy(temp))
+
+    path_index = path_url_list.index(str(p.id)+"/"+request.POST.get('course') + "/" +request.POST.get("clip"))
+    if path_index-1 >= 0:
+        prev_url = path_url_list[path_index-1]
+    else:
+        prev_url = ""
+    if path_index < len(path_url_list)-1:
+        next_url = path_url_list[path_index+1]
+    else :
+        next_url = ""
+    result["prev_url"] = prev_url
+    result["next_url"] = next_url
+
     temp= JsonResponse(result)
 #    temp_content= temp.content // json string
 #    //  update stat_table set json_data= temp_content where  stat_id=1;
@@ -7927,7 +7972,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "모집종료"
-
+        result_end["opr_status_num"] = support_business.support_business_status
 
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number = str(round(len(
@@ -7959,6 +8004,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
         result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number =  str(round(len(
                 Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
@@ -7991,7 +8037,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "작성중"
-
+        result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number =  str(round(len(
                 Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
@@ -8024,6 +8070,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id))
         result_end["opr_favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number = str(round(len(
                 Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
@@ -8056,6 +8103,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "공고종료"
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number = str(round(len(
                 Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
@@ -8087,6 +8135,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "블라인드"
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+        result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number =  str(round(len(
                 Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
@@ -8101,7 +8150,7 @@ def opr_vue_get_support_business_info(request):
                     is_submit=True))) + " : 1"
         blind_set.append(copy.deepcopy(result_end))
 
-    all_support_business = SupportBusiness.objects.all().filter( support_business_author_id__in=support_business_author_list).exclude(Q(support_business_status="1")|Q(support_business_status="6"))
+    all_support_business = SupportBusiness.objects.all().filter( support_business_author_id__in=support_business_author_list).exclude(Q(support_business_status=None)|Q(support_business_status=1)|Q(support_business_status=6))
 
     all_set = []
     for support_business in all_support_business:
@@ -8114,7 +8163,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_author"] = support_business.support_business_author.mng_name
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
-
+        result_end["opr_status_num"] = support_business.support_business_status
         try:
             result_end["author"] = support_business.support_business_author.mng_name
         except Exception as e:
@@ -8503,9 +8552,9 @@ def vue_get_registerd_channel(request):
             t["path_created_at"] = p.path_created_at
 
             try:
-                result["path_user"] = p.path_user.user.startup.repre_name
+                t["path_user"] = p.path_user.user.startup.repre_name
             except:
-                result["path_user"] = p.path_user.mng_name
+                t["path_user"] = p.path_user.mng_name
             t["path_total_play"] = p.path_total_play
             t["path_thumb"] = p.path_thumb
             t["path_percent"] = 0
@@ -8513,9 +8562,12 @@ def vue_get_registerd_channel(request):
             view_num = len(WatchHistory.objects.all().filter(
                 watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
                            .filter(watch_path=p)) * 6
-            per = round(view_num * 100 / origin_length,2)
-            if(per > 100):
-                per = 100
+            try:
+                per = round(view_num * 100 / origin_length,2)
+                if(per > 100):
+                    per = 100
+            except:
+                per=0
             t["path_percent"] = per
             t["path_entry_point"] = ""
             result["path_list"].append(copy.deepcopy(t))
@@ -8526,9 +8578,9 @@ def vue_get_registerd_channel(request):
             t["id"] = p.id
             t["course_created_at"] = p.course_created_at
             try:
-                result["course_user"] = p.course_user.user.startup.repre_name
+                t["course_user"] = p.course_user.user.startup.repre_name
             except:
-                result["course_user"] = p.course_user.mng_name
+                t["course_user"] = p.course_user.mng_name
             t["course_total_play"] = p.course_total_play
             t["course_thumb"] = p.course_thumb
 
@@ -8536,11 +8588,13 @@ def vue_get_registerd_channel(request):
             view_num = len(WatchHistory.objects.all().filter(
                 watch_user=AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))) \
                            .filter(watch_course=p)) * 6
-            per = round(view_num * 100 / origin_length,2)
-            if (per > 100):
-                per = 100
-            t["course_percent"] = per
-
+            try:
+                per = round(view_num * 100 / origin_length,2)
+                if (per > 100):
+                    per = 100
+                t["course_percent"] = per
+            except:
+                t["course_percent"]=""
             try:
                 t["course_entry_point"] = ""
             except:
@@ -8554,9 +8608,9 @@ def vue_get_registerd_channel(request):
             t["clip_created_at"] = p.clip_created_at
 
             try:
-                result["clip_user"] = p.clip_user.user.startup.repre_name
+                t["clip_user"] = p.clip_user.user.startup.repre_name
             except:
-                result["clip_user"] = p.clip_user.mng_name
+                t["clip_user"] = p.clip_user.mng_name
 
             t["clip_play"] = p.clip_play
             t["clip_thumb"] = p.clip_thumb
@@ -8569,7 +8623,6 @@ def vue_get_registerd_channel(request):
             if (per > 100):
                 per = 100
             t["clip_percent"] = per
-
             try:
                 t["clip_entry_point"] =""
             except:
@@ -9876,8 +9929,8 @@ def vue_get_path_all(request):
 # ------ postman정상작동
 @csrf_exempt
 def get_favorite_startup(request):
-    if gca_check_session(request)== False:
-        return HttpResponse('login_required')
+    if gca_check_session(request) == False:
+        return HttpResponse(status=401)
     usr_id= request.GET.get("gca_id")
     add  = AdditionalUserInfo.objects.get(id=usr_id)
     result=[]
@@ -10055,7 +10108,28 @@ def make_pdf(request):
             pdf.addPage(PdfFileReader(BytesIO(imgTemp.getvalue())).getPage(0))
             imgTemp = BytesIO()
             imgDoc = canvas.Canvas(imgTemp, pagesize=A4)
-
-
-
     pdf.write(open("output.pdf", "wb"))
+
+
+
+
+@csrf_exempt
+def appliance_delete_service(request):
+    if gca_check_session(request) == False:
+        return HttpResponse(status=401)
+    try:
+        print(request.POST)
+        print(ApplianceService.objects.get(id= request.POST.get("id")))
+        ApplianceService.objects.get(id=request.POST.get("id")).delete()
+    except Exception as e :
+        print(e)
+    return JsonResponse({"result":"ok"})
+
+
+@csrf_exempt
+def email_check(request):
+    num = len(User.objects.all().filter(username=request.POST.get("email")))
+    if num == 0:
+        return JsonResponse({"result":"ok"})
+    else:
+        return JsonResponse({"result": "exist"})

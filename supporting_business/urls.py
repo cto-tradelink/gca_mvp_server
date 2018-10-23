@@ -43,6 +43,10 @@ urlpatterns = [
         name='statics_my_support_business_ing_fav', ),
     url(r'statics_my_support_business_ing_appliance/', views_paging.statics_my_support_business_ing_appliance,
         name='statics_my_support_business_ing_appliance', ),
+    url(r'email_check', views.email_check,
+        name='email_check', ),
+    url(r'vue_get_name', views.vue_get_name, name='vue_get_name', ),
+
 
 
     # 기관관리자
@@ -126,7 +130,7 @@ urlpatterns = [
 
 
     # 로그인한 스타트업 유저
-    url(r'^vue_get_startup_detail/', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
+    url(r'^vue_get_startup_detail', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
     url(r'^vue_update_startup_detail/', views.vue_update_startup_detail, name='vue_update_startup_detail', ),
     url(r'^vue_update_startup_head_detail/', views.vue_update_startup_head_detail,name='vue_update_startup_head_detail', ),
     url(r'^vue_update_startup_with_application_1/', views.vue_update_startup_with_application_1,name='vue_update_startup_with_application_1', ),
@@ -155,7 +159,7 @@ urlpatterns = [
     url(r'^get_home_info/', views.get_home_info, name='get_home_info', ),
     url(r'^vue_get_startup_list_sample/', views.vue_get_startup_list_sample, name='vue_get_startup_list_sample', ),
     url(r'^vue_get_sns_auth/', views.vue_get_sns_auth, name='vue_get_sns_auth', ),
-    url(r'^vue_get_startup_detail/', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
+
     url(r'^vue_submit_application/', views.vue_submit_application, name='vue_submit_application', ),
     url(r'^toggle_favorite_clip/', views.toggle_favorite_clip, name='toggle_favorite_clip', ),
     url(r'^toggle_favorite_course/', views.toggle_favorite_course, name='toggle_favorite_course', ),
@@ -191,6 +195,14 @@ urlpatterns = [
     url(r'vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
     url(r'vue_get_register_channel/', views.vue_get_register_channel,
         name='vue_get_register_channel', ),
+    url(r'vue_update_startup_news_detail/', views.vue_update_startup_news_detail,
+        name='vue_update_startup_news_detail', ),
+    url(r'vue_del_history/', views.vue_del_history,
+        name='vue_del_history', ),
+    url(r'vue_channel_register_check/', views.vue_channel_register_check,name='vue_channel_register_check', ),
+    url(r'vue_get_registerd_channel/', views.vue_get_registerd_channel,name='vue_get_registerd_channel', ),
+    url(r'appliance_delete_service/', views.appliance_delete_service, name='appliance_delete_service', ),
+
 
 ]
 import debug_toolbar

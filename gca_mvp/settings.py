@@ -100,8 +100,8 @@ WSGI_APPLICATION = 'gca_mvp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'gca_db_dev_2',
-                        'USER': 'gca_admin',
+        'NAME': 'gca_db_dev_2',
+        'USER': 'gca_admin',
         'PASSWORD': 'gca1234!',
         'HOST': 'gca-db.ccol6zg20myn.ap-northeast-2.rds.amazonaws.com',
         'PORT': '3306',
