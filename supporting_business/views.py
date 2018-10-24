@@ -10112,7 +10112,7 @@ def make_pdf(request):
         else:
             print("세이브")
             height_sum=HEIGHT
-            can.showPage();
+            can.showPage()
 
 
     can.save()
