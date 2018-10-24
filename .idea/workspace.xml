@@ -2,8 +2,37 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/20018.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-0.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-1.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-2.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-3.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-4.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-5.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-6.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-7.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TESTIMG-8.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/Untitled.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/Untitled1.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/Untitled2.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/Untitled3.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_0.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_1.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_2.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_3.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_4.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_5.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_6.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_7.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/clip_8.jpg" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/db.sqlite3" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/google.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/requirements.txt" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/test.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/test.png" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/user_resume.jpg" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/output.pdf" afterPath="$PROJECT_DIR$/output.pdf" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gca_mvp/settings.py" afterPath="$PROJECT_DIR$/gca_mvp/settings.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/urls.py" afterPath="$PROJECT_DIR$/supporting_business/urls.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
     </list>
@@ -41,8 +70,8 @@
           <file leaf-file-name="models.py" pinned="true" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="4598">
-                  <caret line="247" column="53" lean-forward="false" selection-start-line="247" selection-start-column="53" selection-end-line="247" selection-end-column="53" />
+                <state relative-caret-position="8968">
+                  <caret line="477" column="13" lean-forward="false" selection-start-line="477" selection-start-column="4" selection-end-line="477" selection-end-column="13" />
                   <folding>
                     <element signature="e#2#30#0" expanded="true" />
                   </folding>
@@ -50,21 +79,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="settings.py" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/gca_mvp/settings.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1881">
-                  <caret line="100" column="16" lean-forward="false" selection-start-line="100" selection-start-column="16" selection-end-line="100" selection-end-column="16" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
           <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="165">
-                  <caret line="1460" column="31" lean-forward="false" selection-start-line="1460" selection-start-column="4" selection-end-line="1460" selection-end-column="31" />
+                <state relative-caret-position="646">
+                  <caret line="10124" column="12" lean-forward="true" selection-start-line="10124" selection-start-column="12" selection-end-line="10124" selection-end-column="12" />
                   <folding>
                     <element signature="e#24#59#0" expanded="true" />
                   </folding>
@@ -72,31 +91,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="models.hwp" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/supporting_business/models.hwp">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="2869">
-                  <caret line="151" column="26" lean-forward="false" selection-start-line="151" selection-start-column="4" selection-end-line="151" selection-end-column="26" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="annotation.py" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/supporting_business/annotation.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="169708">
-                  <caret line="8932" column="43" lean-forward="false" selection-start-line="8932" selection-start-column="43" selection-end-line="8932" selection-end-column="43" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
           <file leaf-file-name="admin.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/admin.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="437">
-                  <caret line="24" column="25" lean-forward="false" selection-start-line="24" selection-start-column="25" selection-end-line="24" selection-end-column="25" />
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
                   <folding>
                     <element signature="e#0#32#0" expanded="true" />
                   </folding>
@@ -104,8 +103,8 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="tests.py" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/supporting_business/tests.py">
+          <file leaf-file-name="apps.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/supporting_business/apps.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="0">
                   <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
@@ -114,11 +113,23 @@
               </provider>
             </entry>
           </file>
+          <file leaf-file-name="forms.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/supporting_business/forms.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                  <folding>
+                    <element signature="e#0#24#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
           <file leaf-file-name="urls.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="165">
-                  <caret line="178" column="55" lean-forward="false" selection-start-line="178" selection-start-column="55" selection-end-line="178" selection-end-column="55" />
+                <state relative-caret-position="836">
+                  <caret line="48" column="51" lean-forward="false" selection-start-line="48" selection-start-column="51" selection-end-line="48" selection-end-column="51" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -126,12 +137,24 @@
               </provider>
             </entry>
           </file>
+          <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/supporting_business/__init__.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
           <file leaf-file-name="views_paging.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/views_paging.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="235">
-                  <caret line="14" column="36" lean-forward="true" selection-start-line="14" selection-start-column="36" selection-end-line="14" selection-end-column="36" />
-                  <folding />
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                  <folding>
+                    <element signature="e#24#59#0" expanded="true" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -144,6 +167,16 @@
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="wsgi.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/gca_mvp/wsgi.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                  <folding />
                 </state>
               </provider>
             </entry>
@@ -178,17 +211,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>del_history</find>
-      <find>add_rep</find>
-      <find>vue_get_register_channel</find>
-      <find>vue_channel_register_check</find>
-      <find>ActivityLike</find>
-      <find>vue_set_activity_like</find>
-      <find>vue_get_path</find>
-      <find>vue_hit_pa</find>
-      <find>vue_get_registerd_channel</find>
-      <find>cert_email</find>
-      <find>email</find>
       <find>vue_my_favorite_set</find>
       <find>1751</find>
       <find>SAVE_FILTER</find>
@@ -207,7 +229,18 @@
       <find>intro_tag</find>
       <find>vue_get_start</find>
       <find>vue_get_startup_detail</find>
+      <find>vue_update_startup_detail_base</find>
+      <find>get_support_business_static</find>
+      <find>excel_down_statics</find>
+      <find>vue_get_support_business_select_name_3</find>
+      <find>appliance</find>
+      <find>vue_get_support_business_appliance</find>
+      <find>get_support_business_favorite_startup</find>
       <find>vue_get_startup_detail_base</find>
+      <find>vue_get_clip</find>
+      <find>pdf</find>
+      <find>clip</find>
+      <find>make_pdf</find>
     </findStrings>
     <replaceStrings>
       <replace>gconnect.or.kr</replace>
@@ -308,11 +341,11 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="-1879" />
-    <option name="y" value="70" />
-    <option name="width" value="1915" />
-    <option name="height" value="886" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-1479" />
+    <option name="y" value="-38" />
+    <option name="width" value="1676" />
+    <option name="height" value="829" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -330,7 +363,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
       <pane id="Scope">
         <subPane subId="Project Files">
           <expand>
@@ -352,6 +384,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -448,19 +481,19 @@
     <option name="mySupportQtDebugging" value="false" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business" />
-      <recent name="C:\Users\user\PycharmProjects\gca_mvp\media\gca" />
-      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\js" />
-      <recent name="C:\Users\user\PycharmProjects\gca_mvp\templates\pc\manager" />
-      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\img" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\migrations" />
       <recent name="C:\Users\user\PycharmProjects\gca_mvp\media\gca" />
       <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\css" />
       <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\js" />
       <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\templatetags" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business" />
+      <recent name="C:\Users\user\PycharmProjects\gca_mvp\media\gca" />
+      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\js" />
+      <recent name="C:\Users\user\PycharmProjects\gca_mvp\templates\pc\manager" />
+      <recent name="C:\Users\user\PycharmProjects\gca_mvp\supporting_business\static\img" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -715,7 +748,14 @@
       <option name="project" value="LOCAL" />
       <updated>1539885981210</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="유저관리 수정">
+      <created>1540300152286</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1540300152286</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TodoView">
@@ -728,17 +768,17 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1879" y="70" width="1915" height="886" extended-state="0" />
+    <frame x="-1928" y="-38" width="1936" height="1096" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3284091" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16179775" sideWeight="0.49755502" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.192" sideWeight="0.502445" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15" sideWeight="0.502445" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.325" sideWeight="0.4978678" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2423913" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.44269663" sideWeight="0.51759064" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.021855012" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18113208" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.11140725" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.08635394" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24946237" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.09488273" sideWeight="0.18695652" order="1" side_tool="true" content_ui="tabs" />
@@ -925,10 +965,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0023_auto_20180903_1320.py" />
-    <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0024_auto_20180903_1324.py" />
-    <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0025_auto_20180903_1637.py" />
-    <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0026_auto_20180904_1633.py" />
     <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0028_auto_20180904_1638.py" />
     <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0029_auto_20180906_0444.py" />
     <entry file="file://$PROJECT_DIR$/supporting_business/migrations/0031_auto_20180906_1230.py" />
@@ -1014,39 +1050,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/gca_mvp/urls.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#41#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/annotation.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="169708">
           <caret line="8932" column="43" lean-forward="false" selection-start-line="8932" selection-start-column="43" selection-end-line="8932" selection-end-column="43" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../gca_mvp_server/gca_mvp/supporting_business/views.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="544">
-          <caret line="84" column="0" lean-forward="false" selection-start-line="83" selection-start-column="0" selection-end-line="84" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/admin.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="437">
-          <caret line="24" column="25" lean-forward="false" selection-start-line="24" selection-start-column="25" selection-end-line="24" selection-end-column="25" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1066,46 +1073,109 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4598">
-          <caret line="247" column="53" lean-forward="false" selection-start-line="247" selection-start-column="53" selection-end-line="247" selection-end-column="53" />
-          <folding>
-            <element signature="e#2#30#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/models.hwp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2869">
           <caret line="151" column="26" lean-forward="false" selection-start-line="151" selection-start-column="4" selection-end-line="151" selection-end-column="26" />
-          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
+    <entry file="file://$PROJECT_DIR$/gca_mvp/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="178" column="55" lean-forward="false" selection-start-line="178" selection-start-column="55" selection-end-line="178" selection-end-column="55" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/gca_mvp/wsgi.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/admin.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#32#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/apps.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/forms.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8968">
+          <caret line="477" column="13" lean-forward="false" selection-start-line="477" selection-start-column="4" selection-end-line="477" selection-end-column="13" />
+          <folding>
+            <element signature="e#2#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/views_paging.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="235">
-          <caret line="14" column="36" lean-forward="true" selection-start-line="14" selection-start-column="36" selection-end-line="14" selection-end-column="36" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#24#59#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="836">
+          <caret line="48" column="51" lean-forward="false" selection-start-line="48" selection-start-column="51" selection-end-line="48" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#41#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../gca_mvp_server/gca_mvp/supporting_business/views.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="544">
+          <caret line="84" column="0" lean-forward="false" selection-start-line="83" selection-start-column="0" selection-end-line="84" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="1460" column="31" lean-forward="false" selection-start-line="1460" selection-start-column="4" selection-end-line="1460" selection-end-column="31" />
+        <state relative-caret-position="646">
+          <caret line="10124" column="12" lean-forward="true" selection-start-line="10124" selection-start-column="12" selection-end-line="10124" selection-end-column="12" />
           <folding>
             <element signature="e#24#59#0" expanded="true" />
           </folding>

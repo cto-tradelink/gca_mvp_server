@@ -46,7 +46,7 @@ urlpatterns = [
     url(r'email_check', views.email_check,
         name='email_check', ),
     url(r'vue_get_name', views.vue_get_name, name='vue_get_name', ),
-
+    url(r'make_pdf', views.make_pdf, name='make_pdf', ),
 
 
     # 기관관리자
@@ -176,8 +176,9 @@ urlpatterns = [
     url(r'^vue_get_all_favorite/', views.vue_get_all_favorite, name='vue_get_all_favorite', ),
     url(r'^hit_support_business/', views.hit_support_business, name='hit_support_business', ),
     url(r'^vue_set_usr_info/', views.vue_set_usr_info, name='vue_set_usr_info', ),
-    url(r'^vue_get_startup_detail_base/', views.vue_get_startup_detail_base, name='vue_get_startup_detail_base', ),
+
     url(r'^vue_update_startup_detail_base/', views.vue_update_startup_detail_base, name='vue_update_startup_detail_base', ),
+    url(r'^vue_get_startup_detail_base/', views.vue_get_startup_detail_base, name='vue_get_startup_detail_base', ),
     url(r'^get_unread_alarm/', views.get_unread_alarm, name='get_unread_alarm', ),
     url(r'save_filter/', views.save_filter, name='save_filter', ),
     url(r'vue_get_course_all/', views.vue_get_course_all, name='vue_get_course_all', ),

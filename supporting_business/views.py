@@ -1305,11 +1305,12 @@ def opr_vue_get_support_business_list(request):
 def vue_get_startup_detail(request):
 
     # startup= AdditionalUserInfo.objects.get(id=request.GET.get("id")).user.startup
-
+    print("야!")
 
     if (request.POST.get("area") == "pub"):
         startup = Startup.objects.get(id=request.POST.get("id"))
     else:
+        print(request.POST)
         print(AdditionalUserInfo.objects.get(id=request.POST.get("id")))
         startup = Startup.objects.get(user =AdditionalUserInfo.objects.get(id=request.POST.get("id")).user)
     result = {}
@@ -1334,8 +1335,15 @@ def vue_get_startup_detail(request):
     result["repre_email"] = startup.user.username
     print("here")
     print(result["repre_email"])
-    # result["logo"] = startup.clip_thumbnail_selected_company_filter_list
 
+    result["intro_tag"] = []
+    result["select_tag"] = []
+    for f in startup.selected_company_filter_list.all():
+
+        if f.cat_0 == "기본장르" or f.cat_0 == "영역" or f.cat_0 == "조건":
+            print("필터를 넣습니다.")
+            result["intro_tag"].append(f.filter_name)
+            result["select_tag"].append(f.filter_name)
     result["information"] = {}
     result["information"]["id"] = startup.id
     result["information"]["tag"] = []
@@ -2266,7 +2274,7 @@ def vue_update_startup_detail_base(request):
     for f in startup.selected_company_filter_list.all():
         if f.cat_0 =="영역" or f.cat_0 =="기본장르" or f.cat_0 =="조건":
             startup.selected_company_filter_list.remove(f)
-    for k in rjd["select_tag"]:
+    for k in rjd["intro_tag"]:
         print(k)
         startup.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=k))
     startup.user.additionaluserinfo.save()
@@ -4024,13 +4032,12 @@ def vue_get_support_business_appliance(request):
         temp={}
         temp["index"] = k
         k=k+1
-        temp["company_name"] = a.company_name
-        temp["company_kind"] = a.company_kind
+        temp["company_name"] = a.startup.company_name
+        temp["company_kind"] = a.startup.company_kind
         temp["id"] = a.id
-        temp["repre_name"] = a.repre_name
-        temp["repre_email"] = a.repre_email
-
-        temp["repre_tel"] = a.repre_tel
+        temp["repre_name"] = a.startup.repre_name
+        temp["repre_email"] = a.startup.repre_email
+        temp["repre_tel"] = a.startup.repre_tel
         temp["appliance_update_at_ymdt"] = a.appliance_update_at_ymdt
         temp["down_path"] = a.id
         result.append(copy.deepcopy(temp))
@@ -4347,15 +4354,14 @@ def get_support_business_static(request):
     # 매니저의 해당 지원사업의 좋아요 데이터 : [공고문 id /날짜 / 숫자 ] list1
     support_business_detail_favorite_date_ymd = []
     favored_support_business=[]
-    for date_dict in FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).filter(favored_timestamp__gte=str(support_business.support_business_update_at_ymdt).split(" ")[0])\
-            .values("favored_timestamp").order_by("-favored_timestamp").distinct():
-        if date_dict["favored_timestamp"] not in support_business_detail_favorite_date_ymd:
-            support_business_detail_favorite_date_ymd.append(date_dict["favored_timestamp"])
+    for date_dict in FavoriteLog.objects.all().filter(support_business=support_business).values("date").order_by("-date").distinct():
+        if date_dict["date"] not in support_business_detail_favorite_date_ymd:
+            support_business_detail_favorite_date_ymd.append(date_dict["date"])
     for date in support_business_detail_favorite_date_ymd:
         favored_support_business.append(
             {
                 "date": date,
-                "number": len(FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).filter(favored_timestamp=date))
+                "number": len(FavoriteLog.objects.all().filter(support_business=support_business).filter(date=date))
             }
         )
     result["favored_support_business"] = favored_support_business
@@ -4363,9 +4369,9 @@ def get_support_business_static(request):
 
 # =======[매니저 my 지원사업 좋아요 누른 스타트업의 id, 필터 추출]====== : 완료  list2
     startup_list = []
-    for favored_startup in FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).values("favored_usr").distinct():
+    for favored_startup in FavoriteLog.objects.all().filter(support_business=support_business).values("user").distinct():
         print(favored_startup)
-        startup_list.append( Startup.objects.get(user= AdditionalUserInfo.objects.get(id=favored_startup["favored_usr"]).user))
+        startup_list.append( Startup.objects.get(user= AdditionalUserInfo.objects.get(id=favored_startup["user"]).user))
     favored_comtype_filter = []
     favored_location_filter = []
     favored_genre_filter =[]
@@ -4910,7 +4916,7 @@ def vue_get_support_business_select_name_3(request):
         return HttpResponse("{}")
     mng = AdditionalUserInfo.objects.all().get(id=request.GET.get("gca_id"))
     support_business_list = []
-    for sp in SupportBusiness.objects.all().exclude(support_business_author=mng).filter( Q(support_business_status="3")):
+    for sp in SupportBusiness.objects.all().exclude(support_business_author=mng).filter( Q(support_business_status="3")).filter(support_business_apply_end_ymdt__gte=timezone.now()):
         support_business_list.append({
             "name":sp.support_business_name,
             "author": sp.support_business_author.mng_name,
@@ -4969,7 +4975,10 @@ def excel_down_statics(request):
         ws.write(index, 4  , ",".join(local) )
         ws.write(index, 5, startup.company_hold_employee)
         ws.write(index, 6, startup.repre_tel)
-        ws.write(index, 7, str(ap.appliance_update_at_ymdt).split("T")[0])
+        try:
+            ws.write(index, 7, str(ap.appliance_update_at_ymdt).split("T")[0])
+        except:
+            ws.write(index, 7, '')
         index=index+1
     wb.save(response)
     return response
@@ -7258,8 +7267,11 @@ def  get_support_business_favorite_startup(request):
     index = 1
     for st in item:
         kind = st.user.startup.selected_company_filter_list
+        print(kind)
         kind_l = ""
+        print(st.user.username)
         for k in kind.all():
+            print(k.filter_name)
             if( k.cat_1 =="기업형태"):
                 kind_l = k.filter_name
         result.append({
@@ -10042,8 +10054,6 @@ from reportlab.lib.pagesizes import A4
 from decimal import Decimal
 @csrf_exempt
 def make_pdf(request):
-
-
     imgdata =request.POST.get("data")
     binary_data = a2b_base64(imgdata.split(",")[1])
     filename = 'media/test.png'  # I assume you have a way of picking unique filenames
@@ -10056,42 +10066,39 @@ def make_pdf(request):
     print(request.POST.get("height_array"))
     height_arr = request.POST.get("height_array").split(",")
 
-    for i in range(0,9):
-        print(sum(int(j) for j in height_arr[:i+1]))
-        box = ( 100, sum(int(j) for j in height_arr[:i]), imgwidth,sum(int(j) for j in height_arr[:i+1]))
-        percent=0.6
+    for i in range(0,len(height_arr)-1):
+        print(height_arr[i])
+        print(str(height_arr[i+1]) + "///")
+        box = ( 130, int(height_arr[i]), imgwidth, int(height_arr[i+1]))
+        percent=1
         a = im.crop(box)
-        print(i)
-
         try:
-            a = a.resize((int(imgwidth * percent), int(int(height_arr[(i + 1)]) * percent)))
+            a = a.resize((int(imgwidth * percent), int( (int(height_arr[(i +1)]) - int(height_arr[(i)]) ) * percent)))
             a.save(os.path.join("TESTIMG-%s.png" % k))
             k=k+1
         except:
-
             box = (0, i, imgwidth, imgheight)
             a = im.crop(box)
             a = a.resize((int(imgwidth * percent), int(int(height_arr[(8)]) * percent)))
             a.save(os.path.join("TESTIMG-%s.png" % k))
 
-
     path = os.path.join('TESTIMG-{0}.png')
-    pdf = PdfFileWriter()
-
 
     # Using ReportLab Canvas to insert image into PDF
-
-
     # Draw image on Canvas and save PDF in buffer
     inner=True
     start_img_num = 0
     HEIGHT = 800
     height_sum=HEIGHT
     num=0
-    imgTemp = BytesIO()
-    imgDoc = canvas.Canvas(imgTemp, pagesize=A4)
-    while inner:
+    packet = BytesIO()
+    can = canvas.Canvas(packet, pagesize=A4)
+    output_stream = open("output.pdf", "wb")
+    output = PdfFileWriter()
 
+    while inner:
+        print("출력")
+        print(height_sum)
         try:
             height_sum  = height_sum - int( (int(height_arr[num+1])*percent))
         except:
@@ -10099,16 +10106,18 @@ def make_pdf(request):
             break;
 
         if height_sum > 0:
-            imgDoc.drawImage(path.format(num), 20, height_sum, width=imgwidth, height= int(int(height_arr[num+1])*percent),)
+            can.drawImage(path.format(num), 20, height_sum, width=imgwidth, height= int(int(height_arr[num+1])*percent),)
             num=num+1
 
         else:
+            print("세이브")
             height_sum=HEIGHT
-            imgDoc.save()
-            pdf.addPage(PdfFileReader(BytesIO(imgTemp.getvalue())).getPage(0))
-            imgTemp = BytesIO()
-            imgDoc = canvas.Canvas(imgTemp, pagesize=A4)
-    pdf.write(open("output.pdf", "wb"))
+            can.showPage()
+
+
+    can.save()
+    output.write(output_stream)
+    output_stream.close()
 
 
 
