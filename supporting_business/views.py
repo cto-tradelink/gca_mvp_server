@@ -953,7 +953,7 @@ def vue_get_support_business_info(request):
         result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["status"] = "모집종료"
-
+        result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number = str(round(len(
@@ -1043,7 +1043,7 @@ def vue_get_support_business_info(request):
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["status"] = "공고중"
-
+        result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
         result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
@@ -1070,6 +1070,7 @@ def vue_get_support_business_info(request):
         result_end["id"] = support_business.id
         result_end['support_business_name'] = support_business.support_business_name
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["support_business_poster"] = support_business.support_business_poster
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["author"] = support_business.support_business_author.mng_name
@@ -1105,6 +1106,7 @@ def vue_get_support_business_info(request):
         result_end["apply_num"] = len(Appliance.objects.all().filter(support_business_id=support_business.id).filter(is_submit=True))
         result_end["favorite"] = len(AdditionalUserInfo.objects.all().filter(favorite=support_business))
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
+        result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["status"] = "블라인드"
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
@@ -1129,6 +1131,7 @@ def vue_get_support_business_info(request):
         result_end["support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
         result_end['support_business_name'] = support_business.support_business_name
         result_end["support_business_poster"] = support_business.support_business_poster
+        result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         try:
             result_end["author"] = support_business.support_business_author.mng_name
@@ -8009,6 +8012,7 @@ def opr_vue_get_support_business_info(request):
         result_end['opr_support_business_name'] = support_business.support_business_name
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+
         result_end['opr_support_business_poster'] = support_business.support_business_poster
         result_end["opr_status"] = "승인대기"
         result_end["opr_author"] = support_business.support_business_author.mng_name
@@ -8114,7 +8118,7 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "공고종료"
-        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+
         result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
             number = str(round(len(
@@ -8139,6 +8143,7 @@ def opr_vue_get_support_business_info(request):
         result_end['opr_support_business_name'] = support_business.support_business_name
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_author"] = support_business.support_business_author.mng_name
         result_end['opr_support_business_poster'] = support_business.support_business_poster
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
@@ -8174,7 +8179,6 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_author"] = support_business.support_business_author.mng_name
-        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_status_num"] = support_business.support_business_status
         try:
             result_end["author"] = support_business.support_business_author.mng_name
@@ -10046,7 +10050,7 @@ def vue_login_check(request):
 from PIL import Image
 
 # -*- coding: utf-8 -*-
-from io import BytesIO
+import io
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -10088,36 +10092,42 @@ def make_pdf(request):
     # Draw image on Canvas and save PDF in buffer
     inner=True
     start_img_num = 0
-    HEIGHT = 800
+    HEIGHT = 1200
     height_sum=HEIGHT
     num=0
-    packet = BytesIO()
+    packet = io.BytesIO()
     can = canvas.Canvas(packet, pagesize=A4)
-    output_stream = open("output.pdf", "wb")
+    output_stream = open("final.pdf", "wb")
     output = PdfFileWriter()
 
     while inner:
         print("출력")
         print(height_sum)
         try:
-            height_sum  = height_sum - int( (int(height_arr[num+1])*percent))
+            height_sum  = height_sum - int( (int(height_arr[num+1])*percent) - (int(height_arr[num])*percent))
         except:
             inner=False
             break;
-
+        if num == 8:
+            break;
         if height_sum > 0:
+
             can.drawImage(path.format(num), 20, height_sum, width=imgwidth, height= int(int(height_arr[num+1])*percent),)
             num=num+1
-
         else:
             print("세이브")
+            can.save()
+
+            new_pdf = PdfFileReader(io.BytesIO(packet.getvalue()))
+            existing_pdf = PdfFileReader("20018.pdf")
+            page = existing_pdf.getPage(0)
+            page.mergePage(new_pdf.getPage(0))
+            output.addPage(page)
             height_sum=HEIGHT
-            can.showPage()
-
-
-    can.save()
-    output.write(output_stream)
-    output_stream.close()
+            can = canvas.Canvas(packet, pagesize=A4)
+            packet=""
+            output.write(output_stream)
+            output_stream.close()
 
 
 
