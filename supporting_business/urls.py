@@ -14,7 +14,7 @@ urlpatterns = [
     url(r'^vue_get_startup_public_detail/', views.vue_get_startup_public_detail, name='vue_get_startup_public_detail', ),
     url(r'^vue_home_support_business/', views.vue_home_support_business, name='vue_home_support_business', ),
     url(r'^get_support_business_detail', views.get_support_business_detail, name='get_support_business_detail', ),
-    url(r'^vue_get_filter/', views.vue_get_filter, name='vue_get_filter', ),
+    url(r'^vue_get_filter', views.vue_get_filter, name='vue_get_filter', ),
     url(r'^similar_support_business/', views.similar_support_business, name='similar_support_business', ),
     url(r'^vue_get_startup_list/', views.vue_get_startup_list, name='vue_get_startup_list', ),
     url(r'^vue_login_user/', views.vue_login_user, name='vue_login_user', ),
@@ -203,7 +203,7 @@ urlpatterns = [
     url(r'vue_channel_register_check/', views.vue_channel_register_check,name='vue_channel_register_check', ),
     url(r'vue_get_registerd_channel/', views.vue_get_registerd_channel,name='vue_get_registerd_channel', ),
     url(r'appliance_delete_service/', views.appliance_delete_service, name='appliance_delete_service', ),
-
+    url(r'get_usr_filter', views.get_usr_filter, name='get_usr_filter', ),
 
 ]
 import debug_toolbar

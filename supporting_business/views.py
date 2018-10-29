@@ -68,7 +68,6 @@ from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 
 @csrf_exempt
 def is_in_favor_list(target,id, additionaluserinfo_id):
-    print("clip list check")
     try:
         user = AdditionalUserInfo.objects.get(id=additionaluserinfo_id)
 
@@ -415,11 +414,11 @@ def save_filter(request):
 
     # if gca_check_session(request) == False:
     #     return HttpResponse(status=401)
-
+    print(request.POST.get("filter").split(","))
     id=request.POST.get("id")
 
     startup = Startup.objects.all().get(user=AdditionalUserInfo.objects.get(id=id).user)
-    startup.selected_company_filter_list.remove()
+    startup.selected_company_filter_list.clear()
     for filter in request.POST.get("filter").split(","):
         if  '명' in filter:
             filter = filter.replace("명","").replace(" ","")
@@ -427,10 +426,10 @@ def save_filter(request):
             startup.save()
         else:
             startup.selected_company_filter_list.add(SupportBusinessFilter.objects.get(filter_name=filter))
-    print(id)
-    print(startup.selected_company_filter_list)
-
-    return JsonResponse({"result":"success"})
+    filter_list = []
+    for filter in startup.selected_company_filter_list.all():
+        filter_list.append(filter.filter_name)
+    return JsonResponse({"result":"success","data":filter_list})
 #----------------------------------------------------------------------------------------------------------------------
 # <<가. 회원별 권한 설정>>
 # <목표> 회원별 권한 설정 및 보이는 페이지 정리
@@ -687,7 +686,7 @@ def vue_get_support_business_by_author(request):
     if request.GET.get("support_business_status")=="ing":
         support_business = support_business.filter(support_business_status=3).filter(support_business_apply_end_ymdt__gte=timezone.now())
     else:
-        support_business = support_business.filter(support_business_status__in=[3,4,5,]).filter(Q(support_business_apply_end_ymdt__lte=timezone.now())).exclude(support_business_status=2)
+        support_business = support_business.filter(support_business_status__in=[3,4,5,]).filter(Q(support_business_apply_end_ymdt__lte=timezone.now()))
     result=[]
     for s in support_business:
         result.append({
@@ -1576,9 +1575,9 @@ def vue_signup(request):
 
                 return JsonResponse({"result":"ok","id":user.additionaluserinfo.id, "user":"USR", "code":"USR", "session_key":session.session_key})
             else:
-                return JsonResponse({"result":"false","message":"이미 가입"})
+                return JsonResponse({"result":"false","message":"이미가입"})
         else:
-            return JsonResponse({"result": "false","message":"유효하지 않은폼"})
+            return JsonResponse({"result": "false","message":"인증번호"})
 
 @csrf_exempt
 def token_check(request):
@@ -1732,20 +1731,40 @@ def vue_get_follow_startup(st_id):
 @csrf_exempt
 def get_unread_alarm(request):
     try:
-        user_id = request.GET.get("id")
+        user_id = request.GET.get("gca_id")
         user = AdditionalUserInfo.objects.get(id=user_id)
         alarm_set = []
+        print(user)
         for a in Alarm.objects.filter(user=user).filter(alarm_read=False):
-            alarm_set.append({
-                "id":a.id,
-                "alarm_content":a.alarm_content,
-                "alarm_origin_support_business":a.alarm_origin_support_business_id,
-                "alarm_origin_st":a.alarm_origin_st_id,
-                "alarm_created_at":a.alarm_created_at,
-            })
-    except:
+            kind=""
+            if a.alarm_origin_support_business_id == None:
+                kind = "startup"
+                alarm_set.append({
+                    "id": a.id,
+                    "alarm_kind": kind,
+                    "alarm_content": a.alarm_content,
+                    "alarm_origin_support_business": "",
+                    "alarm_origin_support_business_id": "",
+                    "alarm_origin_st": a.alarm_origin_st.company_name,
+                    "alarm_origin_st_id": a.alarm_origin_st_id,
+                    "alarm_created_at": a.alarm_created_at,
+                })
+            else:
+                kind ="support_business"
+                alarm_set.append({
+                    "id":a.id,
+                    "alarm_kind":kind,
+                    "alarm_content":a.alarm_content,
+                    "alarm_origin_support_business":a.alarm_origin_support_business.support_business_name,
+                    "alarm_origin_support_business_id": a.alarm_origin_support_business_id,
+                    "alarm_origin_st":"",
+                    "alarm_origin_st_id": "",
+                    "alarm_created_at":a.alarm_created_at,
+                })
+    except Exception as e :
+        print(e)
         pass
-        return  ""
+
     return JsonResponse((alarm_set), safe=False)
 
 
@@ -1885,6 +1904,7 @@ def vue_set_mng_support_business_step_1(request):
         pass
     support_business.save()
     print(support_business.id)
+
     return JsonResponse({"result":support_business.id})
 
 
@@ -3110,8 +3130,24 @@ def vue_get_support_business_name(request):
     temp["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
     temp["support_business_pro_0_open_ymd"] = support_business.support_business_pro_0_open_ymd
 
+    try:
+        if support_business.support_business_status == "4":  # 작성중인 공고문
+            temp["status"] = "모집종료"
+        if support_business.support_business_status == "1":  # 작성중인 공고문
+            temp["status"] = "작성중"
+        if support_business.support_business_status == "2":  # 승인대기중인 공고문
+            temp["status"] = "승인대기"
+        if support_business.support_business_status == "3":
+            temp["status"] = "공고중"
+        if support_business.support_business_apply_end_ymdt < timezone.now() and support_business.support_business_status == "3":  # 모집 종료 된 공고문
+            temp["status"] = "모집종료"
+        if support_business.support_business_status == "5":  # 공고 종료 된 공고문
+            temp["status"] = "공고종료"
+        if support_business.support_business_status == "6":  # 블라인드 공고문
+            temp["status"] = "블라인드"
+    except Exception as e:
+        temp["status"] = "작성중"
     temp["comp"]=""
-
 
     if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
         number = str(round(len(
@@ -3844,8 +3880,8 @@ def vue_submit_support_business(request):
 # --------[스타트업 지원서 불러오기 ]-------
 @csrf_exempt
 def get_startup_application(request):
-    # if gca_check_session(request)== False:
-    #     return HttpResponse("{}")
+    if gca_check_session(request)== False:
+        return HttpResponse("{}")
 
     ad_user = AdditionalUserInfo.objects.get(id=request.POST.get("id"))
     user = ad_user.user
@@ -3866,7 +3902,7 @@ def get_startup_application(request):
                 temp["support_business_poster"] = ap.support_business.support_business_poster
                 temp["support_business_apply_start_ymd"] = ap.support_business.support_business_apply_start_ymd
                 temp["support_business_apply_end_ymdt"] = ap.support_business.support_business_apply_end_ymdt
-                if ap.support_business.support_business_recruit_size == "" or  ap.support_business.support_business_recruit_size== "0" :
+                if ap.support_business.support_business_recruit_size == "" or ap.support_business.support_business_recruit_size == None or  ap.support_business.support_business_recruit_size== "0" :
                     temp["comp"] =  str(len(Appliance.objects.all().filter(support_business=ap.support_business).filter(is_submit=True))) +" : 1"
                 else:
                     #temp["comp"] = len(Appliance.objects.all().filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
@@ -3905,13 +3941,15 @@ def get_startup_application(request):
         temp = {}
         temp["support_business_name"] = ap.support_business.support_business_name
         temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
-        if ap.support_business.support_business_recruit_size == "" or ap.support_business.support_business_recruit_size == "0":
+        if ap.support_business.support_business_recruit_size == "" or  ap.support_business.support_business_recruit_size == None  or ap.support_business.support_business_recruit_size == "0":
             temp["comp"] = str(
-                len(Appliance.objects.all().filter(support_business=ap.startup).filter(is_submit=True))) + " : 1"
+                len(Appliance.objects.all().filter(support_business=ap.support_business).filter(is_submit=True))) + " : 1"
         else:
+
+
             # temp["comp"] = len(Appliance.objects.all().filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
             number = str( round((len(Appliance.objects.all().filter(support_business=ap.support_business).filter(
-                is_submit=True))) / int(ap.support_business.support_business_recruit_size), 1) )
+                is_submit=True))) / int(ap.support_business.support_business_recruit_size ), 1) )
             if number == "0.0":
                 number ="0"
             temp["comp"] = number + " : 1"
@@ -3948,13 +3986,13 @@ def get_startup_application(request):
         temp = {}
         temp["support_business_name"] = ap.support_business.support_business_name
         temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
-        if ap.support_business.support_business_recruit_size == "" or ap.support_business.support_business_recruit_size == "0":
+        if ap.support_business.support_business_recruit_size == ""or  ap.support_business.support_business_recruit_size == None  or ap.support_business.support_business_recruit_size == "0":
             temp["comp"] = str(
-                len(Appliance.objects.all().filter(support_business=ap.startup).filter(is_submit=True))) + " : 1"
+                len(Appliance.objects.all().filter(support_business=ap.support_business).filter(is_submit=True))) + " : 1"
         else:
             # temp["comp"] = len(Appliance.objects.all().filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
             number = str( round((len(Appliance.objects.all().filter(support_business=ap.support_business).filter(
-                is_submit=True))) / int(ap.support_business.support_business_recruit_size), 1) )
+                is_submit=True))) / int(ap.support_business.support_business_recruit_size ), 1) )
             if number == "0.0":
                 number ="0"
             temp["comp"] = number + " : 1"
@@ -4844,10 +4882,13 @@ def vue_get_support_business_select_name_by_kikwan_1(request):
     if gca_check_session(request) == False:
         return HttpResponse("{}")
     support_business_list = []
-    for sp in SupportBusiness.objects.all().filter( Q(support_business_status="3") ):
+    for sp in SupportBusiness.objects.all().filter( Q(support_business_status="3") ).filter(support_business_apply_end_ymdt__gte=timezone.now()):
         support_business_list.append({
-            "name":sp.support_business_name,
-            "support_business_id":sp.id
+            "author": sp.support_business_author.mng_name,
+            "author_id": sp.support_business_author.id,
+            "name": sp.support_business_name,
+            "support_business_id": sp.id,
+            "support_business_status": sp.support_business_status
         })
     return JsonResponse(support_business_list, safe=False)
 
@@ -4859,7 +4900,9 @@ def vue_get_support_business_select_name_by_kikwan_2(request):
     support_business_list=[]
     for sp in SupportBusiness.objects.all().filter(support_business_apply_end_ymdt__lte=timezone.now() ).filter( Q(support_business_status="3") |  Q(support_business_status="5") | Q(support_business_status="4") ):
         support_business_list.append({
-            "name":sp.support_business_name+"t",
+            "author":sp.support_business_author.mng_name,
+            "author_id": sp.support_business_author.id,
+            "name":sp.support_business_name,
             "support_business_id":sp.id,
             "support_business_status":sp.support_business_status
             })
@@ -4945,10 +4988,6 @@ def vue_get_support_business_select_name_4(request):
         })
 
     return JsonResponse(support_business_list, safe=False)
-
-
-
-
 
 @csrf_exempt
 def excel_down_statics(request):
@@ -10111,7 +10150,6 @@ def make_pdf(request):
         if num == 8:
             break;
         if height_sum > 0:
-
             can.drawImage(path.format(num), 20, height_sum, width=imgwidth, height= int(int(height_arr[num+1])*percent),)
             num=num+1
         else:
@@ -10128,8 +10166,6 @@ def make_pdf(request):
             packet=""
             output.write(output_stream)
             output_stream.close()
-
-
 
 
 @csrf_exempt
@@ -10152,3 +10188,24 @@ def email_check(request):
         return JsonResponse({"result":"ok"})
     else:
         return JsonResponse({"result": "exist"})
+
+
+@csrf_exempt
+def get_usr_filter(request):
+    if gca_check_session(request) == False:
+        return HttpResponse(status=401, statusText="gca_unauthorized")
+    usr_acc = AdditionalUserInfo.objects.get(id=request.GET.get("gca_id"))
+    usr_startup = Startup.objects.get(user = usr_acc.user)
+    filter = usr_startup.selected_company_filter_list.all()
+    filter_list = []
+    for f in filter:
+        if request.POST.get("kind") == "support_business":
+            filter_list.append(f.filter_name)
+        if request.POST.get("kind") == "startup":
+            if f.cat_0 != "조건":
+                filter_list.append(f.filter_name)
+    return JsonResponse({"result":filter_list})
+
+
+
+
