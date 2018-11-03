@@ -3,8 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="34d6aeb7-0587-4290-974f-6d01b6b1adfc" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gca_mvp/settings.py" afterPath="$PROJECT_DIR$/gca_mvp/settings.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/urls.py" afterPath="$PROJECT_DIR$/supporting_business/urls.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views.py" afterPath="$PROJECT_DIR$/supporting_business/views.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/supporting_business/views_paging.py" afterPath="$PROJECT_DIR$/supporting_business/views_paging.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -40,11 +43,9 @@
           <file leaf-file-name="models.py" pinned="true" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="160">
-                  <caret line="507" column="33" lean-forward="false" selection-start-line="507" selection-start-column="4" selection-end-line="507" selection-end-column="33" />
-                  <folding>
-                    <element signature="e#2#30#0" expanded="true" />
-                  </folding>
+                <state relative-caret-position="13433">
+                  <caret line="712" column="23" lean-forward="false" selection-start-line="712" selection-start-column="6" selection-end-line="712" selection-end-column="23" />
+                  <folding />
                 </state>
               </provider>
             </entry>
@@ -52,10 +53,32 @@
           <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="249">
-                  <caret line="3040" column="29" lean-forward="true" selection-start-line="3040" selection-start-column="29" selection-end-line="3040" selection-end-column="29" />
+                <state relative-caret-position="316">
+                  <caret line="4913" column="26" lean-forward="false" selection-start-line="4913" selection-start-column="26" selection-end-line="4913" selection-end-column="26" />
                   <folding>
                     <element signature="e#24#59#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="settings.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/gca_mvp/settings.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="475">
+                  <caret line="26" column="21" lean-forward="true" selection-start-line="26" selection-start-column="21" selection-end-line="26" selection-end-column="21" />
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="urls.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/gca_mvp/urls.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="0">
+                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                  <folding>
+                    <element signature="e#0#41#0" expanded="true" />
                   </folding>
                 </state>
               </provider>
@@ -71,18 +94,6 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="admin.py" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/supporting_business/admin.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="0">
-                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-                  <folding>
-                    <element signature="e#0#32#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
           <file leaf-file-name="apps.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/apps.py">
               <provider selected="true" editor-type-id="text-editor">
@@ -93,23 +104,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="forms.py" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/supporting_business/forms.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="0">
-                  <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-                  <folding>
-                    <element signature="e#0#24#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
           <file leaf-file-name="urls.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="76">
-                  <caret line="16" column="25" lean-forward="false" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+                <state relative-caret-position="234">
+                  <caret line="191" column="33" lean-forward="false" selection-start-line="191" selection-start-column="10" selection-end-line="191" selection-end-column="33" />
                   <folding>
                     <element signature="e#0#41#0" expanded="true" />
                   </folding>
@@ -120,8 +119,8 @@
           <file leaf-file-name="views_paging.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/supporting_business/views_paging.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="186">
-                  <caret line="384" column="58" lean-forward="false" selection-start-line="384" selection-start-column="30" selection-end-line="384" selection-end-column="58" />
+                <state relative-caret-position="378">
+                  <caret line="562" column="49" lean-forward="true" selection-start-line="562" selection-start-column="49" selection-end-line="562" selection-end-column="49" />
                   <folding>
                     <element signature="e#24#59#0" expanded="true" />
                   </folding>
@@ -159,8 +158,8 @@
           <file leaf-file-name="views.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/../gca_mvp_server/gca_mvp/supporting_business/views.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="171">
-                  <caret line="92" column="8" lean-forward="true" selection-start-line="92" selection-start-column="8" selection-end-line="92" selection-end-column="8" />
+                <state relative-caret-position="133">
+                  <caret line="90" column="16" lean-forward="true" selection-start-line="90" selection-start-column="16" selection-end-line="90" selection-end-column="16" />
                   <folding />
                 </state>
               </provider>
@@ -182,36 +181,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>excel_down_statics</find>
+      <find>appliance_update_at_ymdt</find>
+      <find>delete_chan</find>
+      <find>vue_login</find>
+      <find>confirmation_code</find>
+      <find>vue_modify_course</find>
+      <find>startup_lis</find>
+      <find>user_id</find>
       <find>appliance</find>
-      <find>vue_get_support_business_appliance</find>
-      <find>get_support_business_favorite_startup</find>
-      <find>vue_get_startup_detail_base</find>
-      <find>vue_get_clip</find>
-      <find>pdf</find>
-      <find>clip</find>
-      <find>vue_get_support_business_info</find>
-      <find>make_pdf</find>
-      <find>gca_che</find>
-      <find>status=401</find>
-      <find>vue_get_startup_account</find>
-      <find>accounts</find>
-      <find>account</find>
-      <find>vue_get_support_business_select_name_3</find>
-      <find>vue_get_support_business_select_name_by_kikwan_1</find>
-      <find>company_activity_created_at</find>
-      <find>pub</find>
-      <find>vue_get_startup_detail</find>
-      <find>vue_update_startup_news_detail</find>
-      <find>공고중</find>
-      <find>selected_company_filter_list</find>
-      <find>selected_support_business_filter_list</find>
-      <find>get_</find>
-      <find>alarm_content</find>
-      <find>alarm_origin_support_business</find>
+      <find>sample</find>
+      <find>vue_modify</find>
+      <find>vue_get_application</find>
+      <find>applian</find>
+      <find>ApplianceSnapShot</find>
+      <find>Q(</find>
+      <find>get_startup_application</find>
+      <find>startup_list(</find>
+      <find>is_</find>
+      <find>vue_home_support_business</find>
+      <find>is_in_favor_list</find>
+      <find>vue_home_se</find>
+      <find>vue_modify_clip</find>
+      <find>vue_modify_path</find>
+      <find>save_silger</find>
       <find>save_filter</find>
-      <find>save_fil</find>
-      <find>get_unread_alarm</find>
+      <find>vue_get_star</find>
+      <find>startup_list</find>
+      <find>vue_home</find>
+      <find>real</find>
+      <find>vue_get_channel_statics</find>
+      <find>get_support_business_static</find>
     </findStrings>
     <replaceStrings>
       <replace>make_alarm</replace>
@@ -298,10 +297,10 @@
         <option value="$PROJECT_DIR$/supporting_business/admin.py" />
         <option value="$PROJECT_DIR$/supporting_business/tests.py" />
         <option value="$PROJECT_DIR$/supporting_business/annotation.py" />
-        <option value="$PROJECT_DIR$/supporting_business/views_paging.py" />
         <option value="$PROJECT_DIR$/supporting_business/models.py" />
-        <option value="$PROJECT_DIR$/gca_mvp/settings.py" />
         <option value="$PROJECT_DIR$/supporting_business/urls.py" />
+        <option value="$PROJECT_DIR$/supporting_business/views_paging.py" />
+        <option value="$PROJECT_DIR$/gca_mvp/settings.py" />
         <option value="$PROJECT_DIR$/supporting_business/views.py" />
       </list>
     </option>
@@ -313,10 +312,9 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="80" />
-    <option name="y" value="-16" />
-    <option name="width" value="1358" />
-    <option name="height" value="755" />
+    <option name="x" value="-8" />
+    <option name="width" value="1255" />
+    <option name="height" value="1100" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -334,6 +332,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -419,7 +418,22 @@
             <path>
               <item name="Root" type="cbb8eebc:String" user="Root" />
               <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+              <item name=".idea" type="cbb8eebc:String" user=".idea" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
               <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+              <item name=".ipynb_checkpoints" type="cbb8eebc:String" user=".ipynb_checkpoints" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+              <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gca_mvp" type="cbb8eebc:String" user="gca_mvp" />
+              <item name="media" type="cbb8eebc:String" user="media" />
             </path>
             <path>
               <item name="Root" type="cbb8eebc:String" user="Root" />
@@ -430,7 +444,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -775,7 +788,14 @@
       <option name="project" value="LOCAL" />
       <updated>1540450867268</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="유저관리 수정">
+      <created>1540775117795</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1540775117795</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TodoView">
@@ -791,13 +811,13 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3284091" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16179775" sideWeight="0.49755502" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23586957" sideWeight="0.502445" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.61630434" sideWeight="0.49946696" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.61630434" sideWeight="0.50053304" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32391304" sideWeight="0.4978678" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2423913" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.0032608695" sideWeight="0.51759064" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.41956523" sideWeight="0.5074627" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.021855012" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18336888" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.036780383" sideWeight="0.8130435" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.08635394" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24946237" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.09488273" sideWeight="0.18695652" order="1" side_tool="true" content_ui="tabs" />
@@ -940,7 +960,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/supporting_business/views.py</url>
-          <line>10154</line>
+          <line>10211</line>
           <option name="timeStamp" value="103" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
@@ -1079,25 +1099,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/gca_mvp/settings.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1881">
-          <caret line="100" column="16" lean-forward="false" selection-start-line="100" selection-start-column="16" selection-end-line="100" selection-end-column="16" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/models.hwp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2869">
           <caret line="151" column="26" lean-forward="false" selection-start-line="151" selection-start-column="4" selection-end-line="151" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/gca_mvp/urls.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -1112,7 +1117,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1120,17 +1124,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/apps.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1139,7 +1132,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#24#0" expanded="true" />
+            <element signature="e#0#24#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1163,34 +1156,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/views_paging.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="186">
-          <caret line="384" column="58" lean-forward="false" selection-start-line="384" selection-start-column="30" selection-end-line="384" selection-end-column="58" />
-          <folding>
-            <element signature="e#24#59#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="507" column="33" lean-forward="false" selection-start-line="507" selection-start-column="4" selection-end-line="507" selection-end-column="33" />
-          <folding>
-            <element signature="e#2#30#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../gca_mvp_server/gca_mvp/supporting_business/views.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="92" column="8" lean-forward="true" selection-start-line="92" selection-start-column="8" selection-end-line="92" selection-end-column="8" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/tests.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -1199,20 +1164,72 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/apps.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13433">
+          <caret line="712" column="23" lean-forward="false" selection-start-line="712" selection-start-column="6" selection-end-line="712" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../gca_mvp_server/gca_mvp/supporting_business/views.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="133">
+          <caret line="90" column="16" lean-forward="true" selection-start-line="90" selection-start-column="16" selection-end-line="90" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/supporting_business/views_paging.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="378">
+          <caret line="562" column="49" lean-forward="true" selection-start-line="562" selection-start-column="49" selection-end-line="562" selection-end-column="49" />
+          <folding>
+            <element signature="e#24#59#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/urls.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="76">
-          <caret line="16" column="25" lean-forward="false" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+        <state relative-caret-position="234">
+          <caret line="191" column="33" lean-forward="false" selection-start-line="191" selection-start-column="10" selection-end-line="191" selection-end-column="33" />
           <folding>
             <element signature="e#0#41#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/gca_mvp/urls.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#41#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gca_mvp/settings.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="475">
+          <caret line="26" column="21" lean-forward="true" selection-start-line="26" selection-start-column="21" selection-end-line="26" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/supporting_business/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="249">
-          <caret line="3040" column="29" lean-forward="true" selection-start-line="3040" selection-start-column="29" selection-end-line="3040" selection-end-column="29" />
+        <state relative-caret-position="316">
+          <caret line="4913" column="26" lean-forward="false" selection-start-line="4913" selection-start-column="26" selection-end-line="4913" selection-end-column="26" />
           <folding>
             <element signature="e#24#59#0" expanded="true" />
           </folding>

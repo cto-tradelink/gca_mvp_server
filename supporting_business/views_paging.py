@@ -66,6 +66,44 @@ from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 
 
 
+@csrf_exempt
+def is_in_favor_list(target,id, additionaluserinfo_id):
+    try:
+        user = AdditionalUserInfo.objects.get(id=additionaluserinfo_id)
+
+        if target  == "support_business":
+            if SupportBusiness.objects.get(id=id) in user.favorite.all():
+                return True
+            else:
+                return False
+        if target  == "clip":
+            if Clip.objects.get(id=id) in user.favorite_clip.all():
+                return True
+            else:
+                return False
+        if target  == "course":
+            print("course check")
+            if Course.objects.get(id=id) in user.favorite_course.all():
+                return True
+            else:
+                return False
+        if target  == "path":
+            if Path.objects.get(id=id) in user.favorite_path.all():
+                return True
+            else:
+                return False
+
+        if target  == "startup":
+            print("startup check!!!")
+            if Startup.objects.get(id=id) in user.favorite_startup.all():
+                return True;
+            else :
+                return False
+    except:
+        return False
+
+
+
  #세션 인증
 
 def gca_check_session(request):
@@ -506,3 +544,37 @@ def opr_account_kikwan_all_account(request):
         opr_all_account_set.append(copy.deepcopy(temp))
     result["all_account_set"] = opr_all_account_set
     return JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def startup_list(request):
+    filter_list = request.POST.get("filter_list").split(",")
+    result = Startup.objects.all().exclude(company_name="").exclude(company_name=None)
+    for filter in filter_list:
+        if filter != None and filter != "":
+            result = copy.deepcopy(result.filter(selected_company_filter_list__filter_name=filter))
+            print(result)
+            for r in result:
+                print(r.company_name)
+    print(result)
+    result_set = []
+    for s in result:
+        temp_obj = {}
+        temp_obj["company_name"] = s.company_name
+        temp_obj["logo"] = s.logo
+        temp_obj["company_short_desc"] = s.company_short_desc
+        try:
+            temp_obj["is_favored"] = is_in_favor_list("startup", s.id, request.GET.get("gca_id"))
+        except:
+            temp_obj["is_favored"] = False
+        temp_obj["filter"] = []
+        temp_obj["id"] = s.id
+        for t in s.selected_company_filter_list.all():
+            if t.filter_name != "" and t.filter_name != None and t.cat_0!="지원형태":
+                temp_obj["filter"].append(t.filter_name)
+
+        result_set.append(copy.deepcopy(temp_obj))
+
+    return  JsonResponse(list(result_set), safe=False)
+
+
