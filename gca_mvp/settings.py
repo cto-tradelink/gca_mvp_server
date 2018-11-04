@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p&h3t0i3n@lh+vl5l&ax5xwjy@(j^5f*v5gy&1*3-ytf*ycgwu'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
@@ -221,7 +221,7 @@ CORS_EXPOSE_HEADERS = (
     'Access-Control-Allow-Origin: *',
 )
 
-SESSION_COOKIE_AGE =  60 *60 *3 #60 * 60  * 3
+SESSION_COOKIE_AGE =  60 #*60 *3 #60 * 60  * 3
 
 ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True
 LOGIN_REDIRECT_URL = "/facebook_login.php"
