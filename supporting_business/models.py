@@ -148,9 +148,9 @@ class Startup(models.Model):
     company_short_desc = models.CharField(max_length=1000, blank=True, null=True)
     company_intro = models.CharField(max_length=1000, blank=True, null=True)
 
-    company_youtube = models.CharField(max_length=300, blank=True, null=True)
-    company_facebook = models.CharField(max_length=300, blank=True, null=True)
-    company_instagram = models.CharField(max_length=300, blank=True, null=True)
+    company_youtube = models.CharField(max_length=300, blank=True, null=True, default="")
+    company_facebook = models.CharField(max_length=300, blank=True, null=True, default="")
+    company_instagram = models.CharField(max_length=300, blank=True, null=True, default="")
     company_website = models.CharField(max_length=300, default="", blank=True, null=True, )
 
     address_0 = models.CharField(max_length=400, default="", blank=True, null=True, )
@@ -271,13 +271,14 @@ class SupportBusiness(models.Model):
     support_business_name_sub = models.CharField(max_length=300, blank=True, null=True, default="")
     support_business_poster = models.CharField(max_length=1000, blank=True, null=True)#파일
     support_business_relate_support_business=models.ForeignKey("SupportBusiness",blank=True, null=True)
-    support_business_short_desc = models.CharField(max_length=14, blank=True, null=True, default="")
+    support_business_short_desc = models.CharField(max_length=200, blank=True, null=True, default="")
     support_business_subject = models.TextField(blank=True, null=True, )
     support_business_detail = models.TextField(blank=True, null=True, )
     support_business_apply_start_ymd = models.DateTimeField(blank=True, null=True, )
     support_business_apply_end_ymdt = models.DateTimeField(blank=True, null=True, )
     support_business_object = models.TextField(blank=True, null=True, default="")
     support_business_recruit_size = models.CharField(max_length=30, blank=True, null=True, default="")
+    support_business_employee_condition = models.IntegerField(blank=True, null=True, default=0)
     support_business_prefer = models.TextField(blank=True, null=True, default="")
     support_business_constraint = models.TextField(blank=True, null=True, default="")
     support_business_choose_method = models.TextField(blank=True, null=True, default="")
@@ -425,18 +426,18 @@ class SupportBusiness(models.Model):
 
 #지원서
 class Appliance(models.Model):
-    support_business = models.ForeignKey(SupportBusiness, blank=True, null=True)
-    startup = models.ForeignKey(Startup, blank=True, null=True)
-    company_name = models.CharField(max_length=100, blank=True, null=True, default="")
-    established_date = models.DateField(blank=True, null=True)
-    address_0 = models.CharField(max_length=400, blank=True, null=True, default="")
-    address_1 = models.CharField(max_length=400, blank=True, null=True, default="")
-    repre_name = models.CharField(max_length=100, blank=True, null=True, default="")
-    repre_tel = models.CharField(max_length=100, blank=True, null=True, default="")
-    repre_email = models.CharField(max_length=100, blank=True, null=True, default="")
-    mark_name = models.CharField(max_length=100, blank=True, null=True, default="")
-    mark_tel = models.CharField(max_length=100, blank=True, null=True, default="")
-    mark_email = models.CharField(max_length=100, blank=True, null=True, default="")
+    support_business = models.ForeignKey(SupportBusiness, blank=True, null=True) #
+    startup = models.ForeignKey(Startup, blank=True, null=True)#
+    company_name = models.CharField(max_length=100, blank=True, null=True, default="")#
+    established_date = models.DateField(blank=True, null=True)#
+    address_0 = models.CharField(max_length=400, blank=True, null=True, default="")#
+    address_1 = models.CharField(max_length=400, blank=True, null=True, default="")#
+    repre_name = models.CharField(max_length=100, blank=True, null=True, default="")#
+    repre_tel = models.CharField(max_length=100, blank=True, null=True, default="")#
+    repre_email = models.CharField(max_length=100, blank=True, null=True, default="")#
+    mark_name = models.CharField(max_length=100, blank=True, null=True, default="")#
+    mark_tel = models.CharField(max_length=100, blank=True, null=True, default="")#
+    mark_email = models.CharField(max_length=100, blank=True, null=True, default="")#
     company_keyword = models.CharField(max_length=1000, blank=True, null=True, default="")
     company_total_employee = models.CharField(max_length=20, blank=True, null=True, default="")
     company_hold_employee = models.CharField(max_length=20, blank=True, null=True, default="")
@@ -460,9 +461,7 @@ class Appliance(models.Model):
     export_before_nation_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_nation_2 = models.CharField(max_length=20, blank=True, null=True, default="")
     company_kind = models.CharField(max_length=10, blank=True, null=True)
-    company_keyword = models.CharField(max_length=1000, blank=True, null=True)
-    company_website = models.CharField(max_length=100, blank=True, null=True)
-    company_intro = models.TextField(blank=True, null=True, default="")
+    company_website = models.CharField(max_length=100, blank=True, null=True)#
     attached_ppt_file = models.CharField(max_length=1000, blank=True, null=True, default="")
     attached_cert_file = models.CharField(max_length=1000, blank=True, null=True, default="")
     attached_ir_file = models.CharField(max_length=1000, blank=True, null=True, default="")
@@ -471,9 +470,9 @@ class Appliance(models.Model):
     attached_ip_file = models.CharField(max_length=1000, blank=True, null=True, default="")
     attached_etc_file = models.CharField(max_length=1000, blank=True, null=True, default="")
     etc_file_title_by_mng = models.TextField(blank=True, null=True)
-    company_instagram = models.CharField(max_length=200, blank=True, null=True)
-    company_youtube = models.CharField(max_length=300, blank=True, null=True)
-    company_facebook = models.CharField(max_length=300, blank=True, null=True)
+    company_instagram = models.CharField(max_length=200, blank=True, null=True, default="")#
+    company_youtube = models.CharField(max_length=300, blank=True, null=True, default="")#
+    company_facebook = models.CharField(max_length=300, blank=True, null=True, default="")#
     appliance_created_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     appliance_update_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     is_submit = models.BooleanField(default=False)
@@ -529,6 +528,8 @@ class ApplianceService(models.Model):
     appliance = models.ForeignKey(Appliance)
     service_name = models.CharField(max_length=300, blank=True, null=True)
     service_intro = models.TextField()
+    service_img = models.CharField(max_length=300, null=True, blank=True, default="")  # 파일
+    service_file = models.CharField(max_length=300, null=True, blank=True, default="")  # 파일
 
 #
 # class SessionPerUser(models.Model):
@@ -829,3 +830,12 @@ class QuaterTableSupportBusiness(models.Model):
     qt_support_business = models.ForeignKey(SupportBusiness)
     qt_support_business_status = models.IntegerField()
     qt_support_business_approved_date_ymd= models.DateField(auto_now_add=True)
+
+
+class CountingTable(models.Model):
+    support_business = models.ForeignKey("SupportBusiness")
+    date = models.DateField(null=True, blank=True)
+    hit_num = models.IntegerField()
+    fav_num = models.IntegerField()
+    apply_num = models.IntegerField()
+

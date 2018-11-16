@@ -62,7 +62,8 @@ from django.conf import settings
 from django.contrib.auth import get_user
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
-
+from django.contrib.sessions.models import Session
+from django.contrib.auth.models import User
 
 
 
@@ -102,30 +103,19 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
     except:
         return False
 
-
+def gca_check_session(request):
 
  #세션 인증
-
-def gca_check_session(request):
-    my_session_key= request.GET.get("session_key")
-    my_id = request.GET.get("gca_id")
-    engine = import_module(settings.SESSION_ENGINE)
-    session = engine.SessionStore(my_session_key)
-    session_user_id = ""
+    session_key = request.GET.get("session_key")
     try:
-        session_user_id = session[SESSION_KEY]
-        backend_path = session[BACKEND_SESSION_KEY]
-        backend = load_backend(backend_path)
-        user = backend.get_user(session_user_id) or AnonymousUser()
-        sk_user_id = str(AdditionalUserInfo.objects.get(id=my_id).user.id)
-    except KeyError:
-        user = AnonymousUser()
-
-    print("sk check")
-    if my_session_key == "gca_test":
-        return True
-    if user.is_authenticated() and str(session_user_id) == sk_user_id :
-        return True
+        session = Session.objects.get(session_key=session_key)
+        session_data = session.get_decoded()
+        uid = session_data.get('_auth_user_id')
+        user = User.objects.get(id=uid)
+    except:
+        return False
+    if user.additionaluserinfo and user.is_authenticated():
+        return user.additionaluserinfo.id
     else:
         return False
 
@@ -545,18 +535,28 @@ def opr_account_kikwan_all_account(request):
     result["all_account_set"] = opr_all_account_set
     return JsonResponse(result, safe=False)
 
-
+import re
 @csrf_exempt
 def startup_list(request):
+
+    check_result = gca_check_session(request)
+    if check_result != False:
+        user_auth_id = check_result
+
     filter_list = request.POST.get("filter_list").split(",")
     result = Startup.objects.all().exclude(company_name="").exclude(company_name=None)
     for filter in filter_list:
-        if filter != None and filter != "":
+        if filter == "구성원 제한없음":
+            pass
+        elif "명 이하" in filter or "명 이상" in filter:
+            # x 명이 있는 경우에는 구성원을 입력하지 않은 스타트업을 추가해주어야함
+            num = int(re.findall('\d+', filter)[0])
+            if (num != 0):
+                result = copy.deepcopy(result.filter(company_total_employee__lte=num).exclude(company_name="").exclude(
+                    company_name=None)) | Startup.objects.all().filter(company_total_employee=None)
+        elif filter != None and filter != "":
             result = copy.deepcopy(result.filter(selected_company_filter_list__filter_name=filter))
-            print(result)
-            for r in result:
-                print(r.company_name)
-    print(result)
+
     result_set = []
     for s in result:
         temp_obj = {}
@@ -564,17 +564,59 @@ def startup_list(request):
         temp_obj["logo"] = s.logo
         temp_obj["company_short_desc"] = s.company_short_desc
         try:
-            temp_obj["is_favored"] = is_in_favor_list("startup", s.id, request.GET.get("gca_id"))
+            temp_obj["is_favored"] = is_in_favor_list("startup", s.id, user_auth_id)
         except:
             temp_obj["is_favored"] = False
         temp_obj["filter"] = []
         temp_obj["id"] = s.id
         for t in s.selected_company_filter_list.all():
-            if t.filter_name != "" and t.filter_name != None and t.cat_0!="지원형태":
+            if t.filter_name != "" and t.filter_name != None and t.cat_0!="지원형태" and t.cat_1!="기업형태":
                 temp_obj["filter"].append(t.filter_name)
 
         result_set.append(copy.deepcopy(temp_obj))
 
     return  JsonResponse(list(result_set), safe=False)
 
+@csrf_exempt
+def startup_list_by_or(request):
+    filter_list = request.POST.get("filter_list").split(",")
+    result = Startup.objects.all().exclude(company_name="").exclude(company_name=None)
+    startup_set =[]
+    startup_list = []
+    for filter in filter_list:
+        if filter == "구성원 제한없음":
+            pass
+        elif "명 이하" in filter or "명 이상" in filter:
+            # x 명이 있는 경우에는 구성원을 입력하지 않은 스타트업을 추가해주어야함
+            num = int(re.findall('\d+', filter)[0])
+            if (num != 0):
+                result = copy.deepcopy(result.filter(company_total_employee__lte=num).exclude(company_name="").exclude(
+                    company_name=None)) | Startup.objects.all().filter(company_total_employee=None)
+        elif filter != None and filter != "":
+            for s in result.filter(selected_company_filter_list__filter_name__in=filter_list):
+                if s not in startup_list:
+                    startup_list.append(s)
 
+    for s in startup_list:
+        temp_obj = {}
+        temp_obj["company_name"] = s.company_name
+        temp_obj["logo"] = s.logo
+        temp_obj["company_short_desc"] = s.company_short_desc
+        try:
+            temp_obj["is_favored"] = is_in_favor_list("startup", s.id, request.POST.get("id"))
+        except:
+            temp_obj["is_favored"] = False
+        temp_obj["filter"] = []
+        temp_obj["id"] = s.id
+        temp_obj["sim"]=0
+        for t in s.selected_company_filter_list.all():
+            if t.filter_name != "" and t.filter_name != None and t.cat_0 != "지원형태" and t.cat_1 != "기업형태":
+                temp_obj["filter"].append(t.filter_name)
+        for f in filter_list:
+            for f_s in s.selected_company_filter_list.all():
+                if f == f_s.filter_name:
+                    temp_obj["sim"] = temp_obj["sim"] + 1
+
+        startup_set.append(copy.deepcopy(temp_obj))
+
+    return JsonResponse(startup_set, safe=False)

@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.kakao',
     'allauth.socialaccount.providers.naver',
     'supporting_business',
-'corsheaders',
+    'corsheaders',
 
 
 ]
@@ -102,7 +102,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'gca_db_dev_2',
         'USER': 'gca_admin',
-        'PASSWORD': 'gca1234!',
+        'PASSWORD': 'gca1234!!',
         'HOST': 'gca-db.ccol6zg20myn.ap-northeast-2.rds.amazonaws.com',
         'PORT': '3306',
     }
@@ -224,6 +224,4 @@ CORS_EXPOSE_HEADERS = (
 SESSION_COOKIE_AGE =  60 #*60 *3 #60 * 60  * 3
 
 ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True
-LOGIN_REDIRECT_URL = "/facebook_login.php"
 ACCOUNT_AUTHENTICATED_LOGOUT_REDIRECTS = True
-ACCOUNT_LOGOUT_REDIRECT_URL = "/facebook_logout.php"
