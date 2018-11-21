@@ -22,19 +22,17 @@ class FavoriteLog(models.Model):
 class AdditionalUserInfo(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL)
     auth = models.CharField(max_length=10, blank=True, null=True, default="")
+    is_superuser = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='uploads/user/avatar', null=True, blank=True, default="")
     startup = models.CharField(max_length=30, blank=True, null=True, default="")
     agreement = models.BooleanField(default=True)
-
     repre_name = models.CharField(max_length=30, blank=True, null=True, default="")
     repre_tel = models.CharField(max_length=30, blank=True, null=True, default="")
     repre_email = models.CharField(max_length=100, default="", blank=True, null=True, )
-
     mng_name = models.CharField(max_length=30, blank=True, null=True, default="")
     mng_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
     mng_phone = models.CharField(max_length=100, default="", blank=True, null=True, )
     mng_email = models.CharField(max_length=100, default="", blank=True, null=True, )
-
     mng_position = models.CharField(max_length=20, blank=True, null=True, default="")
     mng_bonbu = models.CharField(max_length=20, blank=True, null=True)
     mng_kikwan = models.CharField(max_length=20, blank=True, null=True)
@@ -44,18 +42,14 @@ class AdditionalUserInfo(models.Model):
     mng_boss = models.ForeignKey("AdditionalUserInfo", blank=True, null=True)
     mng_date_joined_ymd = models.DateTimeField(auto_now_add=True)
     mng_website = models.CharField(max_length=100, blank=True, null=True)
-
     favorite = models.ManyToManyField("SupportBusiness", blank=True, null=True)
     favorite_startup = models.ManyToManyField("Startup", blank=True, null=True)
     favorite_clip = models.ManyToManyField("Clip", blank=True, null=True)
     favorite_course = models.ManyToManyField("Course", blank=True, null=True)
     favorite_path = models.ManyToManyField("Path", blank=True, null=True)
     sns = models.CharField(max_length=100, blank=True, null=True)
-
-
     facebook = models.CharField(max_length=1, blank=True, null=True)
     twitter = models.CharField(max_length=1, blank=True, null=True)
-
     class Meta:
         verbose_name="회원 관리"
         verbose_name_plural="회원 관리"
@@ -71,11 +65,8 @@ class AdditionalUserInfo(models.Model):
         else:
             print(self.user.startup.repre_name)
             return self.user.startup.repre_name
-
-
     def last_login(self):
         return self.user.last_login
-
     def account_stage(self):
         depth = self.get_depth()
         if depth == 0 :
@@ -329,6 +320,7 @@ class SupportBusiness(models.Model):
     support_business_etc_file_title_mng = models.CharField(max_length=1000, blank=True, null=True, default="")
     support_business_appliance_form = models.CharField(max_length=100, blank=True, null=True, default="")
     support_business_poster_data_url = models.TextField( blank=True, null=True, default="")
+    support_business_raw_filter_text = models.CharField(max_length=3000, null=True, default="", blank=True)
     class Meta:
         verbose_name="지원사업 관리"
         verbose_name_plural="지원사업 관리"
@@ -341,88 +333,10 @@ class SupportBusiness(models.Model):
     def get_name(self):
         return self.support_business_name
 
-    #2018 08 18 첨부파일 정보들.
-    # 1 : 작성중
-    # 2 : 승인대기중
-    # 3 : 노출중
-    # 4 : 블라인드중
-    #   모집종료 -> 3번 상태에서 마감이 지난것
-    # 6 : 공고 종료
 
-    # def __str__(self):
-    #     return self.title
-    # def get_absolute_url(self):
-    #     return reverse('support', args=[self.id])
-    # def get_absolute_url_manage(self):
-    #     return reverse('manage_support_detail', args=[self.id])
-    # def is_past_due(self):
-    #
-    #     try:
-    #         if self.apply_end > datetime.datetime.now():
-    #             return "모집중"
-    #         else:
-    #             return "모집 마감"
-    #     except:
-    #         return ""
-    #
-    # def is_past(self):
-    #     try:
-    #         if datetime.datetime.now() < self.apply_end:
-    #             return False
-    #         else:
-    #             return True
-    #     except:
-    #         return False
-    #
-    # def is_pre(self):
-    #     try:
-    #         if datetime.datetime.now() < self.apply_start:
-    #             return True
-    #         else:
-    #             return False
-    #     except:
-    #         return False
-
-    # def manage_status(self):
-    #
-    #     time_min = datetime.datetime.now()
-    #     if self.confirm == True :
-    #         return "승인대기중"
-    #
-    #     if self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min:
-    #         return "공고중"
-    #     if self.apply_end < datetime.datetime.now() and  self.confirm == False and self.open_status == True and self.complete == False :
-    #         return "모집 마감"
-    #     if self.confirm == False and self.open_status == False and self.complete == True :
-    #         return "공고 종료"
-    #     if self.confirm == False and self.open_status == False and self.complete == False:
-    #         return "작성중"
-    #     if self.apply_start > datetime.datetime.now():
-    #         return  "공고 대기중"
-    #
-    # def is_blind_state(self):
-    #     time_min = datetime.datetime.now()
-    #     if self.is_blind == 1:
-    #         return "블라인드"
-    #     elif self.confirm==1:
-    #         return ""
-    #     elif self.confirm == False and self.open_status == True and self.complete == False and self.apply_end > time_min and self.apply_start < time_min and self.is_blind==False:
-    #         return "노출"
-    #     else:
-    #         return ""
-
-
-    #
-    # def __str__(self):
-    #     return self.support_business_name
-
-
-# class Tag(models.Model):
-#     name = models.CharField(max_length=100)
-#
-#     def __str__(self):
-#         return self.name
-
+class SupportBusinessAttachedFiles(models.Model):
+    support_business = models.ForeignKey("SupportBusiness")
+    file_path = models.CharField(max_length=500, blank=True, null=True)
 
 #지원서
 class Appliance(models.Model):
@@ -770,6 +684,8 @@ class ApplianceSnapShot(models.Model):
 
 
 
+
+
 class StatTable(models.Model):
     stat_user =  models.ForeignKey("AdditionalUserInfo")
     stat_name =  models.CharField(max_length=32, null=True,blank=True)
@@ -810,6 +726,8 @@ class SupportBusinessAwarded(models.Model):
     awarded_usr = models.ForeignKey("AdditionalUserInfo")
     awarded_usr_filter = models.ManyToManyField("FilterForStatics")
 
+
+
 class LineGraphTable(models.Model):
     linegraph_support_business = models.ForeignKey("SupportBusiness")
     linegraph_date = models.DateField(auto_now_add=True)
@@ -839,3 +757,81 @@ class CountingTable(models.Model):
     fav_num = models.IntegerField()
     apply_num = models.IntegerField()
 
+class CountingStartupListTable(models.Model):
+    support_business = models.ForeignKey("SupportBusiness")
+    all_startup_list = models.TextField( blank=True, null=True)
+    hit_startup_list = models.TextField( blank=True, null=True)
+    fav_startup_list = models.TextField( blank=True, null=True)
+    applied_startup_list = models.TextField( blank=True, null=True)
+    awarded_startup_list = models.TextField( blank=True, null=True)
+
+class CountingFilterListTable(models.Model):
+
+    support_business = models.ForeignKey("SupportBusiness")
+    all_filter = models.TextField( blank=True, null=True)
+    hit_filter = models.TextField( blank=True, null=True)
+    fav_filter = models.TextField( blank=True, null=True)
+    applied_filter = models.TextField( blank=True, null=True)
+    awarded_filter = models.TextField( blank=True, null=True)
+
+
+class OPRINGCountingTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    date = models.DateField(null=True, blank=True)
+    hit_num = models.IntegerField()
+    fav_num = models.IntegerField()
+    apply_num = models.IntegerField()
+
+class OPRINGCountingStartupListTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    all_startup_list = models.TextField( blank=True, null=True)
+    hit_startup_list = models.TextField( blank=True, null=True)
+    fav_startup_list = models.TextField( blank=True, null=True)
+    applied_startup_list = models.TextField( blank=True, null=True)
+    awarded_startup_list = models.TextField( blank=True, null=True)
+
+class OPRINGCountingFilterListTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    all_filter = models.TextField( blank=True, null=True)
+    hit_filter = models.TextField( blank=True, null=True)
+    fav_filter = models.TextField( blank=True, null=True)
+    applied_filter = models.TextField( blank=True, null=True)
+    awarded_filter = models.TextField( blank=True, null=True)
+
+
+
+class OPRENDCountingTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    date = models.DateField(null=True, blank=True)
+    hit_num = models.IntegerField()
+    fav_num = models.IntegerField()
+    apply_num = models.IntegerField()
+
+class OPRENDCountingStartupListTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    all_startup_list = models.TextField( blank=True, null=True)
+    hit_startup_list = models.TextField( blank=True, null=True)
+    fav_startup_list = models.TextField( blank=True, null=True)
+    applied_startup_list = models.TextField( blank=True, null=True)
+    awarded_startup_list = models.TextField( blank=True, null=True)
+
+class OPRENDCountingFilterListTable(models.Model):
+    opr = models.ForeignKey("AdditionalUserInfo")
+    all_filter = models.TextField( blank=True, null=True)
+    hit_filter = models.TextField( blank=True, null=True)
+    fav_filter = models.TextField( blank=True, null=True)
+    applied_filter = models.TextField( blank=True, null=True)
+    awarded_filter = models.TextField( blank=True, null=True)
+
+class GATable(models.Model):
+    string_data=models.TextField()
+
+class ClipCountingTable(models.Model):
+    clip = models.ForeignKey("Clip")
+    string_data=models.TextField()
+class CourseCountingTable(models.Model):
+    course = models.ForeignKey("Course")
+    string_data=models.TextField()
+class PathCountingTable(models.Model):
+    path = models.ForeignKey("Path")
+    string_data=models.TextField()

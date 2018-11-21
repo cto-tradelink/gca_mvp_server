@@ -10,7 +10,7 @@ urlpatterns = [
     url(r'^$', views.index, name='index', ),
     url(r'^login_sns/', views.login_sns, name='login_sns', ),
     url(r'^logout', views.logout, name='logout', ),
-
+    url(r'^get_site_statics_update', views.get_site_statics_update, name='get_site_statics_update', ),
     url(r'^vue_login_check/', views.vue_login_check, name='vue_login_check', ),
     url(r'^vue_get_startup_public_detail/', views.vue_get_startup_public_detail, name='vue_get_startup_public_detail', ),
     url(r'^vue_home_support_business', views.vue_home_support_business, name='vue_home_support_business', ),
@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^vue_get_filter', views.vue_get_filter, name='vue_get_filter', ),
     url(r'^similar_support_business/', views.similar_support_business, name='similar_support_business', ),
     url(r'^vue_get_startup_list/', views_paging.startup_list, name='startup_list', ),
+    url(r'^vue_login_user/', views.vue_login_user, name='vue_login_user', ),
     url(r'^vue_login_user/', views.vue_login_user, name='vue_login_user', ),
     url(r'^cert_email/', views.cert_email, name='cert_email', ),
     url(r'^vue_signup/', views.vue_signup, name='vue_signup', ),
@@ -35,7 +36,8 @@ urlpatterns = [
     url(r'^statics_my_support_business_ing_fav/', views_paging.statics_my_support_business_ing_fav, name='statics_my_support_business_ing_fav', ),
     url(r'^statics_my_support_business_ing_appliance/', views_paging.statics_my_support_business_ing_appliance,   name='statics_my_support_business_ing_appliance', ),
     url(r'^email_check', views.email_check, name='email_check', ),
-url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business_gwanri_aw, name='excel_down_support_business_gwanri_aw', ),
+    url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business_gwanri_aw, name='excel_down_support_business_gwanri_aw', ),
+    url(r'^check_company_name', views.check_company_name,  name='check_company_name', ),
 
 
     url(r'^vue_get_name', views.vue_get_name, name='vue_get_name', ),
@@ -47,6 +49,9 @@ url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business
     url(r'^download_appliance/', views.download_appliance, name='download_appliance', ),
     url(r'^download', views.download, name='download', ),
     url(r'^del_file', views.del_file, name='del_file', ),
+    url(r'^vue_home_support_business_new', views.vue_home_support_business_new, name='vue_home_support_business_new', ),
+
+
 
     # 로그인한 스타트업 유저
     url(r'^vue_get_startup_detail', views.vue_get_startup_detail, name='vue_get_startup_detail', ),
@@ -128,7 +133,10 @@ url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business
     url(r'add_favorite_startup', views.add_favorite_startup, name='add_favorite_startup', ),
     url(r'remove_favorite_startup', views.remove_favorite_startup, name='remove_favorite_startup', ),
     url(r'delete_application', views.delete_application, name='delete_application', ),
-    url(r'delete_application', views.delete_application, name='delete_application', ),
+    url(r'updated_support_statics', views.updated_support_statics, name='updated_support_statics', ),
+
+
+
 #     기관관리자
     url(r'^vue_get_opr_dashboard/', views.vue_get_opr_dashboard, name='vue_get_opr_dashboard', ),
     url(r'^vue_get_opr_acc/', views.vue_get_opr_acc, name='vue_get_opr_acc', ),
@@ -222,7 +230,8 @@ url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business
     url(r'vue_get_channel_statics_path/', views.vue_get_channel_statics_path, name='vue_get_channel_statics_path', ),
     url(r'get_site_statics/', views.get_site_statics, name='get_site_statics', ),
     url(r'delete_support_business/', views.delete_support_business, name='delete_support_business', ),
-
+    url(r'delete_support_business_file', views.delete_support_business_file, name='delete_support_business_file', ),
+    url(r'superuser_grant_check', views.superuser_grant_check, name='superuser_grant_check', ),
 
 
 
