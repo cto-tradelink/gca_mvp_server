@@ -50,8 +50,7 @@ urlpatterns = [
     url(r'^download', views.download, name='download', ),
     url(r'^del_file', views.del_file, name='del_file', ),
     url(r'^vue_home_support_business_new', views.vue_home_support_business_new, name='vue_home_support_business_new', ),
-
-
+    url(r'^get_channel_content', views.get_channel_content, name='get_channel_content', ),
 
     # 로그인한 스타트업 유저
     url(r'^vue_get_startup_detail', views.vue_get_startup_detail, name='vue_get_startup_detail', ),

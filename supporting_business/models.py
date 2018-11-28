@@ -283,11 +283,14 @@ class SupportBusiness(models.Model):
     support_business_pro_1_end_ymd = models.DateField(blank=True, null=True)
     support_business_pro_1_open_ymd = models.DateField(blank=True, null=True)
     support_business_pro_1_criterion = models.TextField(blank=True, null=True, default="")
+    support_business_pro_1_check = models.BooleanField(default=False )
     support_business_pro_2_choose = models.TextField(blank=True, null=True, default="")
     support_business_pro_2_start_ymd = models.DateField(blank=True, null=True)
     support_business_pro_2_end_ymd = models.DateField(blank=True, null=True)
     support_business_pro_2_open_ymd = models.DateField(blank=True, null=True)
     support_business_pro_2_criterion = models.TextField(blank=True, null=True, default="")
+    support_business_pro_2_check = models.BooleanField(default=False )
+
     support_business_supply_content = models.TextField(blank=True, null=True, default="")
 
 
@@ -314,6 +317,9 @@ class SupportBusiness(models.Model):
     support_business_meta_0=models.CharField(blank=True, null=True, max_length=100)
     mng_support_business_step_3_etc_input_mojipjogun = models.CharField(max_length=100, blank=True, null=True)
     mng_support_business_step_3_etc_input_mojipgenre = models.CharField(max_length=100, blank=True, null=True)
+    mng_support_business_step_3_etc_input_mojipjogun_chk = models.BooleanField(default=False)
+    mng_support_business_step_3_etc_input_mojipgenre_chk = models.BooleanField(default=False)
+
     support_business_status = models.CharField(max_length=10, blank=True, null=True)
     support_business_prefer_chk = models.BooleanField(default=False)
     support_business_constraint_chk = models.BooleanField(default=False)#파일
@@ -391,7 +397,7 @@ class Appliance(models.Model):
     appliance_update_at_ymdt = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     is_submit = models.BooleanField(default=False)
     img_data_url = models.TextField()
-
+    is_applied_to_company_info = models.BooleanField(default=False)
     class meta:
         get_latest_by = "updated_at"
 
@@ -556,25 +562,6 @@ class HitPathLog(models.Model):
     hit_path_course = models.ForeignKey(Course)
     hit_path_user = models.ForeignKey(AdditionalUserInfo)
     hit_path_date = models.DateField(auto_now_add=True)
-#
-#
-# class  WatchClipHistory(models.Model):
-#     watch_clip_clip = models.ForeignKey(Clip)
-#     watch_clip_user = models.ForeignKey(AdditionalUserInfo)
-#     watch_clip_date = models.DateField(auto_now_add=True)
-#
-# class  WatchCourseHistory(models.Model):
-#     watch_course_course = models.ForeignKey(Course)
-#     watch_course_clip = models.ForeignKey(Clip)
-#     watch_course_user = models.ForeignKey(AdditionalUserInfo)
-#     watch_course_date = models.DateField(auto_now_add=True)
-#
-# class  WatchPathHistory(models.Model):
-#     watch_path_path = models.ForeignKey(Path)
-#     watch_path_course = models.ForeignKey(Course)
-#     watch_path_clip = models.ForeignKey(Clip)
-#     watch_path_user = models.ForeignKey(AdditionalUserInfo)
-#     watch_path_date = models.DateField(auto_now_add=True)
 
 
 class  WatchHistory(models.Model):
@@ -584,27 +571,6 @@ class  WatchHistory(models.Model):
     watch_user = models.ForeignKey(AdditionalUserInfo)
     watch_date = models.DateField(auto_now_add=True)
 
-
-'''
-class FavoritePathLog(models.Model):
-    favorite_path = models.ForeignKey(Path)
-    favorite_user = models.ForeignKey(AdditionalUserInfo)
-    favorite_path_up_down = models.IntegerField(default=0)
-    favorite_date = models.DateField(auto_now_add=True)
-
-
-class FavoriteCourseLog(models.Model):
-    favorite_course = models.ForeignKey(Course)
-    favorite_course_up_down = models.IntegerField(default=0)
-    favorite_user = models.ForeignKey(AdditionalUserInfo)
-    favorite_date = models.DateField(auto_now_add=True)
-
-class FavoriteClipLog(models.Model):
-    favorite_clip = models.ForeignKey(Clip)
-    favorite_clip_up_down = models.IntegerField(default=0)
-    favorite_user = models.ForeignKey(AdditionalUserInfo)
-    favorite_date = models.DateField(auto_now_add=True)
-'''
 
 
 class CompletedClip(models.Model):
@@ -756,6 +722,7 @@ class CountingTable(models.Model):
     hit_num = models.IntegerField()
     fav_num = models.IntegerField()
     apply_num = models.IntegerField()
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class CountingStartupListTable(models.Model):
     support_business = models.ForeignKey("SupportBusiness")
@@ -764,16 +731,16 @@ class CountingStartupListTable(models.Model):
     fav_startup_list = models.TextField( blank=True, null=True)
     applied_startup_list = models.TextField( blank=True, null=True)
     awarded_startup_list = models.TextField( blank=True, null=True)
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class CountingFilterListTable(models.Model):
-
     support_business = models.ForeignKey("SupportBusiness")
     all_filter = models.TextField( blank=True, null=True)
     hit_filter = models.TextField( blank=True, null=True)
     fav_filter = models.TextField( blank=True, null=True)
     applied_filter = models.TextField( blank=True, null=True)
     awarded_filter = models.TextField( blank=True, null=True)
-
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRINGCountingTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -781,6 +748,7 @@ class OPRINGCountingTable(models.Model):
     hit_num = models.IntegerField()
     fav_num = models.IntegerField()
     apply_num = models.IntegerField()
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRINGCountingStartupListTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -789,6 +757,7 @@ class OPRINGCountingStartupListTable(models.Model):
     fav_startup_list = models.TextField( blank=True, null=True)
     applied_startup_list = models.TextField( blank=True, null=True)
     awarded_startup_list = models.TextField( blank=True, null=True)
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRINGCountingFilterListTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -797,8 +766,7 @@ class OPRINGCountingFilterListTable(models.Model):
     fav_filter = models.TextField( blank=True, null=True)
     applied_filter = models.TextField( blank=True, null=True)
     awarded_filter = models.TextField( blank=True, null=True)
-
-
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRENDCountingTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -806,6 +774,7 @@ class OPRENDCountingTable(models.Model):
     hit_num = models.IntegerField()
     fav_num = models.IntegerField()
     apply_num = models.IntegerField()
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRENDCountingStartupListTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -814,6 +783,7 @@ class OPRENDCountingStartupListTable(models.Model):
     fav_startup_list = models.TextField( blank=True, null=True)
     applied_startup_list = models.TextField( blank=True, null=True)
     awarded_startup_list = models.TextField( blank=True, null=True)
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRENDCountingFilterListTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
@@ -822,6 +792,7 @@ class OPRENDCountingFilterListTable(models.Model):
     fav_filter = models.TextField( blank=True, null=True)
     applied_filter = models.TextField( blank=True, null=True)
     awarded_filter = models.TextField( blank=True, null=True)
+    updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class GATable(models.Model):
     string_data=models.TextField()

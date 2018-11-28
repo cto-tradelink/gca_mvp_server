@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.naver',
     'supporting_business',
     'corsheaders',
-
+    'background_task',
 
 ]
 

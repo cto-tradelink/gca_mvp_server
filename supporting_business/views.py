@@ -160,7 +160,7 @@ def cert_email(request):
             )
             EmailConfirmation(
                 email=target,
-                confirmation_code=random_code
+                confirmation_code=111111 #random_code
             ).save()
             return HttpResponse("ok")
         except Exception as e:
@@ -208,7 +208,7 @@ def vue_login_user(request):
             except:
                 return JsonResponse({"result":"false"})
         else:
-            if len(User.objects.filter(username=username))  > 0:
+            if (User.objects.filter(username=username)).count()  > 0:
                 return JsonResponse({"result":"pw_check"})
             else:
                 return JsonResponse({"result":'0'})
@@ -500,7 +500,7 @@ def vue_add_mng_acc(request):
         user_auth_id =  check_result
 
     if request.method == "POST":
-        if len(User.objects.filter(username=request.POST.get("id"))) == 0:
+        if (User.objects.filter(username=request.POST.get("id"))).count() == 0:
             print(request.POST)
             add_user = User.objects.create_user(username=request.POST.get("id"), password=request.POST.get("pw"))
             if add_user is not None:
@@ -557,7 +557,7 @@ def vue_get_opr_dashboard(request):
         mng_list.append(a.id)
     result = {}
     # 모집 마감된 공고
-    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
         support_business_author_id__in=mng_list)
     end_set=[]
     for support_business in end_support_business:
@@ -569,16 +569,22 @@ def vue_get_opr_dashboard(request):
         result_end["opr_id"]= support_business.id
         result_end["opr_support_business_author_id"] = support_business.support_business_author.id
         result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))/int(support_business.support_business_recruit_size),1))
-            if number == "0.0":
-                number ="0"
-            result_end["opr_comp"] = number +" : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+            except:
+                result_end["opr_comp"] = str((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(
+                        is_submit=True)).count()) + " : 1"
         else:
-            result_end["opr_comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) )+" : 1"
+            result_end["opr_comp"] = str((Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() )+" : 1"
 
 
 
@@ -596,20 +602,10 @@ def vue_get_opr_dashboard(request):
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number ="0"
-            result_end["opr_comp"] =  number + " : 1"
-            pass
-        else:
-            result_end["opr_comp"] = str(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
+
+        result_end["opr_comp"] = "0 : 1"
 
         waiting_set.append(copy.deepcopy(result_end))
 
@@ -628,22 +624,26 @@ def vue_get_opr_dashboard(request):
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_support_business_author_id"] = support_business.support_business_author.id
         result_end["opr_open_date"] = (support_business.support_business_created_at_ymdt)
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number="0"
-            result_end["opr_comp"] =  number + " : 1"
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+            except:
+                result_end["opr_comp"] = str((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(
+                        is_submit=True)).count()) + " : 1"
 
         else:
-            result_end["opr_comp"] = str(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+            result_end["opr_comp"] = ""
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         ing_set.append(copy.deepcopy(result_end))
     result["opr_end_set"] = end_set
     result["opr_ing_set"] = ing_set
@@ -806,7 +806,7 @@ def vue_set_mng_acc(request):
         print(request.POST.get("mng_pw1"))
 
         #비밀번호를 입력한경우
-        if request.POST.get("mng_pw0") == request.POST.get("mng_pw1"):
+        if request.POST.get("mng_pw0") == request.POST.get("mng_pw1") and request.POST.get("mng_pw1"):
             if request.POST.get("mng_pw0") != "":
                 user = User.objects.get(id=AdditionalUserInfo.objects.get(id=additional_user_info_id).user.id)
                 user.set_password(request.POST.get("mng_pw1"))
@@ -852,7 +852,7 @@ def vue_get_dashboard(request):
     result = {}
     support_business_author_id = user_auth_id
     #모집 마감된 공고문
-    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(support_business_author_id=support_business_author_id)
+    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(support_business_author_id=support_business_author_id)
     end_set = []
     for support_business in end_support_business:
         result_end={}
@@ -864,14 +864,17 @@ def vue_get_dashboard(request):
 
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] =len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))/int(support_business.support_business_recruit_size),1))
-            if( number == "0.0" ):
-                number= "0"
-            result_end["comp"] = number +" : 1"
-        else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) )+" : 1"
+        result_end["apply_num"] =(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        try:
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                number = str(round((Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()/int(support_business.support_business_recruit_size),1))
+                if( number == "0.0" ):
+                    number= "0"
+                result_end["comp"] = number +" : 1"
+            else:
+                result_end["comp"] = ""
+        except:
+            result_end["comp"] = ""
         end_set.append(copy.deepcopy(result_end))
     blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(support_business_author_id=support_business_author_id)
     blind_set = []
@@ -883,18 +886,20 @@ def vue_get_dashboard(request):
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end['support_business_poster'] = support_business.support_business_poster
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number = "0"
-            result_end["comp"] = number + " : 1"
-            pass
-        else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        try:
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+                pass
+            else:
+                result_end["comp"] = ""
+        except:
+            result_end["comp"] = ""
         blind_set.append(copy.deepcopy(result_end))
 
     writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter(support_business_author_id=support_business_author_id)
@@ -907,19 +912,21 @@ def vue_get_dashboard(request):
         result_end['support_business_poster'] = support_business.support_business_poster
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
         result_end["comp"]=""
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number = "0"
-            result_end["comp"] = number + " : 1"
-            pass
-        else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+        try:
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+                pass
+            else:
+                result_end["comp"] = ""
+        except:
+            result_end["comp"] = ""
         writing_set.append(copy.deepcopy(result_end))
 
     ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_author_id=support_business_author_id).filter(support_business_apply_end_ymdt__gt=timezone.now())
@@ -934,19 +941,21 @@ def vue_get_dashboard(request):
         result_end['support_business_poster'] = support_business.support_business_poster
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
         result_end["comp"]=""
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number = "0"
-            result_end["comp"] = number + " : 1"
+        try:
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
 
-        else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            else:
+                result_end["comp"] = ""
+        except:
+            result_end["comp"] = ""
         ing_set.append(copy.deepcopy(result_end))
 
     result["end_set"] = end_set
@@ -974,8 +983,8 @@ def vue_get_support_business_info(request):
     result = {}
     # 모집 마감된 공고문
     support_business_author_id = request.POST.get("id")
-    #end_support_business = SupportBusiness.objects.filter(apply_end__lt=datetime.datetime.now()).filter(status="4").filter(user_id=user_id)
-    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+    #end_support_business = SupportBusiness.objects.filter(apply_end__lt=datetime.now()).filter(status="4").filter(user_id=user_id)
+    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
         support_business_author_id=support_business_author_id)
 
     end_set = []
@@ -988,23 +997,24 @@ def vue_get_support_business_info(request):
         result_end["author"] = support_business.support_business_author.mng_name
         result_end["support_business_poster"] = support_business.support_business_poster
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["status"] = "모집종료"
         result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number = "0"
-            result_end["comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         end_set.append(copy.deepcopy(result_end))
 
     waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter( support_business_author_id=support_business_author_id)
@@ -1020,21 +1030,22 @@ def vue_get_support_business_info(request):
         result_end["status"] = "승인대기"
         result_end["author"] = support_business.support_business_author.mng_name
         result_end["updated"] = support_business.support_business_update_at_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number = "0"
-            result_end["comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         waiting_set.append(copy.deepcopy(result_end))
 
     # #작성중인 공고
@@ -1050,24 +1061,18 @@ def vue_get_support_business_info(request):
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["updated"] = support_business.support_business_update_at_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["status"] = "작성중"
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number ="0"
-            result_end["comp"] = number + " : 1"
-            pass
+        if support_business.support_business_recruit_size:
+            result_end["comp"] =  " 0 : 1"
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
+
         writing_set.append(copy.deepcopy(result_end))
     #공고중인 공고
-    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.datetime.now()).filter(
+    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.now()).filter(
         support_business_author_id=support_business_author_id)
     ing_set = []
     for support_business in ing_support_business:
@@ -1081,25 +1086,26 @@ def vue_get_support_business_info(request):
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["status"] = "공고중"
         result_end["updated"] = support_business.support_business_update_at_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number ="0"
-            result_end["comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         ing_set.append(copy.deepcopy(result_end))
 
     #공고 종료된 공고
-    comp_support_business = SupportBusiness.objects.filter(support_business_status="5").filter(support_business_apply_end_ymdt__lte=datetime.datetime.now()).filter(support_business_author_id=support_business_author_id)
+    comp_support_business = SupportBusiness.objects.filter(support_business_status="5").filter(support_business_apply_end_ymdt__lte=datetime.now()).filter(support_business_author_id=support_business_author_id)
     comp_set = []
     for support_business in comp_support_business:
         result_end = {}
@@ -1111,22 +1117,23 @@ def vue_get_support_business_info(request):
         result_end["support_business_poster"] = support_business.support_business_poster
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["author"] = support_business.support_business_author.mng_name
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["status"] = "공고종료"
 
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number="0"
-            result_end["comp"] = number+ " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         comp_set.append(copy.deepcopy(result_end))
     #블라인드된 공고문
     blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(support_business_author_id= support_business_author_id)
@@ -1140,23 +1147,24 @@ def vue_get_support_business_info(request):
         result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["author"] = support_business.support_business_author.mng_name
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["updated"] = support_business.support_business_update_at_ymdt
         result_end["status"] = "블라인드"
         result_end["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number = "0"
-            result_end["comp"] = number  + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         blind_set.append(copy.deepcopy(result_end))
 
     all_support_business = SupportBusiness.objects.filter(support_business_author_id=support_business_author_id)
@@ -1175,8 +1183,8 @@ def vue_get_support_business_info(request):
         except Exception as e:
             print(e)
         result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True))
-        result_end["favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+        result_end["favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         try:
             if support_business.support_business_status == "4":  # 작성중인 공고문
                 result_end["status"] = "모집종료"
@@ -1197,18 +1205,18 @@ def vue_get_support_business_info(request):
             print("durl")
             result_end["status"]="작성중"
         result_end["open_date"] = (support_business.support_business_apply_start_ymd)
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number ="0"
-
-            result_end["comp"] = number + " : 1"
-            pass
+        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size is not None:
+            try:
+                number =  str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number ="0"
+                result_end["comp"] = number + " : 1"
+            except:
+                result_end["comp"] = ""
         else:
-            result_end["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["comp"] = ""
         all_set.append(copy.deepcopy(result_end))
 
 
@@ -1257,8 +1265,8 @@ def vue_get_support_business_list(request):
         temp["mng_team"] = s.support_business_author.mng_team
         temp["mng_kikwan"] = s.support_business_author.mng_kikwan
         temp["mng_tel"] = s.support_business_author.mng_tel
-        temp["apply_num"] = len(Appliance.objects.filter(support_business=s).filter(is_submit=True))
-        temp["award_num"] = len(Award.objects.filter(support_business=s))
+        temp["apply_num"] = (Appliance.objects.filter(support_business=s).filter(is_submit=True)).count()
+        temp["award_num"] = (Award.objects.filter(support_business=s)).count()
         status=""
         try:
             if  s.support_business_status=="1":
@@ -1307,8 +1315,8 @@ def opr_vue_get_support_business_list(request):
             temp["opr_mng_team"] = s.support_business_author.mng_team
             temp["opr_mng_kikwan"] = s.support_business_author.mng_kikwan
             temp["opr_mng_tel"] = s.support_business_author.mng_tel
-            temp["opr_apply_num"] = len(Appliance.objects.filter(support_business=s).filter(is_submit=True))
-            temp["opr_award_num"] = len(Award.objects.filter(support_business=s))
+            temp["opr_apply_num"] = (Appliance.objects.filter(support_business=s).filter(is_submit=True)).count()
+            temp["opr_award_num"] = (Award.objects.filter(support_business=s)).count()
             opr_status=""
             try:
                 if  s.support_business_status=="1":
@@ -1480,8 +1488,8 @@ def vue_get_startup_detail(request):
         obj["company_activity_text"] = news.company_activity_text
         obj["company_activity_img"] = news.company_activity_img
         obj["company_activity_youtube"] = news.company_activity_youtube
-        obj["like_num"] = len(news.activitylike_set.all())
-        obj["rep_num"] = len(news.reply_set.all())
+        obj["like_num"] = (news.activitylike_set.all()).count()
+        obj["rep_num"] = (news.reply_set.all()).count()
         obj["id"] = news.id
 
         obj["rep"] = []
@@ -1946,7 +1954,7 @@ def vue_set_mng_support_business_step_1(request):
         support_business = SupportBusiness()
     print(rjd)
     support_business.support_business_name = rjd.get("support_business_name")
-    support_business.support_business_author_id = rjd.get("support_business_author_id")
+
     try:
         support_business.support_business_name_tag = rjd.get("support_business_name_tag")
     except:
@@ -1955,8 +1963,11 @@ def vue_set_mng_support_business_step_1(request):
         support_business.support_business_short_desc = rjd.get("support_business_short_desc")
     except:
         pass
+    if  rjd.get("user") == "mng":
         support_business.support_business_status = "1"
-        support_business.save()
+
+
+    support_business.save()
     if request.FILES.get('file'):
         support_business.support_business_poster = handle_uploaded_file_poster(request.FILES['file'], str(request.FILES['file']))
         print(os.path.exists( support_business.support_business_poster) )
@@ -2005,7 +2016,7 @@ def vue_set_mng_support_business_step_2(request):
     print(rjd)
     support_business = SupportBusiness.objects.get(id=rjd.get("id"))
     tag = rjd.get("supply_tag")
-    support_business.support_business_status = "1"
+
     for t in support_business.selected_support_business_filter_list.all():
         if t.cat_0 == "지원형태":
             support_business.selected_support_business_filter_list.remove(t)
@@ -2037,8 +2048,7 @@ def vue_set_mng_support_business_step_3(request):
     support_business = SupportBusiness.objects.get(id=rjd.get("id"))
     tag = rjd.get("recruit_tag")
 
-    support_business.support_business_status = "1"
-    # 모집 분야 필터
+
     for t in support_business.selected_support_business_filter_list.all():
         if t.cat_0 == "기본장르" or t.cat_0 == "영역":
             support_business.selected_support_business_filter_list.remove(t)
@@ -2076,6 +2086,9 @@ def vue_set_mng_support_business_step_3(request):
     support_business.support_business_constraint = rjd.get("support_business_constraint")
     support_business.mng_support_business_step_3_etc_input_mojipjogun = rjd.get("mng_support_business_step_3_etc_input_mojipjogun")
     support_business.mng_support_business_step_3_etc_input_mojipgenre = rjd.get("mng_support_business_step_3_etc_input_mojipgenre")
+    support_business.mng_support_business_step_3_etc_input_mojipjogun_chk = rjd.get("mng_support_business_step_3_etc_input_mojipjogun_chk")
+    support_business.mng_support_business_step_3_etc_input_mojipgenre_chk = rjd.get("mng_support_business_step_3_etc_input_mojipgenre_chk")
+
     try:
         if rjd.get("support_business_prefer_chk") == True:
             support_business.support_business_prefer_chk = True
@@ -2109,8 +2122,13 @@ def vue_set_mng_support_business_step_4(request):
         user_id =  check_result
     rjd = json.loads(request.POST.get("json_data"))
     support_business = SupportBusiness.objects.get(id=rjd.get("id"))
-    support_business.support_business_status = "1"
+
+    print(rjd)
     support_business.support_business_pro_0_choose = rjd.get("support_business_pro_0_choose")
+    support_business.support_business_pro_1_check = rjd.get("support_business_pro_1_check")
+    support_business.support_business_pro_2_check = rjd.get("support_business_pro_2_check")
+
+
     try:
         if rjd.get("support_business_pro_0_start_ymd") !="":
             support_business.support_business_pro_0_start_ymd = rjd.get("support_business_pro_0_start_ymd").split("T")[0]
@@ -2198,7 +2216,7 @@ def vue_set_mng_support_business_step_5(request):
 
     print(rjd)
     support_business = SupportBusiness.objects.get(id=rjd["id"])
-    support_business.support_business_status = "1"
+
 
     if request.FILES:
         print("첫번째 if 문 통과")
@@ -2223,18 +2241,6 @@ def vue_set_mng_support_business_step_5(request):
     except:
         pass
     support_business.save();
-
-
-
-
-
-
-
-
-
-
-
-
     return JsonResponse({"result":"ok"})
 
     # --------[공고문 내용 업데이트 기능 (지원서 작성 여섯번째 페이지) 6 페이지 : 공고문 수정하기]------- (매니저)
@@ -2249,7 +2255,7 @@ def vue_set_mng_support_business_step_6(request):
     rjd = json.loads(request.POST.get("json_data"))
 
     support_business = SupportBusiness.objects.get(id=rjd["id"])
-    support_business.support_business_status = "1"
+
     try:
         if rjd.get("support_business_ceremony_start_ymd") != '':
             support_business.support_business_ceremony_start_ymd = rjd.get("support_business_ceremony_start_ymd").split("T")[0]
@@ -2317,6 +2323,8 @@ def mng_support_business_step_7(request):
         user_id =  check_result
     id = json.loads(request.POST.get("json_data"))["id"]
     support_business = SupportBusiness.objects.get(id=id)
+
+
     support_business.support_business_status = "2"
     support_business.save();
     return JsonResponse({"result":"success"})
@@ -2834,24 +2842,20 @@ def vue_home_support_business(request):
             obj["is_favored"] = False
         obj["support_business_apply_end_ymdt"] = (support_business.support_business_apply_end_ymdt)
         obj["support_business_short_desc"] = support_business.support_business_short_desc
-        obj["favorite"] =  len(support_business.additionaluserinfo_set.all())
+        obj["favorite"] =  (support_business.additionaluserinfo_set.all()).count()
         obj["comp"]=""
-        print(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)))
-        try:
-            print(str(round(len( Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(  support_business.support_business_recruit_size), 1)) )
-        except:
-            pass
+
+
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+            number =  str(round((
+                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
                 support_business.support_business_recruit_size), 1))
             if number == "0.0":
                 number ="0"
             obj["comp"] = number + " : 1"
 
         else:
-            obj["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            obj["comp"] = ""
 
         obj["selected_support_business_filter_list"]=[]
         print(obj["selected_support_business_filter_list"])
@@ -2914,24 +2918,20 @@ def vue_home_support_business_new(request):
             obj["is_favored"] = False
         obj["support_business_apply_end_ymdt"] = (support_business.support_business_apply_end_ymdt)
         obj["support_business_short_desc"] = support_business.support_business_short_desc
-        obj["favorite"] =  len(support_business.additionaluserinfo_set.all())
+        obj["favorite"] =  (support_business.additionaluserinfo_set.all()).count()
         obj["comp"]=""
-        print(len(Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)))
-        try:
-            print(str(round(len( Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(  support_business.support_business_recruit_size), 1)) )
-        except:
-            pass
+
+
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+            number =  str(round((
+                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
                 support_business.support_business_recruit_size), 1))
             if number == "0.0":
                 number ="0"
             obj["comp"] = number + " : 1"
 
         else:
-            obj["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            obj["comp"] = ""
 
         obj["selected_support_business_filter_list"]=[]
         print(obj["selected_support_business_filter_list"])
@@ -3022,7 +3022,7 @@ def similar_support_business(request):
 
     origin_support_business = SupportBusiness.objects.all().get(id=request.GET.get('q'))
 
-    for support_business in SupportBusiness.objects.filter(support_business_status=3).filter(support_business_apply_end_ymdt__gte=datetime.datetime.now()).exclude(id=request.GET.get('q')):
+    for support_business in SupportBusiness.objects.filter(support_business_status=3).filter(support_business_apply_end_ymdt__gte=datetime.now()).exclude(id=request.GET.get('q')):
         obj = {}
         obj["tag"] = []
         obj["support_business_name"] = support_business.support_business_name
@@ -3032,18 +3032,17 @@ def similar_support_business(request):
         obj["support_business_poster"] = support_business.support_business_poster
         obj["comp"]=""
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+            number =  str(round((
+                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
                 support_business.support_business_recruit_size), 1))
             if number =="0.0":
                 number ="0"
             obj["comp"] = number + " : 1"
 
         else:
-            obj["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            obj["comp"] = ""
 
-        obj["favorite"] = str(len(AdditionalUserInfo.objects.filter(favorite=support_business)))
+        obj["favorite"] = str((AdditionalUserInfo.objects.filter(favorite=support_business)).count())
         obj["is_favored"] = is_in_favor_list("support_business", support_business.id, request.POST.get("id"))
 
         obj["id"] = support_business.id
@@ -3087,8 +3086,12 @@ def get_support_business_detail(request):
     result["support_business_subject"] = support_business.support_business_subject
     result["support_business_detail"] = support_business.support_business_detail
     result["support_business_poster"] = support_business.support_business_poster
-    # result["support_business_poster_data_url"] = support_business.support_business_poster_data_url
-
+    try:
+        with open(support_business.support_business_poster, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+        result["support_business_poster_data_url"] = str(encoded_string)
+    except Exception as e:
+        print(e)
     result["support_business_status"] = support_business.support_business_status
 
 
@@ -3120,19 +3123,24 @@ def get_support_business_detail(request):
     result["support_business_pro_0_end_ymd"] = support_business.support_business_pro_0_end_ymd
     result["support_business_pro_0_open_ymd"] = support_business.support_business_pro_0_open_ymd
     result["support_business_pro_0_criterion"] = support_business.support_business_pro_0_criterion
-    result["favorite"] = len(support_business.additionaluserinfo_set.all())
+
+
+
+
+    result["favorite"] = (support_business.additionaluserinfo_set.all()).count()
     result["comp"]=""
     if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-        number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-        if(number =="0.0" ):
-            number = "0"
-        result["comp"] =  number + " : 1"
-
+        try:
+            number =  str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+            if(number =="0.0" ):
+                number = "0"
+            result["comp"] =  number + " : 1"
+        except:
+            result["comp"] = ""
     else:
-        result["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+        result["comp"] = ""
 
     result["support_business_etc_file_title_mng"] = support_business.support_business_etc_file_title_mng
     result["support_business_pro_1_choose"] = support_business.support_business_pro_1_choose
@@ -3140,12 +3148,14 @@ def get_support_business_detail(request):
     result["support_business_pro_1_end_ymd"] = support_business.support_business_pro_1_end_ymd
     result["support_business_pro_1_open_ymd"] = support_business.support_business_pro_1_open_ymd
     result["support_business_pro_1_criterion"] = support_business.support_business_pro_1_criterion
+    result["support_business_pro_1_check"] = support_business.support_business_pro_1_check
 
     result["support_business_pro_2_choose"] = support_business.support_business_pro_2_choose
     result["support_business_pro_2_start_ymd"] = support_business.support_business_pro_2_start_ymd
     result["support_business_pro_2_end_ymd"] = support_business.support_business_pro_2_end_ymd
     result["support_business_pro_2_open_ymd"] = support_business.support_business_pro_2_open_ymd
     result["support_business_pro_2_criterion"] = support_business.support_business_pro_2_criterion
+    result["support_business_pro_2_check"] = support_business.support_business_pro_2_check
 
     result["support_business_ceremony_start_ymd"] = support_business.support_business_ceremony_start_ymd
     result["support_business_ceremony_end_ymd"] = support_business.support_business_ceremony_end_ymd
@@ -3163,6 +3173,9 @@ def get_support_business_detail(request):
 
     result["mng_support_business_step_3_etc_input_mojipjogun"] = support_business.mng_support_business_step_3_etc_input_mojipjogun
     result["mng_support_business_step_3_etc_input_mojipgenre"] = support_business.mng_support_business_step_3_etc_input_mojipgenre
+    result["mng_support_business_step_3_etc_input_mojipjogun_chk"] = support_business.mng_support_business_step_3_etc_input_mojipjogun_chk
+    result["mng_support_business_step_3_etc_input_mojipgenre_chk"] = support_business.mng_support_business_step_3_etc_input_mojipgenre_chk
+
     result["mng_support_business_step_6_etc_input"] = support_business.mng_support_business_step_6_etc_input
     result["support_business_etc_file_title_mng"] = support_business.support_business_etc_file_title_mng
     result["support_business_appliance_form"] = support_business.support_business_appliance_form
@@ -3467,16 +3480,15 @@ def vue_get_support_business_name(request):
     temp["comp"]=""
 
     if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-        number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
+        number = str(round((
+                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
                 support_business.support_business_recruit_size), 1))
         if number == "0.0":
             number ="0"
         temp["comp"] = number + " : 1"
 
     else:
-        temp["comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+        temp["comp"] = ""
     return JsonResponse(temp, safe=False)
 
 
@@ -3510,7 +3522,7 @@ def toggle_from_favorite_log(request):
     result=""
     if request.GET.get("target")=="support_business":
         support_business = SupportBusiness.objects.get(id=request.GET.get(id))
-        if len(FavoriteLog.objects.filter(support_business=support_business).filter(user=user))>0:
+        if (FavoriteLog.objects.filter(support_business=support_business).filter(user=user)).count()>0:
             FavoriteLog.objects.filter(support_business=support_business).filter(user=user).delete()
             result="remove"
         else:
@@ -3521,7 +3533,7 @@ def toggle_from_favorite_log(request):
             result="save"
     if request.GET.get("target") == "startup":
         startup = Startup.objects.get(id=request.GET.get(id))
-        if len(FavoriteLog.objects.filter(startup=startup).filter(user=user)) > 0:
+        if (FavoriteLog.objects.filter(startup=startup).filter(user=user)).count() > 0:
             FavoriteLog.objects.filter(startup=startup).filter(user=user).delete()
             result="remove"
         else:
@@ -3532,7 +3544,7 @@ def toggle_from_favorite_log(request):
             result ="save"
     if request.GET.get("target") == "clip":
         clip = Clip.objects.get(id=request.GET.get(id))
-        if len(FavoriteLog.objects.filter(clip=clip).filter(user=user)) > 0:
+        if (FavoriteLog.objects.filter(clip=clip).filter(user=user)).count() > 0:
             FavoriteLog.objects.filter(clip=clip).filter(user=user).delete()
             result="remove"
         else:
@@ -3543,7 +3555,7 @@ def toggle_from_favorite_log(request):
             result="save"
     if request.GET.get("target") == "course":
         course = Course.objects.get(id=request.GET.get(id))
-        if len(FavoriteLog.objects.filter(course=course).filter(user=user)) > 0:
+        if (FavoriteLog.objects.filter(course=course).filter(user=user)).count() > 0:
             FavoriteLog.objects.filter(course=course).filter(user=user).delete()
             result="remove"
         else:
@@ -3554,7 +3566,7 @@ def toggle_from_favorite_log(request):
             result="save"
     if request.GET.get("target") == "path":
         path = Path.objects.get(id=request.GET.get(id))
-        if len(FavoriteLog.objects.filter(path=path).filter(user=user)) > 0:
+        if (FavoriteLog.objects.filter(path=path).filter(user=user)).count() > 0:
             FavoriteLog.objects.filter(path=path).filter(user=user).delete()
             result="delete"
         else:
@@ -4070,8 +4082,7 @@ def vue_get_application(request):
         app.attached_fund_file=startup.attached_fund_file
         result["attached_ppt_file"] = startup.attached_ppt_file
         app.attached_ppt_file = startup.attached_ppt_file
-        result["attached_etc_file"] = startup.attached_etc_file
-        app.attached_etc_file = startup.attached_etc_file
+        result["attached_etc_file"] = ""
         result["attached_ip_file"] = startup.attached_ip_file
         app.attached_ip_file = startup.attached_ip_file
         result["company_total_employee"] = 0
@@ -4157,6 +4168,7 @@ def vue_get_application(request):
             elif t.cat_0 =="영역":
                 result["special_filter"].append(t.filter_name)
         print()
+        result["is_submit"] = False
         result["service"] = []
         for s in startup.service_set.all():
             app_ser = ApplianceService()
@@ -4166,10 +4178,11 @@ def vue_get_application(request):
             app_ser.startup = startup
             app_ser.save()
             result["service"].append({"service_name":s.service_name,"":s.service_intro ,"id":app_ser.id})
-
+        result["created"] = True
     else:
         result["id"] = app.id
         result["st_id"] = startup.id
+        result["created"] = False
         result["support_business_id"] = support_business.id
         result["support_business_appliance_form"] = support_business.support_business_appliance_form
         result["support_business_meta"] = support_business.support_business_meta
@@ -4248,12 +4261,8 @@ def vue_get_application(request):
         result["service"] = []
         for s in app.applianceservice_set.all():
             result["service"].append({"service_name": s.service_name, "service_intro": s.service_intro, "id": s.id})
-
-
-
-
-
-
+        result["is_submit"]=app.is_submit
+        result["is_applied_to_company_info"] = app.is_applied_to_company_info
 
 
     return JsonResponse(result, )
@@ -4302,7 +4311,11 @@ def vue_submit_support_business(request):
     support_business = SupportBusiness.objects.get(id=request.POST.get("id"))
     support_business.support_business_appliance_form = request.POST.get("meta")
     support_business.support_business_update_at_ymdt = timezone.now()
-    support_business.support_business_status=2
+
+    if request.POST.get("user") == "mng":
+        support_business.support_business_status=2
+
+
     support_business.save();
     return JsonResponse({"result":"ok"})
 
@@ -4327,7 +4340,7 @@ def get_startup_application(request):
         try:
             temp = {}
             temp["support_business_name"] = ap.support_business.support_business_name
-            temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
+            temp["favorite"] = (ap.support_business.additionaluserinfo_set.all()).count()
             temp["support_business_id"] = ap.support_business.id
             temp["support_business_kikwan"] = ap.support_business.support_business_author.mng_kikwan
             temp["support_business_poster"] = ap.support_business.support_business_poster
@@ -4336,13 +4349,13 @@ def get_startup_application(request):
             temp["updated"] = ap.appliance_update_at_ymdt
 
             if ap.support_business.support_business_recruit_size == "" or ap.support_business.support_business_recruit_size == None or  ap.support_business.support_business_recruit_size== "0" :
-                temp["comp"] =  str(len(Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True))) +" : 1"
+                temp["comp"] =  str((Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True)).count()) +" : 1"
             else:
                 #temp["comp"] = len(Appliance.objects.filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
-                number = str(round( (len(Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True)))/int(ap.support_business.support_business_recruit_size ),1 ) )
+                number = str(round( ((Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True).count()))/int(ap.support_business.support_business_recruit_size ),1 ) )
                 if number == "0.0":
                     number ="0"
-                temp["comp"] = number + " : 1"
+                temp["comp"] = ""
             try:
                 if ap.support_business.support_business_status == "4":  # 작성중인 공고문
                     temp["status"] = "모집종료"
@@ -4373,20 +4386,19 @@ def get_startup_application(request):
     for ap in Appliance.objects.filter(startup=startup).filter(is_submit=True):
         temp = {}
         temp["support_business_name"] = ap.support_business.support_business_name
-        temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
+        temp["favorite"] = (ap.support_business.additionaluserinfo_set.all()).count()
         temp["updated"] = ap.appliance_update_at_ymdt
         if ap.support_business.support_business_recruit_size == "" or  ap.support_business.support_business_recruit_size == None  or ap.support_business.support_business_recruit_size == "0":
-            temp["comp"] = str(
-                len(Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True))) + " : 1"
+            temp["comp"] = ""
         else:
 
 
             # temp["comp"] = len(Appliance.objects.filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
-            number = str( round((len(Appliance.objects.filter(support_business=ap.support_business).filter(
-                is_submit=True))) / int(ap.support_business.support_business_recruit_size ), 1) )
+            number = str( round(((Appliance.objects.filter(support_business=ap.support_business).filter(
+                is_submit=True).count())) / int(ap.support_business.support_business_recruit_size ), 1) )
             if number == "0.0":
                 number ="0"
-            temp["comp"] = number + " : 1"
+            temp["comp"] = str(number) +" : 1"
         temp["date"] = str(ap.support_business.support_business_pro_0_end_ymd).split(" ")[0]
         temp["start"] = str(ap.support_business.support_business_pro_0_start_ymd).split(" ")[0]
         temp["support_business_kikwan"] = ap.support_business.support_business_author.mng_kikwan
@@ -4395,7 +4407,7 @@ def get_startup_application(request):
         temp["support_business_apply_end_ymdt"] = ap.support_business.support_business_apply_end_ymdt
         temp["id"] = ap.id
         temp["support_business_id"]=ap.support_business.id
-        award_num = len(Award.objects.filter(support_business=ap.support_business).filter(startup=startup))
+        award_num = (Award.objects.filter(support_business=ap.support_business).filter(startup=startup)).count()
         is_award=False
         if award_num !=0 :
             is_award = True
@@ -4427,14 +4439,13 @@ def get_startup_application(request):
 
         temp = {}
         temp["support_business_name"] = ap.support_business.support_business_name
-        temp["favorite"] = len(ap.support_business.additionaluserinfo_set.all())
+        temp["favorite"] = (ap.support_business.additionaluserinfo_set.all()).count()
         if ap.support_business.support_business_recruit_size == ""or  ap.support_business.support_business_recruit_size == None  or ap.support_business.support_business_recruit_size == "0":
-            temp["comp"] = str(
-                len(Appliance.objects.filter(support_business=ap.support_business).filter(is_submit=True))) + " : 1"
+            temp["comp"] = ""
         else:
             # temp["comp"] = len(Appliance.objects.filter(support_business=ap.support_business)) / int(ap.support_business.recruit_size)
-            number = str( round((len(Appliance.objects.filter(support_business=ap.support_business).filter(
-                is_submit=True))) / int(ap.support_business.support_business_recruit_size ), 1) )
+            number = str( round(((Appliance.objects.filter(support_business=ap.support_business).filter(
+                is_submit=True).count())) / int(ap.support_business.support_business_recruit_size ), 1) )
             if number == "0.0":
                 number ="0"
             temp["comp"] = number + " : 1"
@@ -4446,7 +4457,7 @@ def get_startup_application(request):
         temp["id"] = ap.id
         temp["support_business_id"]=ap.support_business.id
         temp["updated"] = ap.appliance_update_at_ymdt
-        award_num = len(Award.objects.filter(support_business=ap.support_business).filter(startup=startup))
+        award_num = (Award.objects.filter(support_business=ap.support_business).filter(startup=startup)).count()
         is_award=False
         if award_num !=0 :
             is_award = True
@@ -4825,7 +4836,7 @@ def get_support_business_static(request):
     for date in  support_business_detail_hit_date_ymd:
         support_business_detail_hit.append(
             {
-                "date":date, "number":len(HitLog.objects.filter(support_business_id= support_business_id).filter(date=date))
+                "date":date, "number":(HitLog.objects.filter(support_business_id= support_business_id).filter(date=date)).count()
             }
         )
     # 프론트에 보낼 객체에 저장한다.
@@ -4916,7 +4927,7 @@ def get_support_business_static(request):
             {
                 "date": date,
                 # 해당 날짜로 검색된 테이블의 행 수 = 좋아요 수
-                "number": len(FavoriteLog.objects.filter(support_business=support_business).filter(date=date))
+                "number": (FavoriteLog.objects.filter(support_business=support_business).filter(date=date)).count()
             }
         )
     # favored_support_business 에 저장한다.
@@ -5004,7 +5015,7 @@ def get_support_business_static(request):
         support_business_appliance.append(
             {
                 "date": date,
-                "number": len(Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+                "number": (Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date))).count()
             }
         )
     result["support_business_appliance"] = support_business_appliance
@@ -5082,14 +5093,14 @@ def get_support_business_static(request):
         support_business_detail_mng_sum_hit.append(
             {
                 "date": date,
-                "number": len(HitLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date))
+                "number": (HitLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date)).count()
             }
         )
         support_business_detail_mng_avg_hit.append(
             {
                 "date": date,
-                "number": round(len(HitLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date)) /
-                                len(SupportBusiness.objects.filter(support_business_author_id=support_business_author_id).exclude(Q(support_business_status="1") | Q(support_business_status="2")).filter(support_business_update_at_ymdt__lte=date))
+                "number": round((HitLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date).count()) /
+                                (SupportBusiness.objects.filter(support_business_author_id=support_business_author_id).exclude(Q(support_business_status="1") | Q(support_business_status="2")).filter(support_business_update_at_ymdt__lte=date).count())
                                 ,1)
             }
         )
@@ -5115,19 +5126,19 @@ def get_support_business_static(request):
         support_business_mng_sum_favorite.append(
             {
                 "date": date,
-                "number": len(
-                    FavoriteLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date))
+                "number": (
+                    FavoriteLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date).count())
             }
         )
         support_business_mng_avg_favorite.append(
             {
                 "date": date,
                 "number": round(
-                    len(FavoriteLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date)) /
-                    len(SupportBusiness.objects.filter(
+                    (FavoriteLog.objects.filter(support_business__in=support_business_mng_arr).filter(date=date).count()) /
+                    (SupportBusiness.objects.filter(
                         support_business_author_id=support_business_author_id).exclude(
                         Q(support_business_status="1") | Q(support_business_status="2")).filter(
-                        support_business_update_at_ymdt__lte=date))
+                        support_business_update_at_ymdt__lte=date).count())
                     , 1)
             }
         )
@@ -5154,8 +5165,8 @@ def get_support_business_static(request):
             {
                 # 중복되지 않은 날짜자 별로 지원서 제출수 객체 를 만든다
                 "date": date,
-                "number": len(
-                    Appliance.objects.filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date))
+                "number": (
+                    Appliance.objects.filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date)).count()
             }
         )
         print()
@@ -5163,10 +5174,10 @@ def get_support_business_static(request):
             {
                 "date": date,
                 "number": round(
-                    len(Appliance.objects.filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date)) /
-                    len(SupportBusiness.objects.filter(
+                    (Appliance.objects.filter(support_business__in=support_business_mng_arr).filter(appliance_update_at_ymdt__date=date).count()) /
+                    (SupportBusiness.objects.filter(
                         support_business_author_id=support_business_author_id).exclude(
-                        Q(support_business_status="1") | Q(support_business_status="2")))
+                        Q(support_business_status="1") | Q(support_business_status="2"))).count()
                     , 1)
             }
         )
@@ -5194,14 +5205,14 @@ def get_support_business_static(request):
         support_business_detail_kikwan_sum_hit.append(
             {
                 "date": date,
-                "number": len(HitLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+                "number": (HitLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date)).count()
             }
         )
         support_business_detail_kikwan_avg_hit.append(
             {
                 "date": date,
-                "number": round(len(HitLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
-                                len(SupportBusiness.objects.filter(support_business_author_id__in=author_list).exclude(Q(support_business_status="1") | Q(support_business_status="2")))
+                "number": round((HitLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date).count()) /
+                                (SupportBusiness.objects.filter(support_business_author_id__in=author_list).exclude(Q(support_business_status="1") | Q(support_business_status="2"))).count()
                                 ,1)
             }
         )
@@ -5223,19 +5234,19 @@ def get_support_business_static(request):
         support_business_kikwan_sum_favorite.append(
             {
                 "date": date,
-                "number": len(
-                    FavoriteLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date))
+                "number": (
+                    FavoriteLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date)).count()
             }
         )
         support_business_kikwan_avg_favorite.append(
             {
                 "date": date,
                 "number": round(
-                    len(FavoriteLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date)) /
-                    len(SupportBusiness.objects.filter(
+                    (FavoriteLog.objects.filter(support_business__in=support_business_kikwan_arr).filter(date=date)).count() /
+                    (SupportBusiness.objects.filter(
                         support_business_author_id__in=author_list).exclude(
                         Q(support_business_status="1") | Q(support_business_status="2")).filter(
-                        support_business_update_at_ymdt__lte=date))
+                        support_business_update_at_ymdt__lte=date).count())
                     , 1)
             }
         )
@@ -5259,18 +5270,18 @@ def get_support_business_static(request):
         support_business_kikwan_sum_appliance.append(
             {
                 "date": date,
-                "number": len(
-                    Appliance.objects.filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date))
+                "number": (
+                    Appliance.objects.filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date)).count()
             }
         )
         support_business_kikwan_avg_appliance.append(
             {
                 "date": date,
                 "number": round(
-                    len(Appliance.objects.filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date)) /
-                    len(SupportBusiness.objects.filter(
+                    (Appliance.objects.filter(support_business__in=support_business_kikwan_arr).filter(appliance_update_at_ymdt__date=date)).count() /
+                    (SupportBusiness.objects.filter(
                         support_business_author_id__in=author_list).exclude(
-                        Q(support_business_status="1") | Q(support_business_status="2")))
+                        Q(support_business_status="1") | Q(support_business_status="2")).count())
                     , 1)
             }
         )
@@ -5337,7 +5348,7 @@ def get_support_business_static(request):
     for h in support_business_detail_hit:
         print(h)
         try:
-            if len(Startup.objects.filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
+            if (Startup.objects.filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)).count() != 0:
                 startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
         except:
             pass
@@ -5638,24 +5649,24 @@ def vue_static_usr(request):
     else:
         user_id =  check_result
     #총기업수
-    total_startup = len(Startup.objects.all())
+    total_startup = (Startup.objects.all()).count()
     #총 개인회원수
-    total_usr = len(AdditionalUserInfo.objects.all().exclude(auth=5).exclude(auth=4))
+    total_usr = (AdditionalUserInfo.objects.all().exclude(auth=5).exclude(auth=4)).count()
     #기업회원 1개당 평균 사업 참가수
-    avg_apply_num_per_startup = round(len(Appliance.objects.all())/total_startup,2)
+    avg_apply_num_per_startup = round((Appliance.objects.all()).count()/total_startup,2)
     #기업 회원 한개당 평균 사업 선정수
-    avg_award_num_per_startup = round(len(Award.objects.all())/total_startup,2)
+    avg_award_num_per_startup = round((Award.objects.all().count())/total_startup,2)
 
 
     ## 최종 선정기업
     # 총 기업회원수
-    total_awarded_startup = len(Award.objects.all().values('startup_id').distinct())
+    total_awarded_startup = (Award.objects.all().values('startup_id').distinct()).count()
     #기업회원 1개당 평균 사업 참가수
     k=0;
     apply_num_arr =[]
     for startup in Award.objects.all().values('startup_id').distinct():
         #k = k + len(Award.objects.filter(startup_id=startup["startup_id"]))
-        apply_num_arr.append(len(Award.objects.filter(startup_id=startup["startup_id"])))
+        apply_num_arr.append((Award.objects.filter(startup_id=startup["startup_id"])).count())
     if len(apply_num_arr) > 0:
         avg_apply_num_per_awarded= sum(apply_num_arr)/len(apply_num_arr)
     else:
@@ -5669,7 +5680,7 @@ def vue_static_usr(request):
     k=0;
     startup_list = []
     for startup in (Startup.objects.filter( selected_company_filter_list__filter_name__contains="경기")):
-        k = k + len(Award.objects.filter(startup=startup))
+        k = k + (Award.objects.filter(startup=startup).count())
         startup_list.append(startup.id)
         startup_list.append(startup.id)
     apply_num_startup_gg_arr=[]
@@ -5696,16 +5707,16 @@ def vue_static_usr(request):
     result={}
     result["total_startup"]= total_startup
     result["total_usr"]=total_usr
-    result["avg_apply_num_per_startup"]=avg_apply_num_per_startup
-    result["avg_award_num_per_startup"]=avg_award_num_per_startup
+    result["avg_apply_num_per_startup"]= round(avg_apply_num_per_startup,2)
+    result["avg_award_num_per_startup"]=round(avg_award_num_per_startup,2)
 
     result["total_awarded_startup"] = (total_awarded_startup)
-    result["avg_apply_num_per_awarded"] = avg_apply_num_per_awarded
-    result["avg_award_num_per_awarded"] = avg_award_num_per_awarded
+    result["avg_apply_num_per_awarded"] = round(avg_apply_num_per_awarded,2)
+    result["avg_award_num_per_awarded"] = round(avg_award_num_per_awarded,2)
 
     result["total_startup_gg"]= len(total_startup_gg)
-    result["avg_apply_num_per_startup_gg"]= avg_apply_num_per_startup_gg
-    result["avg_award_num_per_awarded_gg"] =avg_award_num_per_awarded_gg
+    result["avg_apply_num_per_startup_gg"]= round(avg_apply_num_per_startup_gg,2)
+    result["avg_award_num_per_awarded_gg"] =round(avg_award_num_per_awarded_gg,2)
 
     return JsonResponse(result)
 
@@ -5883,8 +5894,8 @@ def vue_get_startup_account(request):
             local="기타"
         temp["local"] = local
         temp["employ_num"] = s.company_total_employee
-        temp["apply_num"] = len(Appliance.objects.filter(startup=s))
-        temp["award_num"] = len(Award.objects.filter(startup=s))
+        temp["apply_num"] = (Appliance.objects.filter(startup=s)).count()
+        temp["award_num"] = (Award.objects.filter(startup=s)).count()
         temp["join"] = s.user.date_joined
         temp["tag"]=[]
         for t in s.selected_company_filter_list.all():
@@ -5944,7 +5955,7 @@ def vue_get_startup_account(request):
 
 
         aw_st["support_business_name"] = Appliance.objects.filter(startup=startup).last().support_business.support_business_name
-        if len(Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+        if (Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)).count() == 0 :
             aw_st["awarded"] = "탈락"
         else:
             aw_st["awarded"] = "선정"
@@ -5993,8 +6004,8 @@ def opr_vue_get_startup_account(request):
             local="기타"
         temp["opr_local"] = local
         temp["opr_employ_num"] = s.company_total_employee
-        temp["opr_apply_num"] = len(Appliance.objects.filter(startup=s))
-        temp["opr_award_num"] = len(Award.objects.filter(startup=s))
+        temp["opr_apply_num"] = (Appliance.objects.filter(startup=s)).count()
+        temp["opr_award_num"] = (Award.objects.filter(startup=s)).count()
         temp["opr_join"] = s.user.date_joined
         temp["opr_tag"]=[]
         for t in s.selected_company_filter_list.all():
@@ -6059,7 +6070,7 @@ def opr_vue_get_startup_account(request):
 
 
         aw_st["opr_support_business_name"] = Appliance.objects.filter(startup=startup).last().support_business.support_business_name
-        if len(Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+        if (Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)).count() == 0 :
             aw_st["opr_awarded"] = "N"
         else:
             aw_st["opr_awarded"] = "Y"
@@ -6104,10 +6115,12 @@ def get_favorite_support_business_list(request):
 # # --------[]-------
 @csrf_exempt
 def get_home_info(request):
+
     check_result = gca_check_session(request)
+    user_auth_id=""
     if check_result != False:
         user_auth_id =  check_result
-    gr = SupportBusiness.objects.filter(support_business_status=3).filter(support_business_apply_end_ymdt__gte=timezone.now()).order_by("-support_business_update_at_ymdt")[:6] #.filter(  Q(support_business_status=3)|Q(support_business_status=4)|Q(support_business_status=5)).filter(support_business_apply_start_ymd__lte=datetime.datetime.now()).order_by("?")[:6]
+    gr = SupportBusiness.objects.filter(support_business_status=3).filter(support_business_apply_end_ymdt__gte=timezone.now()).order_by("-support_business_update_at_ymdt")[:6] #.filter(  Q(support_business_status=3)|Q(support_business_status=4)|Q(support_business_status=5)).filter(support_business_apply_start_ymd__lte=datetime.now()).order_by("?")[:6]
     result={}
     result["support_business_set"] = []
     for g in gr:
@@ -6126,6 +6139,120 @@ def get_home_info(request):
             team["is_favored"] = ""
         team["id"] = g.id
         result["support_business_set"].append(copy.deepcopy(team))
+    result["startup_set"] = []
+
+    startup = Startup.objects.all().exclude(company_name="").exclude(company_name=None).order_by("?")[:3]
+
+    for s in startup:
+        temp_obj = {}
+        temp_obj["company_name"] = s.company_name
+        temp_obj["company_short_desc"] = s.company_short_desc
+        temp_obj["logo"] = s.logo
+
+        temp_obj["is_favored"] = is_in_favor_list("startup", s.id, user_auth_id)
+
+        temp_obj["tag"] = []
+        temp_obj["id"] = s.id
+        temp_obj["filter"] = []
+        temp_obj["filter"] = []
+
+        for t in s.selected_company_filter_list.all():
+            if t.cat_0 != "지원형태" and t.cat_1 != "기업형태":
+                temp_obj["filter"].append(t.filter_name)
+
+        result["startup_set"].append(copy.deepcopy(temp_obj))
+
+    result["clip"] = []
+    for c in Clip.objects.all().order_by("-id")[:3]:
+        temp={}
+        temp["clip_id"] = c.id
+        try:
+            temp["clip_user"]=c.clip_user.user.startup.mark_name
+        except:
+            temp["clip_user"] = c.clip_user.mng_name
+        temp["clip_thumb"]=c.clip_thumb
+        temp["clip_title"]=c.clip_title
+        temp["clip_play"]=c.clip_play
+        temp["clip_created_at"]=c.clip_created_at
+        temp["clip_info"] = c.clip_info
+        temp["clip_tag"] =[]
+        temp["is_favored"] = is_in_favor_list( "clip", c.id  , user_auth_id )
+        temp["clip_entry_point"] ="/channel/clip/view/"+str(c.id)
+        # 채널 통계에서 사용되는 레이블과 value
+        temp["label"] = c.clip_title
+        temp["value"] = c.id
+
+        temp["tag"]=[]
+        for t in c.clip_filter.all()  :
+            temp["tag"].append(t.name)
+        result["clip"].append(copy.deepcopy(temp))
+
+    result["course"]=[]
+    for c in Course.objects.all().order_by("-id")[:3]:
+        temp = {}
+        temp["id"] = c.id
+        try:
+            print(0)
+            temp["course_entry_point"] = "/channel/course/view/" + str(c.id) + "/" + str(
+                c.course_clips.all().first().id)
+        except Exception as e:
+            print(e)
+            print(c.course_clips.all())
+            print(c.course_clips.all().first())
+            temp["course_entry_point"] = ""
+        try:
+            temp["course_user"] = c.course_user.user.startup.mark_name
+        except:
+            temp["course_user"] = c.course_user.mng_name
+        temp["course_thumb"] = c.course_thumb
+        temp["course_id"] = c.id
+        temp["label"] = c.course_title
+        temp["value"] = c.id
+        temp["is_favored"] = is_in_favor_list("course", c.id, user_auth_id)
+
+        temp["course_title"] = c.course_title
+        temp["course_rec_dur"] = c.course_rec_dur
+        temp["course_created_at"] = c.course_created_at
+        temp["course_info"] = c.course_info
+        temp["course_tag"] = []
+        temp["course_total_play"] = c.course_total_play
+        for t in c.course_filter.all():
+            temp["course_tag"].append(t.name)
+        result["course"].append(copy.deepcopy(temp))
+
+    result["path"] = []
+    for c in Path.objects.all().order_by("-id"):
+        temp = {}
+        temp["id"] = c.id
+        try:
+            temp["path_entry_point"] = "/channel/path/view/" + str(c.id) + "/" + str(
+                c.path_course.all().first().id) + "/" + str(c.path_course.first().course_clips.all().first().id)
+        except Exception as e:
+            print(e)
+            temp["path_entry_point"] = ""
+        try:
+            temp["path_user"] = c.path_user.user.startup.mark_name
+        except:
+            temp["path_user"] = c.path_user.mng_name
+        temp["path_thumb"] = c.path_thumb
+        temp["path_title"] = c.path_title
+        temp["path_rec_dur"] = c.path_rec_dur
+        temp["label"] = c.path_title
+        temp["value"] = c.id
+
+        temp["is_favored"] = is_in_favor_list("path", c.id, user_auth_id)
+
+        temp["path_total_play"] = c.path_total_play
+        temp["path_id"] = c.id
+        temp["path_created_at"] = c.path_created_at
+        temp["path_info"] = c.path_info
+        temp["path_tag"] = []
+        for t in c.path_filter.all():
+            temp["path_tag"].append(t.name)
+        result["path"].append(copy.deepcopy(temp))
+
+
+
     return JsonResponse(result)
 
 #---- (중복)
@@ -6326,22 +6453,22 @@ def vue_channel_process_check(request):
     print(request.POST)
     if request.POST.get("path_id"):
         origin_length = int(Path.objects.get(id=request.POST.get("path_id")).path_total_play)
-        view_num = len(WatchHistory.objects.filter(watch_user=AdditionalUserInfo.objects.get(id=request.POST.get("id")))\
-            .filter(watch_path_id=request.POST.get("path_id")))*6
+        view_num = (WatchHistory.objects.filter(watch_user=AdditionalUserInfo.objects.get(id=request.POST.get("id")))\
+            .filter(watch_path_id=request.POST.get("path_id"))).count()*6
         per = view_num*100 / origin_length
         return  JsonResponse({"result":per})
     if request.POST.get("course_id"):
         origin_length = int(Course.objects.get(id=request.POST.get("course_id")).course_total_play)
-        view_num = len(
+        view_num = (
             WatchHistory.objects.filter(watch_user=AdditionalUserInfo.objects.get(id=request.POST.get("id"))) \
-            .filter(watch_course_id=request.POST.get("course_id"))) * 6
+            .filter(watch_course_id=request.POST.get("course_id"))).count() * 6
         per = view_num * 100 / origin_length
         return JsonResponse({"result": per})
     if request.POST.get("clip_id"):
         origin_length = int(Clip.objects.get(id=request.POST.get("clip_id")).clip_play)
-        view_num = len(
+        view_num = (
             WatchHistory.objects.filter(watch_user=AdditionalUserInfo.objects.get(id=request.POST.get("id"))) \
-            .filter(watch_clip_id=request.POST.get("clip_id"))) * 6
+            .filter(watch_clip_id=request.POST.get("clip_id"))).count() * 6
         per = view_num * 100 / origin_length
         return JsonResponse({"result": per})
 
@@ -6646,7 +6773,7 @@ def vue_get_channel_statics_clip_update(request):
     for hd in hit_date_list:
         temp={}
         temp["date"] = str(hd["hit_clip_date"])
-        temp["number"] = len(HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"]))
+        temp["number"] = (HitClipLog.objects.filter(hit_clip=clip).filter(hit_clip_date = hd["hit_clip_date"])).count()
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.filter(clip=clip).values("date").distinct()
     result["favorite_static"]={}
@@ -6654,7 +6781,7 @@ def vue_get_channel_statics_clip_update(request):
     for fd in favorite_date_list:
         temp={}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"]))
+        temp["number"] = (FavoriteLog.objects.filter(clip=clip).filter(date = fd["date"])).count()
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.filter(clip=clip).values("date").distinct()
     result["reg_static"] = {}
@@ -6662,7 +6789,7 @@ def vue_get_channel_statics_clip_update(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"]))
+        temp["number"] = (RegisteredChannel.objects.filter(clip=clip).filter(date=fd["date"])).count()
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
     all_user_list=[]
     hit_user_list = []
@@ -6857,7 +6984,7 @@ def vue_get_channel_statics_path_update(request):
     for hd in hit_date_list:
         temp = {}
         temp["date"] = str(hd["hit_path_date"])
-        temp["number"] = len(HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"]))
+        temp["number"] = (HitPathLog.objects.filter(hit_path=path).filter(hit_path_date=hd["hit_path_date"])).count()
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.filter(path=path).values("date").distinct()
     result["favorite_static"] = {}
@@ -6865,7 +6992,7 @@ def vue_get_channel_statics_path_update(request):
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(FavoriteLog.objects.filter(path=path).filter(date=fd["date"]))
+        temp["number"] = (FavoriteLog.objects.filter(path=path).filter(date=fd["date"])).count()
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.filter(path=path).values("date").distinct()
     result["reg_static"] = {}
@@ -6873,7 +7000,7 @@ def vue_get_channel_statics_path_update(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(RegisteredChannel.objects.filter(path=path).filter(date=fd["date"]))
+        temp["number"] = (RegisteredChannel.objects.filter(path=path).filter(date=fd["date"])).count()
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
@@ -7090,7 +7217,7 @@ def vue_get_channel_statics_course_update(request):
     for hd in hit_date_list:
         temp = {}
         temp["date"] = str(hd["hit_course_date"])
-        temp["number"] = len(HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"]))
+        temp["number"] = (HitCourseLog.objects.filter(hit_course=course).filter(hit_course_date=hd["hit_course_date"])).count()
         result["hit_static"]["line_data"].append(copy.deepcopy(temp))
     favorite_date_list = FavoriteLog.objects.filter(course=course).values("date").distinct()
     result["favorite_static"] = {}
@@ -7098,7 +7225,7 @@ def vue_get_channel_statics_course_update(request):
     for fd in favorite_date_list:
         temp = {}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(FavoriteLog.objects.filter(course=course).filter(date=fd["date"]))
+        temp["number"] = (FavoriteLog.objects.filter(course=course).filter(date=fd["date"])).count()
         result["favorite_static"]["line_data"].append(copy.deepcopy(temp))
     registered_date_list = RegisteredChannel.objects.filter(course=course).values("date").distinct()
     result["reg_static"] = {}
@@ -7106,7 +7233,7 @@ def vue_get_channel_statics_course_update(request):
     for fd in registered_date_list:
         temp = {}
         temp["date"] = str(fd["date"])
-        temp["number"] = len(RegisteredChannel.objects.filter(course=course).filter(date=fd["date"]))
+        temp["number"] = (RegisteredChannel.objects.filter(course=course).filter(date=fd["date"])).count()
         result["reg_static"]["line_data"].append(copy.deepcopy(temp))
         # 전체
     # 먼저 각각의 스타트업 리스트 추출 하고 전체 리스트 만들어서 push
@@ -7541,7 +7668,7 @@ def vue_get_course_uploaded(request):
             ttem["clip_title"]= clip.clip_title
             ttem["clip_created_at"] = clip.clip_created_at
             ttem["clip_play"] = clip.clip_play
-            ttem["int"] = len(clip.additionaluserinfo_set.all())
+            ttem["int"] = (clip.additionaluserinfo_set.all()).count()
             temp["course_clips"].append(copy.deepcopy(ttem))
         result["course_set"].append(copy.deepcopy(temp))
     return JsonResponse(result)
@@ -7660,7 +7787,7 @@ def vue_get_clip(request):
     result["clip_created_at"] = clip.clip_created_at
     result["clip_thumb"] = clip.clip_thumb
     result["clip_id"] = clip.id
-    result["int"] = len(clip.additionaluserinfo_set.all())
+    result["int"] = (clip.additionaluserinfo_set.all()).count()
     result["tag"]=[]
     for  t in clip.clip_filter.all():
         result["tag"].append(t.name)
@@ -7731,7 +7858,7 @@ def vue_get_course(request):
     except:
         result["course_user"] = clip.clip_user.mng_name
     result["course_created_at"] = clip.clip_created_at
-    result["int"] = len(clip.additionaluserinfo_set.all())
+    result["int"] = (clip.additionaluserinfo_set.all()).count()
     result["course_id"] = course.id
     result["tag"] = []
     for t in clip.clip_filter.all():
@@ -7807,7 +7934,7 @@ def vue_get_path(request):
         for t in clip.clip_filter.all():
             result["tag"].append(t.name)
         result["clip_id"] = clip.id
-        result["int"] = len(clip.additionaluserinfo_set.all())
+        result["int"] = (clip.additionaluserinfo_set.all()).count()
         result["clip_play"] = clip.clip_play
         result["user"] = clip.user.name
         result["created"] = clip.created_at
@@ -8104,7 +8231,7 @@ def opr_get_support_business_static(request):
     for date in  support_business_detail_hit_date_ymd:
         support_business_detail_hit.append(
             {
-                "date":date, "number":len(HitLog.objects.filter(support_business= support_business).filter(date=date))
+                "date":date, "number":(HitLog.objects.filter(support_business= support_business).filter(date=date)).count()
             }
 
         )
@@ -8122,7 +8249,7 @@ def opr_get_support_business_static(request):
         support_business_favorite.append(
             {
                 "date": date,
-                "number": len(FavoriteLog.objects.filter(support_business=support_business).filter(date=date))
+                "number": (FavoriteLog.objects.filter(support_business=support_business).filter(date=date)).count()
             }
         )
     result["opr_support_business_detail_hit"] = support_business_detail_hit
@@ -8186,7 +8313,7 @@ def opr_get_support_business_static(request):
         support_business_appliance.append(
             {
                 "date": date,
-                "number": len(Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+                "number": (Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date))).count()
             }
         )
 
@@ -8565,7 +8692,7 @@ def opr_get_support_business_static(request):
         support_business_id=request.GET.get("support_business_id")).values("user").distinct()
     for h in support_business_detail_hit:
         try:
-            if len(Startup.objects.filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)) != 0:
+            if (Startup.objects.filter(user=AdditionalUserInfo.objects.get(id=h["user"]).user)).count() != 0:
                 startup_list.append(Startup.objects.get(user=AdditionalUserInfo.objects.get(id=h["user"]).user).id)
         except:
             pass
@@ -8648,11 +8775,11 @@ def opr_vue_get_support_business_info(request):
     result = {}
     support_business_author_list  = []
     print(AdditionalUserInfo.objects.get(id= user_auth_id).child_list())
-    print(datetime.datetime.now())
+    print(datetime.now())
     for r in AdditionalUserInfo.objects.get(id= user_auth_id).child_list():
         support_business_author_list.append(r.id)
     #user_id = request.POST.get("id")
-    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lte=datetime.datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
+    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lte=datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
         support_business_author_id__in=support_business_author_list)
 
     end_set = []
@@ -8667,24 +8794,26 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["opr_author"] = support_business.support_business_author.mng_name
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "모집종료"
         result_end["opr_status_num"] = support_business.support_business_status
 
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number = "0"
-
-            result_end["opr_comp"] = number + " : 1"
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] = ""
 
         else:
-            result_end["opr_comp"] = str(len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                is_submit=True))) + " : 1"
+            result_end["opr_comp"] = ""
         end_set.append(copy.deepcopy(result_end))
 
     waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter( support_business_author_id__in=support_business_author_list)
@@ -8701,58 +8830,32 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_status"] = "승인대기"
         result_end["opr_author"] = support_business.support_business_author.mng_name
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if( number =="0.0"):
-                number ="0"
-            result_end["opr_comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] = str(
+                    (Appliance.objects.filter(support_business_id=support_business.id).filter(
+                        is_submit=True)).count()) + " : 1"
         else:
             result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+                (Appliance.objects.filter(support_business_id=support_business.id).filter(
+                    is_submit=True)).count()) + " : 1"
         waiting_set.append(copy.deepcopy(result_end))
 
-    # 작성중인 공고
-    writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter( support_business_author_id__in=support_business_author_list)
-    writing_set = []
-    for support_business in writing_support_business:
-        result_end = {}
-        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_award_date_ymd
-        result_end["opr_id"] = support_business.id
-        result_end["opr_author"] = support_business.support_business_author.mng_name
-        result_end['opr_support_business_name'] = support_business.support_business_name
-        result_end['opr_support_business_poster'] = support_business.support_business_poster
-        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
-        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
 
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
-        result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
-        result_end["opr_status"] = "작성중"
-        result_end["opr_status_num"] = support_business.support_business_status
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number ="0"
-            result_end["opr_comp"] = number + " : 1"
-            pass
-        else:
-            result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
-        writing_set.append(copy.deepcopy(result_end))
     # 공고중인 공고
-    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.datetime.now()).filter(
+    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=datetime.now()).filter(
         support_business_author_id__in=support_business_author_list)
     ing_set = []
     for support_business in ing_support_business:
@@ -8767,22 +8870,23 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_status"] = "공고중"
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number =="0.0":
-                number ="0"
-            result_end["opr_comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] = ""
         else:
-            result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+            result_end["opr_comp"] = ""
         ing_set.append(copy.deepcopy(result_end))
 
     # 공고 종료된 공고
@@ -8797,25 +8901,26 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
         result_end["opr_author"] = support_business.support_business_author.mng_name
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "공고종료"
 
         result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number = str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number ="0"
-            result_end["opr_comp"] = number  + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] = ""
         else:
-            result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+            result_end["opr_comp"] = ""
         comp_set.append(copy.deepcopy(result_end))
     # 블라인드된 공고문
     blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter( support_business_author_id__in=support_business_author_list)
@@ -8831,24 +8936,29 @@ def opr_vue_get_support_business_info(request):
         result_end["opr_author"] = support_business.support_business_author.mng_name
         result_end['opr_support_business_poster'] = support_business.support_business_poster
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         result_end["opr_status"] = "블라인드"
         result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
         result_end["opr_status_num"] = support_business.support_business_status
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number ="0"
-            result_end["opr_comp"] = number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] = str(
+                    (Appliance.objects.filter(support_business_id=support_business.id).filter(
+                        is_submit=True)).count()) + " : 1"
         else:
             result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+                (Appliance.objects.filter(support_business_id=support_business.id).filter(
+                    is_submit=True)).count()) + " : 1"
         blind_set.append(copy.deepcopy(result_end))
 
     all_support_business = SupportBusiness.objects.filter( support_business_author_id__in=support_business_author_list).exclude(Q(support_business_status=None)|Q(support_business_status=1)|Q(support_business_status=6))
@@ -8869,8 +8979,8 @@ def opr_vue_get_support_business_info(request):
         except Exception as e:
             print(e)
         result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_apply_num"] = len(Appliance.objects.filter(support_business_id=support_business.id))
-        result_end["opr_favorite"] = len(AdditionalUserInfo.objects.filter(favorite=support_business))
+        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id)).count()
+        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
         try:
             if support_business.support_business_status == "4":  # 작성중인 공고문
                 result_end["opr_status"] = "모집종료"
@@ -8890,17 +9000,18 @@ def opr_vue_get_support_business_info(request):
             result_end["opr_status"] = "작성중"
         result_end["opr_open_date"] = (support_business.support_business_apply_start_ymd)
         if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            number =  str(round(len(
-                Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)) / int(
-                support_business.support_business_recruit_size), 1))
-            if number == "0.0":
-                number ="0"
-            result_end["opr_comp"] =  number + " : 1"
-            pass
+            try:
+                number = str(round((
+                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
+                    support_business.support_business_recruit_size), 1))
+                if number == "0.0":
+                    number = "0"
+                result_end["opr_comp"] = number + " : 1"
+                pass
+            except:
+                result_end["opr_comp"] =""
         else:
-            result_end["opr_comp"] = str(
-                len(Appliance.objects.filter(support_business_id=support_business.id).filter(
-                    is_submit=True))) + " : 1"
+            result_end["opr_comp"] = ""
         all_set.append(copy.deepcopy(result_end))
 
     result["opr_end_set"] = end_set
@@ -9083,8 +9194,8 @@ def vue_get_startup_public_detail(request):
         obj["company_activity_text"] = news.company_activity_text
         obj["company_activity_img"] = news.company_activity_img
         obj["company_activity_youtube"] = news.company_activity_youtube
-        obj["like_num"] = len(news.activitylike_set.all())
-        obj["rep_num"] = len(news.reply_set.all())
+        obj["like_num"] = (news.activitylike_set.all()).count()
+        obj["rep_num"] = (news.reply_set.all()).count()
         obj["id"] = news.id
 
         obj["rep"] = []
@@ -9141,8 +9252,8 @@ def vue_get_startup_public_detail_news(request):
         obj["company_activity_text"] = news.company_activity_text
         obj["company_activity_img"] = news.company_activity_img
         obj["company_activity_youtube"] = news.company_activity_youtube
-        obj["like_num"] = len(news.activitylike_set.all())
-        obj["rep_num"] = len(news.reply_set.all())
+        obj["like_num"] = (news.activitylike_set.all()).count()
+        obj["rep_num"] = (news.reply_set.all()).count()
         obj["id"] = news.id
 
         obj["rep"] = []
@@ -9249,14 +9360,14 @@ def vue_channel_register_check(request):
         result = RegisteredChannel.objects.filter(
             channel_user=AdditionalUserInfo.objects.get(id=user_auth_id), path=Path.objects.get(id=request.POST.get("id"))
         )
-        if len(result) >0 :
+        if (result).count() >0 :
             return JsonResponse({"result":"reg"})
         else :
             return  JsonResponse({"result":"no"})
     if request.POST.get("target") == "course":
         result = RegisteredChannel.objects.filter(
             channel_user=AdditionalUserInfo.objects.get(id=user_auth_id)).filter(course=Course.objects.get(id=request.POST.get("id")) )
-        if len(result) > 0:
+        if (result).count() > 0:
             return JsonResponse({"result": "reg"})
         else:
             return JsonResponse({"result": "no"})
@@ -9267,7 +9378,7 @@ def vue_channel_register_check(request):
                                                         clip=Clip.objects.get(id=request.POST.get("id"))
         )
 
-        if len(result) >0 :
+        if (result).count() >0 :
             return JsonResponse({"result":"reg"})
         else :
             return  JsonResponse({"result":"no"})
@@ -9299,9 +9410,9 @@ def vue_get_registerd_channel(request):
             t["path_thumb"] = p.path_thumb
             t["path_percent"] = 0
             origin_length = int(p.path_total_play)
-            view_num = len(WatchHistory.objects.filter(
+            view_num = (WatchHistory.objects.filter(
                 watch_user=AdditionalUserInfo.objects.get(id=user_auth_id)) \
-                           .filter(watch_path=p)) * 6
+                           .filter(watch_path=p)).count() * 6
             try:
                 per = round(view_num * 100 / origin_length,2)
                 if(per > 100):
@@ -9325,9 +9436,9 @@ def vue_get_registerd_channel(request):
             t["course_thumb"] = p.course_thumb
 
             origin_length = int(p.course_total_play)
-            view_num = len(WatchHistory.objects.filter(
+            view_num = (WatchHistory.objects.filter(
                 watch_user=AdditionalUserInfo.objects.get(id=user_auth_id)) \
-                           .filter(watch_course=p)) * 6
+                           .filter(watch_course=p)).count() * 6
             try:
                 per = round(view_num * 100 / origin_length,2)
                 if (per > 100):
@@ -9356,9 +9467,9 @@ def vue_get_registerd_channel(request):
             t["clip_thumb"] = p.clip_thumb
 
             origin_length = int(p.clip_play)
-            view_num = len(WatchHistory.objects.filter(
+            view_num = (WatchHistory.objects.filter(
                 watch_user=AdditionalUserInfo.objects.get(id=user_auth_id)) \
-                           .filter(watch_clip=p)) * 6
+                           .filter(watch_clip=p)).count() * 6
             per = round(view_num * 100 / origin_length,2)
             if (per > 100):
                 per = 100
@@ -9395,8 +9506,8 @@ def make_excel_kikwan(request):
         ws.write(k, 4, s.support_business_author.mng_team)
         ws.write(k, 5, s.support_business_author.mng_kikwan)
         ws.write(k, 6, s.support_business_author.mng_tel)
-        ws.write(k,  7 ,len(Appliance.objects.filter(support_business=s)))
-        ws.write(k, 8, len(Award.objects.filter(support_business=s)))
+        ws.write(k,  7 ,(Appliance.objects.filter(support_business=s)).count())
+        ws.write(k, 8, (Award.objects.filter(support_business=s)).count())
 
         try:
 
@@ -9673,7 +9784,7 @@ def excel_down_support_business_gwanri_aw(request):
     for id in request.GET.get("id_list").split(","):
         startup_list.append(Startup.objects.get(id=id))
     for startup in startup_list :
-        ap = Appliance.objects.get(support_business_id=request.GET.get("support_business_id"), startup=startup)
+        ap = Appliance.objects.get(support_business_id=request.GET.get("support_business"), startup=startup)
         com_type_list = startup.selected_company_filter_list.all()
         com_type=""
         for filter in com_type_list:
@@ -9719,8 +9830,8 @@ def vue_get_support_business_list_excel(request):
         sheet.write(k, 5, s.support_business_author.mng_team)
         sheet.write(k, 6, "경기도 콘텐츠진흥원")
         sheet.write(k, 7, s.support_business_author.mng_phone)
-        sheet.write(k, 8, len(Appliance.objects.filter(support_business =s)))
-        sheet.write(k, 9, len(Award.objects.filter(support_business=s)))
+        sheet.write(k, 8, (Appliance.objects.filter(support_business =s).count()))
+        sheet.write(k, 9, (Award.objects.filter(support_business=s).count()))
         if s.support_business_status == "1":
             mng_status = "작성중"
         elif s.support_business_status == "2":
@@ -9775,8 +9886,8 @@ def vue_get_support_business_selected_list_excel(request):
         sheet.write(k, 5, s.support_business_author.mng_team)
         sheet.write(k, 6, "경기도 콘텐츠진흥원")
         sheet.write(k, 7, s.support_business_author.mng_phone)
-        sheet.write(k, 8, len(Appliance.objects.filter(support_business =s)))
-        sheet.write(k, 9, len(Award.objects.filter(support_business=s)))
+        sheet.write(k, 8, (Appliance.objects.filter(support_business =s)).count())
+        sheet.write(k, 9, (Award.objects.filter(support_business=s)).count())
         if s.support_business_status == "1":
             mng_status = "작성중"
         elif s.support_business_status == "2":
@@ -9854,8 +9965,8 @@ def vue_get_download_usr_account(request):
 
             sheet.write(k, 7, (local))
             sheet.write(k, 8, s.company_total_employee)
-            sheet.write(k, 9, len(Appliance.objects.filter(startup=s)))
-            sheet.write(k, 10,len(Award.objects.filter(startup=s)))
+            sheet.write(k, 9, (Appliance.objects.filter(startup=s)).count())
+            sheet.write(k, 10,(Award.objects.filter(startup=s)).count())
             sheet.write(k, 11,str(s.user.date_joined).split(" ")[0])
             k = k + 1
 
@@ -9908,9 +10019,9 @@ def vue_get_download_usr_account(request):
             sheet.write(k, 6,(local))
             aw_st["opr_support_business_name"] = Appliance.objects.filter(
                 startup=startup).last().support_business.support_business_name
-            if len(Award.objects.filter(
+            if (Award.objects.filter(
                     support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(
-                    startup=startup)) == 0:
+                    startup=startup)).count() == 0:
                 aw_st["opr_awarded"] = "탈락"
             else:
                 aw_st["opr_awarded"] = "선정"
@@ -10022,8 +10133,8 @@ def vue_get_download_usr_account_selected(request):
 
             sheet.write(k, 7, (local))
             sheet.write(k, 8, s.company_total_employee)
-            sheet.write(k, 9, len(Appliance.objects.filter(startup=s)))
-            sheet.write(k, 10,len(Award.objects.filter(startup=s)))
+            sheet.write(k, 9, (Appliance.objects.filter(startup=s)).count())
+            sheet.write(k, 10,(Award.objects.filter(startup=s)).count())
             sheet.write(k, 11, str(s.user.date_joined).split(" ")[0])
             k = k + 1
 
@@ -10078,9 +10189,9 @@ def vue_get_download_usr_account_selected(request):
                 sheet.write(k, 6,(local))
                 aw_st["opr_support_business_name"] = Appliance.objects.filter(
                     startup=startup).last().support_business.support_business_name
-                if len(Award.objects.filter(
+                if (Award.objects.filter(
                         support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(
-                        startup=startup)) == 0:
+                        startup=startup)).count() == 0:
                     aw_st["opr_awarded"] = "탈락"
                 else:
                     aw_st["opr_awarded"] = "선정"
@@ -10224,7 +10335,7 @@ def get_realtime_support_business_appliance(request):
         support_business_appliance.append(
             {
                 "date": date,
-                "number": len(Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date)))
+                "number": (Appliance.objects.filter(support_business=support_business).filter(appliance_update_at_ymdt__date=str(date))).count()
             }
         )
     result["support_business_appliance"] = support_business_appliance
@@ -10246,8 +10357,8 @@ def mng_vue_get_support_business_list(request):
         temp["mng_mng_team"] = s.support_business_author.mng_team
         temp["mng_mng_kikwan"] = s.support_business_author.mng_kikwan
         temp["mng_mng_tel"] = s.support_business_author.mng_tel
-        temp["mng_apply_num"] = len(Appliance.objects.filter(support_business=s).filter(is_submit=True))
-        temp["mng_award_num"] = len(Award.objects.filter(support_business=s))
+        temp["mng_apply_num"] = (Appliance.objects.filter(support_business=s).filter(is_submit=True)).count()
+        temp["mng_award_num"] = (Award.objects.filter(support_business=s)).count()
         opr_status = ""
         try:
 
@@ -10480,8 +10591,8 @@ def mng_vue_get_startup_account(request):
             local="기타"
         temp["mng_local"] = local
         temp["mng_employ_num"] = s.company_total_employee
-        temp["mng_apply_num"] = len(Appliance.objects.filter(startup=s))
-        temp["mng_award_num"] = len(Award.objects.filter(startup=s))
+        temp["mng_apply_num"] = (Appliance.objects.filter(startup=s)).count()
+        temp["mng_award_num"] = (Award.objects.filter(startup=s)).count()
         temp["mng_join"] = s.user.date_joined
         temp["mng_tag"]=[]
         for t in s.selected_company_filter_list.all():
@@ -10536,7 +10647,7 @@ def mng_vue_get_startup_account(request):
             local="기타"
         aw_st["mng_local"] = local
         aw_st["mng_support_business_name"] = Appliance.objects.filter(startup=startup).last().support_business.support_business_name
-        if len(Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)) == 0 :
+        if (Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)).count() == 0 :
             aw_st["mng_awarded"] = "N"
         else:
             aw_st["mng_awarded"] = "Y"
@@ -10562,8 +10673,8 @@ def vue_get_channel_static(request):
         for date in date_arr:
             favorite_by_date.append(
                 {
-                    "date": date, "number": len(
-                    Favoritelog.objects.filter(favorite_clip_id=id).filter(favorite_date=date))
+                    "date": date, "number": (
+                    Favoritelog.objects.filter(favorite_clip_id=id).filter(favorite_date=date)).count()
                 }
             )
         result["favorite_by_date"] = favorite_by_date
@@ -10622,8 +10733,8 @@ def vue_get_channel_static(request):
         for date in date_arr:
             hit_by_date.append(
                 {
-                    "date": date, "number": len(
-                    HitClipLog.objects.filter(hit_clip_id=id).filter(hit_clip_date=date))
+                    "date": date, "number": (
+                    HitClipLog.objects.filter(hit_clip_id=id).filter(hit_clip_date=date)).count()
                 }
             )
         result["hit_by_date"] = hit_by_date
@@ -10684,7 +10795,7 @@ def vue_get_course_all(request):
         temp={}
         temp["id"] = c.id
         try:
-            print(0)
+
             temp["course_entry_point"] = "/channel/course/view/"+ str(c.id)+"/" + str(c.course_clips.all().first().id)
         except Exception as e:
             print(e)
@@ -10768,7 +10879,8 @@ def get_favorite_startup(request):
 
         filter=[]
         for t in a.selected_company_filter_list.all():
-            filter.append(t.filter_name)
+            if t.cat_0 !="조건" and t.cat_0 != "지원형태":
+                filter.append(t.filter_name)
         is_favored=""
         try:
             is_favored =  is_in_favor_list("startup",a.id, usr_id)
@@ -10814,6 +10926,9 @@ def vue_get_startup_list_sample(request):
                 temp_obj["filter"].append(t.filter_name)
 
         result.append(copy.deepcopy(temp_obj))
+
+
+
     return JsonResponse(list(result), safe=False)
 
 
@@ -10825,7 +10940,6 @@ def vue_get_clip_all(request):
     else:
         user_auth_id = ""
 
-    print("print clip")
     result = []
     for c in Clip.objects.all().order_by("-id"):
         temp={}
@@ -10851,6 +10965,99 @@ def vue_get_clip_all(request):
             temp["tag"].append(t.name)
         result.append(copy.deepcopy(temp))
     return JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def get_channel_content(request):
+    check_result = gca_check_session(request)
+    if check_result:
+        user_auth_id = check_result
+    else:
+        user_auth_id = ""
+    result={}
+    result["clip"]=[]
+    result["course"]=[]
+    result["path"]=[]
+    for c in Clip.objects.all().order_by("-id"):
+        temp = {}
+        temp["clip_id"] = c.id
+        try:
+            temp["clip_user"] = c.clip_user.user.startup.mark_name
+        except:
+            temp["clip_user"] = c.clip_user.mng_name
+        temp["clip_thumb"] = c.clip_thumb
+        temp["clip_title"] = c.clip_title
+        temp["clip_play"] = c.clip_play
+        temp["clip_created_at"] = c.clip_created_at
+        temp["clip_info"] = c.clip_info
+        temp["clip_tag"] = []
+        temp["is_favored"] = is_in_favor_list("clip", c.id, user_auth_id)
+        temp["clip_entry_point"] = "/channel/clip/view/" + str(c.id)
+        # 채널 통계에서 사용되는 레이블과 value
+        temp["label"] = c.clip_title
+        temp["value"] = c.id
+        temp["tag"] = []
+        for t in c.clip_filter.all():
+            temp["tag"].append(t.name)
+        result["clip"].append(copy.deepcopy(temp))
+    for c in Course.objects.all().order_by("-id"):
+        temp = {}
+        temp["id"] = c.id
+        try:
+            temp["course_entry_point"] = "/channel/course/view/" + str(c.id) + "/" + str(
+                c.course_clips.all().first().id)
+        except Exception as e:
+            temp["course_entry_point"] = ""
+        try:
+            temp["course_user"] = c.course_user.user.startup.mark_name
+        except:
+            temp["course_user"] = c.course_user.mng_name
+        temp["course_thumb"] = c.course_thumb
+        temp["course_id"] = c.id
+        temp["label"] = c.course_title
+        temp["value"] = c.id
+        temp["is_favored"] = is_in_favor_list("course", c.id, user_auth_id)
+        temp["course_title"] = c.course_title
+        temp["course_rec_dur"] = c.course_rec_dur
+        temp["course_created_at"] = c.course_created_at
+        temp["course_info"] = c.course_info
+        temp["course_tag"] = []
+        temp["course_total_play"] = c.course_total_play
+        for t in c.course_filter.all():
+            temp["course_tag"].append(t.name)
+        result["course"].append(copy.deepcopy(temp))
+
+    for c in Path.objects.all().order_by("-id"):
+        temp = {}
+        temp["id"] = c.id
+        try:
+            temp["path_entry_point"] = "/channel/path/view/" + str(c.id) + "/" + str(
+                c.path_course.all().first().id) + "/" + str(c.path_course.first().course_clips.all().first().id)
+        except Exception as e:
+            temp["path_entry_point"] = ""
+        try:
+            temp["path_user"] = c.path_user.user.startup.mark_name
+        except:
+            temp["path_user"] = c.path_user.mng_name
+        temp["path_thumb"] = c.path_thumb
+        temp["path_title"] = c.path_title
+        temp["path_rec_dur"] = c.path_rec_dur
+        temp["label"] = c.path_title
+        temp["value"] = c.id
+        temp["is_favored"] = is_in_favor_list("path", c.id, user_auth_id)
+        temp["path_total_play"] = c.path_total_play
+        temp["path_id"] = c.id
+        temp["path_created_at"] = c.path_created_at
+        temp["path_info"] = c.path_info
+        temp["path_tag"] = []
+        for t in c.path_filter.all():
+            temp["path_tag"].append(t.name)
+        result["path"].append(copy.deepcopy(temp))
+    return JsonResponse(result, safe=False)
+
+
+
+
 @csrf_exempt
 def add_favorite_startup(request):
     check_result = gca_check_session(request)
@@ -10973,7 +11180,7 @@ def appliance_delete_service(request):
 
 @csrf_exempt
 def email_check(request):
-    num = len(User.objects.filter(username=request.POST.get("email")))
+    num = (User.objects.filter(username=request.POST.get("email"))).count()
     if num == 0:
         return JsonResponse({"result":"ok"})
     else:
@@ -11013,7 +11220,7 @@ def get_usr_appliance_check(request):
     add = AdditionalUserInfo.objects.get(id=user_auth_id)
     startup = Startup.objects.get(user=add.user)
     result = {}
-    if len(Appliance.objects.filter(support_business_id=request.POST.get("support_business_id"))) > 0:
+    if (Appliance.objects.filter(support_business_id=request.POST.get("support_business_id"))).count() > 0:
         result["is_applied"] = True
         ap = Appliance.objects.get(support_business_id=request.POST.get("support_business_id"),startup=startup )
         result["is_appliance_submitted"] = ap.is_submit
@@ -11247,6 +11454,8 @@ def sync_with_appliance(request):
     startup.export_before_nation_2 = app.export_before_nation_2
     startup.company_intro = app.company_intro
     startup.save()
+    for info in startup.service_set.all():
+        info.delete()
     for info in startup.history_set.all():
         info.delete()
     for info in startup.companyinvest_set.all():
@@ -11277,6 +11486,8 @@ def sync_with_appliance(request):
         app_ser.service_name = s.service_name
         app_ser.service_intro = s.service_intro
         app_ser.save()
+    app.is_applied_to_company_info = True
+    app.save()
     return  JsonResponse({"result":True})
 import os
 from django.conf import settings
@@ -11327,7 +11538,13 @@ def logout(request):
 def delete_application(request):
     print(request.POST.get("application_id"))
     app_num = request.POST.get("application_id")
-    Appliance.objects.get(id=app_num).delete()
+    app =Appliance.objects.get(id=app_num)
+    try:
+        aw=Award.objects.get(startup=app.startup, support_business=app.support_business)
+        aw.delete()
+    except Exception as e:
+        print(e)
+    app.delete()
     return JsonResponse({"result":"true"})
 @csrf_exempt
 def delete_support_business(request):
@@ -11359,9 +11576,9 @@ def updated_support_statics(request):
             qs_startup = OPRENDCountingStartupListTable.objects.get(opr_id=request.GET.get("opr_id"))
             qs_filter = OPRENDCountingFilterListTable.objects.get(opr_id=request.GET.get("opr_id"))
     try:
-        result["support_business_min_date"]  = str(SupportBusiness.objects.get(id=support_business_id).support_business_update_at_ymdt)
+        result["support_business_min_date"]  = str(SupportBusiness.objects.get(id=support_business_id).support_business_update_at_ymdt).split(" ")[0]
     except:
-        result["support_business_min_date"] = str(qs[0].date)
+        result["support_business_min_date"] = str(qs[-1].date).split(" ")[0]
         print(qs[0].date)
     result["support_business_detail_hit"] = list(qs.order_by("-date").annotate(number=F("hit_num")).values("date","number"))
     result["favored_support_business"] = list(qs.order_by("-date").annotate(number=F("fav_num")).values("date","number"))
@@ -11403,7 +11620,7 @@ def check_company_name(request):
         user_auth_id =  check_result
     name = request.POST.get("company_name")
     add = AdditionalUserInfo.objects.get(id=user_auth_id)
-    num = len(Startup.objects.all().exclude(user=add.user).filter(company_name=name))
+    num = (Startup.objects.all().exclude(user=add.user).filter(company_name=name)).count()
     return JsonResponse({"result":num})
 
 @csrf_exempt
@@ -11424,3 +11641,1989 @@ def superuser_grant_check(request):
         user_auth_id = check_result
         is_superuser = AdditionalUserInfo.objects.get(id=user_auth_id).is_superuser
         return JsonResponse({"result":is_superuser})
+
+
+from background_task import background
+
+
+@background(schedule=60)
+def update_static_count_0():
+    sb_set = SupportBusiness.objects.all()
+    CountingStartupListTable.objects.all().delete()
+    CountingFilterListTable.objects.all().delete()
+    for sb in sb_set:
+        # 방문자 스타트업 리스트 추출
+        go = HitLog.objects.filter(support_business=sb).values("user_id").distinct()
+        hit_startup = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    hit_startup.append(st.id)
+
+        hit_startup_list = []
+        k = 1;
+        for startup_id in hit_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+
+            hit_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+
+        go = FavoriteLog.objects.filter(support_business=sb).values("user_id").distinct()
+        fav_startup = []
+        fav_startup_list = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    fav_startup.append(st.id)
+        k = 1;
+        for startup_id in fav_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            fav_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+
+        app = Appliance.objects.filter(support_business=sb).filter(is_submit=True).values("startup_id").distinct()
+        app_startup = []
+        app_startup_list = []
+        for startup_in_app in app:
+            app_startup.append(startup_in_app["startup_id"])
+        k = 1;
+
+        for startup_id in app_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.get(support_business=sb, startup=startup)
+
+            app_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "app_id": pre_app.id,
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+
+        aw = Award.objects.filter(support_business=sb)
+        aw_startup = []
+        aw_startup_list = []
+
+        for awin in aw:
+            aw_startup.append(awin.startup_id)
+        k = 1;
+        for startup_id in aw_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.get(support_business=sb, startup=startup)
+            aw_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "app_id": pre_app.id,
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+
+        hit_filter_list = []
+        hit_comtype_filter = []
+        hit_location_filter = []
+        hit_genre_filter = []
+        hit_area_filter = []
+
+        for st in hit_startup:
+            startup = Startup.objects.get(id=st)
+            hit_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in hit_filter_list:
+                if filter.cat_1 == "기업형태":
+                    hit_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    hit_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    hit_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    hit_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_hit_comtype_filter = organize(hit_comtype_filter)
+        organized_hit_location_filter = organize(hit_location_filter)
+        organized_hit_genre_filter = organize(hit_genre_filter)
+        organized_hit_area_filter = organize(hit_area_filter)
+        fav_filter_list = []
+        fav_comtype_filter = []
+        fav_location_filter = []
+        fav_genre_filter = []
+        fav_area_filter = []
+        for st in fav_startup:
+            startup = Startup.objects.get(id=st)
+            fav_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in fav_filter_list:
+                if filter.cat_1 == "기업형태":
+                    fav_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    fav_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    fav_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    fav_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_fav_comtype_filter = organize(fav_comtype_filter)
+        organized_fav_location_filter = organize(fav_location_filter)
+        organized_fav_genre_filter = organize(fav_genre_filter)
+        organized_fav_area_filter = organize(fav_area_filter)
+        app_filter_list = []
+        app_comtype_filter = []
+        app_location_filter = []
+        app_genre_filter = []
+        app_area_filter = []
+        for st in app_startup:
+            startup = Startup.objects.get(id=st)
+            app_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in app_filter_list:
+                if filter.cat_1 == "기업형태":
+                    app_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    app_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    app_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    app_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_app_comtype_filter = organize(app_comtype_filter)
+        organized_app_location_filter = organize(app_location_filter)
+        organized_app_genre_filter = organize(app_genre_filter)
+        organized_app_area_filter = organize(app_area_filter)
+        aw_filter_list = []
+        aw_comtype_filter = []
+        aw_location_filter = []
+        aw_genre_filter = []
+        aw_area_filter = []
+        for st in aw_startup:
+            startup = Startup.objects.get(id=st)
+            aw_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in aw_filter_list:
+                if filter.cat_1 == "기업형태":
+                    aw_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    aw_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    aw_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    aw_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_aw_comtype_filter = organize(aw_comtype_filter)
+        organized_aw_location_filter = organize(aw_location_filter)
+        organized_aw_genre_filter = organize(aw_genre_filter)
+        organized_aw_area_filter = organize(aw_area_filter)
+        all_startup = []
+        for startup in aw_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in app_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in fav_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in hit_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        all_startup_list = []
+        for startup_id in all_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            all_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        all_filter_list = []
+        all_comtype_filter = []
+        all_location_filter = []
+        all_genre_filter = []
+        all_area_filter = []
+        for st in all_startup:
+            startup = Startup.objects.get(id=st)
+            all_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in all_filter_list:
+                if filter.cat_1 == "기업형태":
+                    all_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    all_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    all_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    all_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_all_comtype_filter = organize(all_comtype_filter)
+        organized_all_location_filter = organize(all_location_filter)
+        organized_all_genre_filter = organize(all_genre_filter)
+        organized_all_area_filter = organize(all_area_filter)
+        cst = CountingStartupListTable()
+        cst.support_business = sb
+        cst.all_startup_list = all_startup_list
+        cst.hit_startup_list = hit_startup_list
+        cst.fav_startup_list = fav_startup_list
+        cst.applied_startup_list = app_startup_list
+        cst.awarded_startup_list = aw_startup_list
+        cst.save()
+        cft = CountingFilterListTable()
+        cft.support_business = sb
+        filter_str = {}
+        filter_str["all_comtype_filter"] = organized_all_comtype_filter
+        filter_str["all_location_filter"] = organized_all_location_filter
+        filter_str["all_genre_filter"] = organized_all_genre_filter
+        filter_str["all_area_filter"] = organized_all_area_filter
+        cft.all_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+        filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+        filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+        filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+        cft.hit_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+        filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+        filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+        filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+        cft.fav_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+        filter_str["organized_app_location_filter"] = organized_app_location_filter
+        filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+        filter_str["organized_app_area_filter"] = organized_app_area_filter
+        cft.applied_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+        filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+        filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+        filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+        cft.awarded_filter = str(filter_str)
+        cft.save()
+@background(schedule=60)
+def update_static_count_1():
+    opr_list_qs = AdditionalUserInfo.objects.filter(auth="OPR").values_list("id", flat=True)
+    OPRENDCountingStartupListTable.objects.all().delete()
+    OPRENDCountingFilterListTable.objects.all().delete()
+    for opr_id in opr_list_qs:
+        opr = AdditionalUserInfo.objects.get(id=opr_id)
+        opr_mng = opr.additionaluserinfo_set.all()
+        support_business_set = []
+        for mng in opr_mng:
+            support_business_set = support_business_set + list(
+                SupportBusiness.objects.filter(support_business_author=mng)
+                .filter(support_business_apply_end_ymdt__lte=datetime.now())
+                .filter(support_business_status__in=[3, 4, 5, "4", "5"]))
+        # 기관관리자 하위의 매니저의 전체 지원사업
+        go = HitLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+        hit_startup = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    hit_startup.append(st.id)
+        hit_startup_list = []
+        k = 1;
+        for startup_id in hit_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            hit_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        go = FavoriteLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+        fav_startup = []
+        fav_startup_list = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    fav_startup.append(st.id)
+        k = 1;
+        for startup_id in fav_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            fav_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        app = Appliance.objects.filter(support_business__in=support_business_set).filter(is_submit=True).values(
+            "startup_id").distinct()
+        app_startup = []
+        app_startup_list = []
+        for startup_in_app in app:
+            app_startup.append(startup_in_app["startup_id"])
+        k = 1;
+        for startup_id in app_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.filter(startup=startup).last()
+            app_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+                "app_id": pre_app.id
+            })
+            k = k + 1
+        aw = Award.objects.filter(support_business__in=support_business_set)
+        aw_startup = []
+        aw_startup_list = []
+        for awin in aw:
+            aw_startup.append(awin.startup_id)
+        k = 1;
+        for startup_id in aw_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.filter(startup=startup).last()
+            aw_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+                "app_id": pre_app.id
+            })
+            k = k + 1
+        hit_filter_list = []
+        hit_comtype_filter = []
+        hit_location_filter = []
+        hit_genre_filter = []
+        hit_area_filter = []
+        for st in hit_startup:
+            startup = Startup.objects.get(id=st)
+            hit_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in hit_filter_list:
+                if filter.cat_1 == "기업형태":
+                    hit_comtype_filter.append(filter.filter_name)
+                    print(hit_comtype_filter)
+                if filter.cat_1 == "소재지":
+                    hit_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    hit_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    hit_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_hit_comtype_filter = organize(hit_comtype_filter)
+        organized_hit_location_filter = organize(hit_location_filter)
+        organized_hit_genre_filter = organize(hit_genre_filter)
+        organized_hit_area_filter = organize(hit_area_filter)
+        fav_filter_list = []
+        fav_comtype_filter = []
+        fav_location_filter = []
+        fav_genre_filter = []
+        fav_area_filter = []
+        for st in fav_startup:
+            startup = Startup.objects.get(id=st)
+            fav_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in fav_filter_list:
+                if filter.cat_1 == "기업형태":
+                    fav_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    fav_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    fav_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    fav_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_fav_comtype_filter = organize(fav_comtype_filter)
+        organized_fav_location_filter = organize(fav_location_filter)
+        organized_fav_genre_filter = organize(fav_genre_filter)
+        organized_fav_area_filter = organize(fav_area_filter)
+        app_filter_list = []
+        app_comtype_filter = []
+        app_location_filter = []
+        app_genre_filter = []
+        app_area_filter = []
+        for st in app_startup:
+            startup = Startup.objects.get(id=st)
+            app_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in app_filter_list:
+                if filter.cat_1 == "기업형태":
+                    app_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    app_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    app_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    app_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_app_comtype_filter = organize(app_comtype_filter)
+        organized_app_location_filter = organize(app_location_filter)
+        organized_app_genre_filter = organize(app_genre_filter)
+        organized_app_area_filter = organize(app_area_filter)
+        aw_filter_list = []
+        aw_comtype_filter = []
+        aw_location_filter = []
+        aw_genre_filter = []
+        aw_area_filter = []
+        for st in aw_startup:
+            startup = Startup.objects.get(id=st)
+            aw_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in aw_filter_list:
+                if filter.cat_1 == "기업형태":
+                    aw_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    aw_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    aw_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    aw_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_aw_comtype_filter = organize(aw_comtype_filter)
+        organized_aw_location_filter = organize(aw_location_filter)
+        organized_aw_genre_filter = organize(aw_genre_filter)
+        organized_aw_area_filter = organize(aw_area_filter)
+        all_startup = []
+        for startup in aw_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in app_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in fav_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in hit_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        all_startup_list = []
+        k = 1
+        for startup_id in all_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            all_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        all_filter_list = []
+        all_comtype_filter = []
+        all_location_filter = []
+        all_genre_filter = []
+        all_area_filter = []
+        for st in all_startup:
+            startup = Startup.objects.get(id=st)
+            all_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in all_filter_list:
+                if filter.cat_1 == "기업형태":
+                    all_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    all_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    all_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    all_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_all_comtype_filter = organize(all_comtype_filter)
+        organized_all_location_filter = organize(all_location_filter)
+        organized_all_genre_filter = organize(all_genre_filter)
+        organized_all_area_filter = organize(all_area_filter)
+        cst = OPRENDCountingStartupListTable()
+        cst.opr = opr
+        cst.all_startup_list = all_startup_list
+        cst.hit_startup_list = hit_startup_list
+        cst.fav_startup_list = fav_startup_list
+        cst.applied_startup_list = app_startup_list
+        cst.awarded_startup_list = aw_startup_list
+        cst.save()
+        cft = OPRENDCountingFilterListTable()
+        cft.opr = opr
+        filter_str = {}
+        filter_str["all_comtype_filter"] = organized_all_comtype_filter
+        filter_str["all_location_filter"] = organized_all_location_filter
+        filter_str["all_genre_filter"] = organized_all_genre_filter
+        filter_str["all_area_filter"] = organized_all_area_filter
+        cft.all_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+        filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+        filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+        filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+        cft.hit_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+        filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+        filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+        filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+        cft.fav_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+        filter_str["organized_app_location_filter"] = organized_app_location_filter
+        filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+        filter_str["organized_app_area_filter"] = organized_app_area_filter
+        cft.applied_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+        filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+        filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+        filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+        cft.awarded_filter = str(filter_str)
+        cft.save()
+from datetime import datetime
+from datetime import timedelta
+@background(schedule=60)
+def update_static_count_2():
+    OPRENDCountingTable.objects.all().delete()
+    opr_list_qs = AdditionalUserInfo.objects.all().filter(auth="OPR").values_list("id", flat=True)
+    for opr_id in opr_list_qs:
+        opr = AdditionalUserInfo.objects.get(id=opr_id)
+        opr_mng = opr.additionaluserinfo_set.all()
+        support_business_set = []
+        for mng in opr_mng:
+            support_business_set = support_business_set + list(
+                SupportBusiness.objects.filter(support_business_author=mng)
+                .filter(support_business_apply_end_ymdt__lte=datetime.now())
+                .filter(support_business_status__in=[3, 4, 5, "3", "4", "5"]))
+        for sb in support_business_set:
+            init_date = sb.support_business_created_at_ymdt.date()
+            while init_date <= datetime.now().date():
+                print(init_date)
+                print("date")
+                res = OPRENDCountingTable()
+                hit_num = (
+                    HitLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+                fav_num = (
+                    FavoriteLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+                app_num = (Appliance.objects.all().filter(support_business__in=support_business_set).filter(
+                    appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
+                res.date = init_date
+                res.opr_id = opr_id
+                res.hit_num = hit_num
+                res.fav_num = fav_num
+                res.apply_num = app_num
+                init_date = init_date + timedelta(days=1)
+                res.save()
+
+@background(schedule=60)
+def update_static_count_3():
+    opr_list_qs = AdditionalUserInfo.objects.filter(auth="OPR").values_list("id", flat=True)
+    OPRINGCountingFilterListTable.objects.all().delete()
+    OPRINGCountingStartupListTable.objects.all().delete()
+    for opr_id in opr_list_qs:
+        opr = AdditionalUserInfo.objects.get(id=opr_id)
+        opr_mng = opr.additionaluserinfo_set.all()
+        support_business_set = []
+        for mng in opr_mng:
+            support_business_set = support_business_set + list(
+                SupportBusiness.objects.filter(support_business_author=mng)
+                .filter(support_business_apply_end_ymdt__gte=datetime.now())
+                .filter(support_business_status__in=[3, "3"]))
+        # 기관관리자 하위의 매니저의 전체 지원사업
+        go = HitLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+        hit_startup = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    hit_startup.append(st.id)
+        hit_startup_list = []
+        k = 1;
+        for startup_id in hit_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            hit_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        go = FavoriteLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+        fav_startup = []
+        fav_startup_list = []
+        for user in go:
+            if user["user_id"] != None:
+                add = AdditionalUserInfo.objects.get(id=user["user_id"])
+                if add.auth == "USR":
+                    st = Startup.objects.get(user=add.user)
+                    fav_startup.append(st.id)
+        k = 1;
+        for startup_id in fav_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            fav_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        app = Appliance.objects.filter(support_business__in=support_business_set).filter(is_submit=True).values(
+            "startup_id").distinct()
+        app_startup = []
+        app_startup_list = []
+        for startup_in_app in app:
+            app_startup.append(startup_in_app["startup_id"])
+        k = 1;
+        for startup_id in app_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.filter(startup=startup).last()
+            app_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+                "app_id": pre_app.id
+            })
+            k = k + 1
+        aw = Award.objects.filter(support_business__in=support_business_set)
+        aw_startup = []
+        aw_startup_list = []
+        for awin in aw:
+            aw_startup.append(awin.startup_id)
+        k = 1;
+        for startup_id in aw_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            pre_app = Appliance.objects.filter(startup=startup).last()
+            aw_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "udated_date": str(pre_app.appliance_update_at_ymdt),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+                "app_id": pre_app.id
+            })
+            k = k + 1
+        hit_filter_list = []
+        hit_comtype_filter = []
+        hit_location_filter = []
+        hit_genre_filter = []
+        hit_area_filter = []
+        for st in hit_startup:
+            startup = Startup.objects.get(id=st)
+            hit_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in hit_filter_list:
+                if filter.cat_1 == "기업형태":
+                    hit_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    hit_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    hit_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    hit_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_hit_comtype_filter = organize(hit_comtype_filter)
+        organized_hit_location_filter = organize(hit_location_filter)
+        organized_hit_genre_filter = organize(hit_genre_filter)
+        organized_hit_area_filter = organize(hit_area_filter)
+        fav_filter_list = []
+        fav_comtype_filter = []
+        fav_location_filter = []
+        fav_genre_filter = []
+        fav_area_filter = []
+        for st in fav_startup:
+            startup = Startup.objects.get(id=st)
+            fav_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in fav_filter_list:
+                if filter.cat_1 == "기업형태":
+                    fav_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    fav_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    fav_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    fav_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_fav_comtype_filter = organize(fav_comtype_filter)
+        organized_fav_location_filter = organize(fav_location_filter)
+        organized_fav_genre_filter = organize(fav_genre_filter)
+        organized_fav_area_filter = organize(fav_area_filter)
+        app_filter_list = []
+        app_comtype_filter = []
+        app_location_filter = []
+        app_genre_filter = []
+        app_area_filter = []
+        for st in app_startup:
+            startup = Startup.objects.get(id=st)
+            app_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in app_filter_list:
+                if filter.cat_1 == "기업형태":
+                    app_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    app_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    app_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    app_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_app_comtype_filter = organize(app_comtype_filter)
+        organized_app_location_filter = organize(app_location_filter)
+        organized_app_genre_filter = organize(app_genre_filter)
+        organized_app_area_filter = organize(app_area_filter)
+        aw_filter_list = []
+        aw_comtype_filter = []
+        aw_location_filter = []
+        aw_genre_filter = []
+        aw_area_filter = []
+        for st in aw_startup:
+            startup = Startup.objects.get(id=st)
+            aw_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in aw_filter_list:
+                if filter.cat_1 == "기업형태":
+                    aw_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    aw_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    aw_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    aw_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_aw_comtype_filter = organize(aw_comtype_filter)
+        organized_aw_location_filter = organize(aw_location_filter)
+        organized_aw_genre_filter = organize(aw_genre_filter)
+        organized_aw_area_filter = organize(aw_area_filter)
+        all_startup = []
+        for startup in aw_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in app_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in fav_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        for startup in hit_startup:
+            if startup not in all_startup:
+                all_startup.append(startup)
+        all_startup_list = []
+        for startup_id in all_startup:
+            startup = Startup.objects.get(id=startup_id)
+            local = []
+            for filter in startup.selected_company_filter_list.all():
+                if (filter.cat_1) == "소재지":
+                    local.append(filter.filter_name)
+            all_startup_list.append({
+                "startup_id": startup.id,
+                "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+                "company_kind": startup.company_kind,
+                "local": ",".join(local),
+                "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+            })
+            k = k + 1
+        all_filter_list = []
+        all_comtype_filter = []
+        all_location_filter = []
+        all_genre_filter = []
+        all_area_filter = []
+        for st in all_startup:
+            startup = Startup.objects.get(id=st)
+            all_filter_list = list(startup.selected_company_filter_list.all())
+            for filter in all_filter_list:
+                if filter.cat_1 == "기업형태":
+                    all_comtype_filter.append(filter.filter_name)
+                if filter.cat_1 == "소재지":
+                    all_location_filter.append(filter.filter_name)
+                if filter.cat_0 == "기본장르":
+                    all_genre_filter.append(filter.filter_name)
+                if filter.cat_0 == "영역":
+                    all_area_filter.append(filter.filter_name)
+                    # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+        organized_all_comtype_filter = organize(all_comtype_filter)
+        organized_all_location_filter = organize(all_location_filter)
+        organized_all_genre_filter = organize(all_genre_filter)
+        organized_all_area_filter = organize(all_area_filter)
+        cst = OPRINGCountingStartupListTable()
+        cst.opr = opr
+        cst.all_startup_list = all_startup_list
+        cst.hit_startup_list = hit_startup_list
+        cst.fav_startup_list = fav_startup_list
+        cst.applied_startup_list = app_startup_list
+        cst.awarded_startup_list = aw_startup_list
+        cst.save()
+        cft = OPRINGCountingFilterListTable()
+        cft.opr = opr
+        filter_str = {}
+        filter_str["all_comtype_filter"] = organized_all_comtype_filter
+        filter_str["all_location_filter"] = organized_all_location_filter
+        filter_str["all_genre_filter"] = organized_all_genre_filter
+        filter_str["all_area_filter"] = organized_all_area_filter
+        cft.all_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+        filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+        filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+        filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+        cft.hit_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+        filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+        filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+        filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+        cft.fav_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+        filter_str["organized_app_location_filter"] = organized_app_location_filter
+        filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+        filter_str["organized_app_area_filter"] = organized_app_area_filter
+        cft.applied_filter = str(filter_str)
+        filter_str = {}
+        filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+        filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+        filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+        filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+        cft.awarded_filter = str(filter_str)
+        cft.save()
+
+@background(schedule=60)
+def update_static_count_4():
+    OPRINGCountingTable.objects.all().delete()
+    opr_list_qs = AdditionalUserInfo.objects.all().filter(auth="OPR").values_list("id", flat=True)
+    for opr_id in opr_list_qs:
+        opr = AdditionalUserInfo.objects.get(id=opr_id)
+        opr_mng = opr.additionaluserinfo_set.all()
+        support_business_set = []
+        for mng in opr_mng:
+            support_business_set = support_business_set + list(
+                SupportBusiness.objects.filter(support_business_author=mng)
+                .filter(support_business_apply_end_ymdt__gte=datetime.now())
+                .filter(support_business_status__in=[3, "3"]))
+        for sb in support_business_set:
+            init_date = sb.support_business_created_at_ymdt.date()
+            while init_date <= datetime.now().date():
+                res = OPRINGCountingTable()
+                hit_num = (
+                    HitLog.objects.filter(support_business__in=support_business_set).filter(date=init_date)).count()
+                fav_num = (
+                    FavoriteLog.objects.filter(support_business__in=support_business_set).filter(date=init_date)).count()
+                app_num = (Appliance.objects.filter(support_business__in=support_business_set).filter(
+                    appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
+                res.date = init_date
+                res.opr_id = opr_id
+                res.hit_num = hit_num
+                res.fav_num = fav_num
+                res.apply_num = app_num
+                init_date = init_date + timedelta(days=1)
+                res.save()
+
+@background(schedule=60)
+def update_static_count_5():
+    CountingTable.objects.all().delete()
+    sb_set = SupportBusiness.objects.all()
+    for sb in sb_set:
+        try:
+            print(sb.support_business_name + "*" * 10)
+        except:
+            print()
+        init_date = sb.support_business_created_at_ymdt.date()
+
+        while init_date <= datetime.now().date():
+            res = CountingTable()
+            hit_num = (HitLog.objects.all().filter(support_business=sb).filter(date=init_date)).count()
+            fav_num = (FavoriteLog.objects.all().filter(support_business=sb).filter(date=init_date)).count()
+            app_num = (
+                Appliance.objects.all().filter(support_business=sb).filter(appliance_update_at_ymdt=init_date).filter(
+                    is_submit=True)).count()
+            res.date = init_date
+            res.hit_num = hit_num
+            res.fav_num = fav_num
+            res.apply_num = app_num
+            res.support_business = sb
+            init_date = init_date + timedelta(days=1)
+            res.save()
+
+# update_static_count_0(repeat=600,repeat_until=datetime(2019,12,31))
+# update_static_count_1(repeat=600,repeat_until=datetime(2019,12,31))
+# update_static_count_2(repeat=600,repeat_until=datetime(2019,12,31))
+# update_static_count_3(repeat=600,repeat_until=datetime(2019,12,31))
+# update_static_count_4(repeat=600,repeat_until=datetime(2019,12,31))
+# update_static_count_5(repeat=600,repeat_until=datetime(2019,12,31))
+
+#####  통계 갱신 코드 수정
+
+@background(schedule=60)
+def get_opr_support_business_statics_number():
+    for opr in AdditionalUserInfo.objects.filter(auth="OPR") :
+        get_opr_end_count(opr.id)
+        get_opr_end_startup_list(opr.id)
+        get_opr_ing_count(opr.id)
+        get_opr_ing_startup_list(opr.id)
+    for sb in SupportBusiness.objects.all():
+        get_support_business_statics_number(sb.id)
+        get_support_business_statics_filter_list(sb.id)
+
+get_opr_support_business_statics_number(repeat=1200, repeat_until=datetime(2019, 12, 31))
+def get_opr_end_count(opr_id):
+    opr = AdditionalUserInfo.objects.get(id=opr_id)
+    opr_mng = opr.additionaluserinfo_set.all()
+    OPRENDCountingTable.objects.all().delete()
+    support_business_set = []
+    for mng in opr_mng:
+        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
+                                                           .filter(support_business_apply_end_ymdt__lte=datetime.now())
+                                                           .filter(
+            support_business_status__in=[3, 4, 5, "3", "4", "5"]))
+    for sb in support_business_set:
+        init_date = sb.support_business_created_at_ymdt.date()
+        while init_date <= datetime.now().date():
+            res = OPRENDCountingTable()
+            hit_num = (HitLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+            fav_num = (
+                FavoriteLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+            app_num = (Appliance.objects.all().filter(support_business__in=support_business_set).filter(
+                appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
+            res.date = init_date
+            res.opr_id = opr_id
+            res.hit_num = hit_num
+            res.fav_num = fav_num
+            res.apply_num = app_num
+            init_date = init_date + timedelta(days=1)
+            res.save()
+
+def get_opr_ing_count(opr_id):
+    opr = AdditionalUserInfo.objects.get(id=opr_id)
+    opr_mng = opr.additionaluserinfo_set.all()
+    OPRINGCountingTable.objects.all().delete()
+    support_business_set = []
+    for mng in opr_mng:
+        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
+                                                           .filter(support_business_apply_end_ymdt__gte=datetime.now())
+                                                           .filter(support_business_status__in=[3, "3"]))
+    for sb in support_business_set:
+        init_date = sb.support_business_created_at_ymdt.date()
+        while init_date <= datetime.now().date():
+            res = OPRINGCountingTable()
+            hit_num = (HitLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+            fav_num = (
+                FavoriteLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
+            app_num = (Appliance.objects.all().filter(support_business__in=support_business_set).filter(
+                appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
+            res.date = init_date
+            res.opr_id = opr_id
+            res.hit_num = hit_num
+            res.fav_num = fav_num
+            res.apply_num = app_num
+            init_date = init_date + timedelta(days=1)
+            res.save()
+def get_opr_end_startup_list(opr_id):
+    opr = AdditionalUserInfo.objects.get(id=opr_id)
+    opr_mng = opr.additionaluserinfo_set.all()
+    support_business_set = []
+    for mng in opr_mng:
+        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
+                                                           .filter(
+            support_business_apply_end_ymdt__lte=datetime.now())
+                                                           .filter(support_business_status__in=[3, 4, 5, "4", "5"]))
+
+    go = HitLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+
+    hit_startup = []
+    for user in go:
+        print(user["user_id"])
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                hit_startup.append(st.id)
+    hit_startup_list = []
+    k = 1;
+    for startup_id in hit_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if( filter.cat_1) =="기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        hit_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    go = FavoriteLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+    fav_startup = []
+    fav_startup_list = []
+    for user in go:
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                fav_startup.append(st.id)
+    k = 1
+    for startup_id in fav_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        fav_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+
+    app = Appliance.objects.filter(support_business__in=support_business_set).filter(is_submit=True).values(
+        "startup_id").distinct()
+    app_startup = []
+    app_startup_list = []
+    for startup_in_app in app:
+        app_startup.append(startup_in_app["startup_id"])
+    k = 1;
+    for startup_id in app_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.filter(startup=startup).last()
+        app_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+            "app_id": pre_app.id
+        })
+        k = k + 1
+
+    aw = Award.objects.filter(support_business__in=support_business_set)
+    aw_startup = []
+    aw_startup_list = []
+    for awin in aw:
+        aw_startup.append(awin.startup_id)
+    k = 1;
+    for startup_id in aw_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.filter(startup=startup).last()
+        aw_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+            "app_id": pre_app.id
+        })
+        k = k + 1
+    hit_filter_list = []
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+    for st in hit_startup:
+        startup = Startup.objects.get(id=st)
+        hit_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in hit_filter_list:
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+                print(hit_comtype_filter)
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_hit_comtype_filter = organize(hit_comtype_filter)
+    print(organized_hit_comtype_filter)
+    organized_hit_location_filter = organize(hit_location_filter)
+    organized_hit_genre_filter = organize(hit_genre_filter)
+    organized_hit_area_filter = organize(hit_area_filter)
+
+    fav_filter_list = []
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    for st in fav_startup:
+        startup = Startup.objects.get(id=st)
+        fav_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in fav_filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_fav_comtype_filter = organize(fav_comtype_filter)
+    organized_fav_location_filter = organize(fav_location_filter)
+    organized_fav_genre_filter = organize(fav_genre_filter)
+    organized_fav_area_filter = organize(fav_area_filter)
+
+    app_filter_list = []
+    app_comtype_filter = []
+    app_location_filter = []
+    app_genre_filter = []
+    app_area_filter = []
+    for st in app_startup:
+        startup = Startup.objects.get(id=st)
+        app_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in app_filter_list:
+            if filter.cat_1 == "기업형태":
+                app_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                app_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                app_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                app_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_app_comtype_filter = organize(app_comtype_filter)
+    organized_app_location_filter = organize(app_location_filter)
+    organized_app_genre_filter = organize(app_genre_filter)
+    organized_app_area_filter = organize(app_area_filter)
+
+    aw_filter_list = []
+    aw_comtype_filter = []
+    aw_location_filter = []
+    aw_genre_filter = []
+    aw_area_filter = []
+    for st in aw_startup:
+        startup = Startup.objects.get(id=st)
+        aw_filter_list = list(startup.selected_company_filter_list.all())
+
+        for filter in aw_filter_list:
+            if filter.cat_1 == "기업형태":
+                aw_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                aw_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                aw_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                aw_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_aw_comtype_filter = organize(aw_comtype_filter)
+    organized_aw_location_filter = organize(aw_location_filter)
+    organized_aw_genre_filter = organize(aw_genre_filter)
+    organized_aw_area_filter = organize(aw_area_filter)
+
+    all_startup = []
+
+    for startup in aw_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in app_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in fav_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in hit_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    all_startup_list = []
+    k = 1
+    for startup_id in all_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        all_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+
+    all_filter_list = []
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    for st in all_startup:
+        startup = Startup.objects.get(id=st)
+        all_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in all_filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_all_comtype_filter = organize(all_comtype_filter)
+    organized_all_location_filter = organize(all_location_filter)
+    organized_all_genre_filter = organize(all_genre_filter)
+    organized_all_area_filter = organize(all_area_filter)
+
+    cst,created = OPRENDCountingStartupListTable.objects.get_or_create(opr=opr)
+    cst.opr = opr
+    cst.all_startup_list = all_startup_list
+    cst.hit_startup_list = hit_startup_list
+    cst.fav_startup_list = fav_startup_list
+    cst.applied_startup_list = app_startup_list
+    cst.awarded_startup_list = aw_startup_list
+    cst.save()
+
+    cft = OPRENDCountingFilterListTable.objects.get_or_create(opr=opr)
+    cft.opr.id = opr.id
+    filter_str = {}
+    filter_str["all_comtype_filter"] = organized_all_comtype_filter
+    filter_str["all_location_filter"] = organized_all_location_filter
+    filter_str["all_genre_filter"] = organized_all_genre_filter
+    filter_str["all_area_filter"] = organized_all_area_filter
+    cft.all_filter = str(filter_str)
+
+    filter_str = {}
+    filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+    filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+    filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+    filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+    cft.hit_filter = str(filter_str)
+
+    filter_str = {}
+    filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+    filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+    filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+    filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+    cft.fav_filter = str(filter_str)
+
+    filter_str = {}
+    filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+    filter_str["organized_app_location_filter"] = organized_app_location_filter
+    filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+    filter_str["organized_app_area_filter"] = organized_app_area_filter
+    cft.applied_filter = str(filter_str)
+
+    filter_str = {}
+    filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+    filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+    filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+    filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+    cft.awarded_filter = str(filter_str)
+    cft.save()
+
+def get_opr_ing_startup_list(opr_id):
+    opr = AdditionalUserInfo.objects.get(id=opr_id)
+    opr_mng = opr.additionaluserinfo_set.all()
+    support_business_set = []
+    for mng in opr_mng:
+        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
+                                                           .filter(
+            support_business_apply_end_ymdt__gte=datetime.now())
+                                                           .filter(support_business_status__in=[3, "3"]))
+    # 기관관리자 하위의 매니저의 전체 지원사업
+    go = HitLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+    hit_startup = []
+    for user in go:
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                hit_startup.append(st.id)
+    hit_startup_list = []
+    k = 1;
+    for startup_id in hit_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        hit_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    print(hit_startup_list)
+
+    go = FavoriteLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
+    fav_startup = []
+    fav_startup_list = []
+    for user in go:
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                fav_startup.append(st.id)
+    k = 1;
+    for startup_id in fav_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        fav_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+
+    app = Appliance.objects.all().filter(support_business__in=support_business_set).filter(is_submit=True).values(
+        "startup_id").distinct()
+    app_startup = []
+    app_startup_list = []
+    for startup_in_app in app:
+        app_startup.append(startup_in_app["startup_id"])
+    k = 1;
+    for startup_id in app_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.filter(startup=startup).last()
+        app_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+            "app_id": pre_app.id
+        })
+        k = k + 1
+
+    aw = Award.objects.filter(support_business__in=support_business_set)
+    aw_startup = []
+    aw_startup_list = []
+
+    for awin in aw:
+        aw_startup.append(awin.startup_id)
+    k = 1;
+    for startup_id in aw_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.filter(startup=startup).last()
+        aw_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel,
+            "app_id": pre_app.id
+        })
+        k = k + 1
+    hit_filter_list = []
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+
+    for st in hit_startup:
+        startup = Startup.objects.get(id=st)
+        hit_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in hit_filter_list:
+            print()
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+                print(hit_comtype_filter)
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_hit_comtype_filter = organize(hit_comtype_filter)
+    organized_hit_location_filter = organize(hit_location_filter)
+    organized_hit_genre_filter = organize(hit_genre_filter)
+    organized_hit_area_filter = organize(hit_area_filter)
+    fav_filter_list = []
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    for st in fav_startup:
+        startup = Startup.objects.get(id=st)
+        fav_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in fav_filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_fav_comtype_filter = organize(fav_comtype_filter)
+    organized_fav_location_filter = organize(fav_location_filter)
+    organized_fav_genre_filter = organize(fav_genre_filter)
+    organized_fav_area_filter = organize(fav_area_filter)
+    app_filter_list = []
+    app_comtype_filter = []
+    app_location_filter = []
+    app_genre_filter = []
+    app_area_filter = []
+    for st in app_startup:
+        startup = Startup.objects.get(id=st)
+        app_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in app_filter_list:
+            if filter.cat_1 == "기업형태":
+                app_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                app_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                app_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                app_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_app_comtype_filter = organize(app_comtype_filter)
+    organized_app_location_filter = organize(app_location_filter)
+    organized_app_genre_filter = organize(app_genre_filter)
+    organized_app_area_filter = organize(app_area_filter)
+    aw_filter_list = []
+    aw_comtype_filter = []
+    aw_location_filter = []
+    aw_genre_filter = []
+    aw_area_filter = []
+    for st in aw_startup:
+        startup = Startup.objects.get(id=st)
+        aw_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in aw_filter_list:
+            if filter.cat_1 == "기업형태":
+                aw_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                aw_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                aw_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                aw_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_aw_comtype_filter = organize(aw_comtype_filter)
+    organized_aw_location_filter = organize(aw_location_filter)
+    organized_aw_genre_filter = organize(aw_genre_filter)
+    organized_aw_area_filter = organize(aw_area_filter)
+    all_startup = []
+    for startup in aw_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in app_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in fav_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in hit_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    all_startup_list = []
+    for startup_id in all_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1) == "기업형태":
+                startup.company_kind = filter.filter_name
+                startup.save()
+        all_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+
+    all_filter_list = []
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    for st in all_startup:
+        startup = Startup.objects.get(id=st)
+        all_filter_list = list(startup.selected_company_filter_list.all())
+
+        for filter in all_filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_all_comtype_filter = organize(all_comtype_filter)
+    organized_all_location_filter = organize(all_location_filter)
+    organized_all_genre_filter = organize(all_genre_filter)
+    organized_all_area_filter = organize(all_area_filter)
+
+    cst,created = OPRINGCountingStartupListTable.objects.get_or_create(opr=opr)
+    cst.opr = opr
+    cst.all_startup_list = all_startup_list
+    cst.hit_startup_list = hit_startup_list
+    cst.fav_startup_list = fav_startup_list
+    cst.applied_startup_list = app_startup_list
+    cst.awarded_startup_list = aw_startup_list
+    cst.save()
+    cft,created = OPRINGCountingFilterListTable.objects.get(opr=opr)
+    cft.opr = opr
+    filter_str = {}
+    filter_str["all_comtype_filter"] = organized_all_comtype_filter
+    filter_str["all_location_filter"] = organized_all_location_filter
+    filter_str["all_genre_filter"] = organized_all_genre_filter
+    filter_str["all_area_filter"] = organized_all_area_filter
+    cft.all_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+    filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+    filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+    filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+    cft.hit_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+    filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+    filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+    filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+    cft.fav_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+    filter_str["organized_app_location_filter"] = organized_app_location_filter
+    filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+    filter_str["organized_app_area_filter"] = organized_app_area_filter
+    cft.applied_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+    filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+    filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+    filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+    cft.awarded_filter = str(filter_str)
+    cft.save()
+
+
+def get_support_business_statics_number(id):
+    sb = SupportBusiness.objects.get(id=id)
+    init_date = sb.support_business_created_at_ymdt.date()
+    while  init_date <= datetime.now().date():
+        res,created = CountingTable.objects.get_or_create(support_business=sb)
+        hit_num = (HitLog.objects.filter(support_business = sb).filter(date = init_date)).count()
+        fav_num = (FavoriteLog.objects.filter(support_business = sb).filter(date=init_date)).count()
+        app_num = (Appliance.objects.filter(support_business= sb).filter(appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
+        res.date = init_date
+        res.hit_num = hit_num
+        res.fav_num = fav_num
+        res.apply_num = app_num
+        res.updated_at = datetime.now()
+        res.support_business = sb
+        res.save()
+        init_date= init_date+timedelta(days=1)
+
+def get_support_business_statics_filter_list(id):
+    # 방문자 스타트업 리스트 추출
+    sb = SupportBusiness.objects.get(id=id)
+    go = HitLog.objects.filter(support_business=sb).values("user_id").distinct()
+    hit_startup = []
+    for user in go:
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                hit_startup.append(st.id)
+    hit_startup_list = []
+    k = 1;
+    for startup_id in hit_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1 == "기업형태"):
+                startup.company_kind = filter.filter_name
+                startup.save()
+        hit_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    go = FavoriteLog.objects.filter(support_business=sb).values("user_id").distinct()
+    fav_startup = []
+    fav_startup_list = []
+    for user in go:
+        if user["user_id"] != None:
+            add = AdditionalUserInfo.objects.get(id=user["user_id"])
+            if add.auth == "USR":
+                st = Startup.objects.get(user=add.user)
+                fav_startup.append(st.id)
+    k = 1;
+    for startup_id in fav_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1 == "기업형태"):
+                startup.company_kind = filter.filter_name
+                startup.save()
+        fav_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    app = Appliance.objects.filter(support_business=sb).filter(is_submit=True).values("startup_id").distinct()
+    app_startup = []
+    app_startup_list = []
+    for startup_in_app in app:
+        app_startup.append(startup_in_app["startup_id"])
+    k = 1;
+    for startup_id in app_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1 == "기업형태"):
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.get(support_business=sb, startup=startup)
+        app_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "app_id": pre_app.id,
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    aw = Award.objects.filter(support_business=sb)
+    aw_startup = []
+    aw_startup_list = []
+    for awin in aw:
+        aw_startup.append(awin.startup_id)
+    k = 1;
+    for startup_id in aw_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1 == "기업형태"):
+                startup.company_kind = filter.filter_name
+                startup.save()
+        pre_app = Appliance.objects.get(support_business=sb, startup=startup)
+        aw_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "udated_date": str(pre_app.appliance_update_at_ymdt),
+            "app_id": pre_app.id,
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    hit_filter_list = []
+    hit_comtype_filter = []
+    hit_location_filter = []
+    hit_genre_filter = []
+    hit_area_filter = []
+    for st in hit_startup:
+        startup = Startup.objects.get(id=st)
+        hit_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in hit_filter_list:
+            if filter.cat_1 == "기업형태":
+                hit_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                hit_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                hit_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                hit_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_hit_comtype_filter = organize(hit_comtype_filter)
+    organized_hit_location_filter = organize(hit_location_filter)
+    organized_hit_genre_filter = organize(hit_genre_filter)
+    organized_hit_area_filter = organize(hit_area_filter)
+    fav_filter_list = []
+    fav_comtype_filter = []
+    fav_location_filter = []
+    fav_genre_filter = []
+    fav_area_filter = []
+    for st in fav_startup:
+        startup = Startup.objects.get(id=st)
+        fav_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in fav_filter_list:
+            if filter.cat_1 == "기업형태":
+                fav_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                fav_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                fav_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                fav_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_fav_comtype_filter = organize(fav_comtype_filter)
+    organized_fav_location_filter = organize(fav_location_filter)
+    organized_fav_genre_filter = organize(fav_genre_filter)
+    organized_fav_area_filter = organize(fav_area_filter)
+    app_filter_list = []
+    app_comtype_filter = []
+    app_location_filter = []
+    app_genre_filter = []
+    app_area_filter = []
+    for st in app_startup:
+        startup = Startup.objects.get(id=st)
+        app_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in app_filter_list:
+            if filter.cat_1 == "기업형태":
+                app_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                app_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                app_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                app_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_app_comtype_filter = organize(app_comtype_filter)
+    organized_app_location_filter = organize(app_location_filter)
+    organized_app_genre_filter = organize(app_genre_filter)
+    organized_app_area_filter = organize(app_area_filter)
+    aw_filter_list = []
+    aw_comtype_filter = []
+    aw_location_filter = []
+    aw_genre_filter = []
+    aw_area_filter = []
+    for st in aw_startup:
+        startup = Startup.objects.get(id=st)
+        aw_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in aw_filter_list:
+            if filter.cat_1 == "기업형태":
+                aw_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                aw_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                aw_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                aw_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_aw_comtype_filter = organize(aw_comtype_filter)
+    organized_aw_location_filter = organize(aw_location_filter)
+    organized_aw_genre_filter = organize(aw_genre_filter)
+    organized_aw_area_filter = organize(aw_area_filter)
+    all_startup = []
+    for startup in aw_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in app_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in fav_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    for startup in hit_startup:
+        if startup not in all_startup:
+            all_startup.append(startup)
+    all_startup_list = []
+    k = 1;
+    for startup_id in all_startup:
+        startup = Startup.objects.get(id=startup_id)
+        local = []
+        for filter in startup.selected_company_filter_list.all():
+            if (filter.cat_1) == "소재지":
+                local.append(filter.filter_name)
+            if (filter.cat_1 == "기업형태"):
+                startup.company_kind = filter.filter_name
+                startup.save()
+        all_startup_list.append({
+            "startup_id": startup.id,
+            "index": k, "mark_email": startup.mark_email, "company_name": startup.company_name,
+            "company_kind": startup.company_kind,
+            "local": ",".join(local),
+            "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
+        })
+        k = k + 1
+    all_filter_list = []
+    all_comtype_filter = []
+    all_location_filter = []
+    all_genre_filter = []
+    all_area_filter = []
+    for st in all_startup:
+        startup = Startup.objects.get(id=st)
+        all_filter_list = list(startup.selected_company_filter_list.all())
+        for filter in all_filter_list:
+            if filter.cat_1 == "기업형태":
+                all_comtype_filter.append(filter.filter_name)
+            if filter.cat_1 == "소재지":
+                all_location_filter.append(filter.filter_name)
+            if filter.cat_0 == "기본장르":
+                all_genre_filter.append(filter.filter_name)
+            if filter.cat_0 == "영역":
+                all_area_filter.append(filter.filter_name)
+                # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
+    organized_all_comtype_filter = organize(all_comtype_filter)
+    organized_all_location_filter = organize(all_location_filter)
+    organized_all_genre_filter = organize(all_genre_filter)
+    organized_all_area_filter = organize(all_area_filter)
+    cst,created = CountingStartupListTable.objects.get_or_create(support_business=sb)
+    cst.support_business = sb
+    cst.all_startup_list = all_startup_list
+    cst.hit_startup_list = hit_startup_list
+    cst.fav_startup_list = fav_startup_list
+    cst.applied_startup_list = app_startup_list
+    cst.awarded_startup_list = aw_startup_list
+    cst.updated_at = datetime.now()
+    cst.save()
+    cft,created = CountingFilterListTable.get_or_create(support_business=sb)
+    cft.support_business = sb
+    filter_str = {}
+    filter_str["all_comtype_filter"] = organized_all_comtype_filter
+    filter_str["all_location_filter"] = organized_all_location_filter
+    filter_str["all_genre_filter"] = organized_all_genre_filter
+    filter_str["all_area_filter"] = organized_all_area_filter
+    cft.all_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_hit_comtype_filter"] = organized_hit_comtype_filter
+    filter_str["organized_hit_location_filter"] = organized_hit_location_filter
+    filter_str["organized_hit_genre_filter"] = organized_hit_genre_filter
+    filter_str["organized_hit_area_filter"] = organized_hit_area_filter
+    cft.hit_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_fav_comtype_filter"] = organized_fav_comtype_filter
+    filter_str["organized_fav_location_filter"] = organized_fav_location_filter
+    filter_str["organized_fav_genre_filter"] = organized_fav_genre_filter
+    filter_str["organized_fav_area_filter"] = organized_fav_area_filter
+    cft.fav_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_app_comtype_filter"] = organized_app_comtype_filter
+    filter_str["organized_app_location_filter"] = organized_app_location_filter
+    filter_str["organized_app_genre_filter"] = organized_app_genre_filter
+    filter_str["organized_app_area_filter"] = organized_app_area_filter
+    cft.applied_filter = str(filter_str)
+    filter_str = {}
+    filter_str["organized_aw_comtype_filter"] = organized_aw_comtype_filter
+    filter_str["organized_aw_location_filter"] = organized_aw_location_filter
+    filter_str["organized_aw_genre_filter"] = organized_aw_genre_filter
+    filter_str["organized_aw_area_filter"] = organized_aw_area_filter
+    cft.awarded_filter = str(filter_str)
+    cft.updated_at=datetime.now()
+    cft.save()
+
+
