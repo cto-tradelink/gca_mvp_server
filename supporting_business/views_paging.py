@@ -64,8 +64,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
-
-
+from datetime import datetime
 
 @csrf_exempt
 def is_in_favor_list(target,id, additionaluserinfo_id):
@@ -105,7 +104,6 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
 
 def gca_check_session(request):
 
- #세션 인증
     session_key = request.GET.get("session_key")
     try:
         session = Session.objects.get(session_key=session_key)
@@ -118,6 +116,7 @@ def gca_check_session(request):
         return user.additionaluserinfo.id
     else:
         return False
+
 
 
 #----------------------- 매니저 페이징 라우터 ---------------------
@@ -620,3 +619,292 @@ def startup_list_by_or(request):
         startup_set.append(copy.deepcopy(temp_obj))
 
     return JsonResponse(startup_set, safe=False)
+@csrf_exempt
+def get_vue_mng_dashboard(request):
+    check_result = gca_check_session(request)
+    if check_result == False:
+        return HttpResponse(status=401)
+    else:
+        user_auth_id = check_result
+    result = {}
+    support_business_author_id = user_auth_id
+    end=""
+    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
+        Q(support_business_status="4") | Q(support_business_status="3")).filter(
+        support_business_author_id=support_business_author_id)
+    result = []
+    end = end_support_business.count()
+
+    if(request.POST.get("kind")=="end"):
+    # 모집 마감된 공고문
+        end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
+            Q(support_business_status="4") | Q(support_business_status="3")).filter(
+            support_business_author_id=support_business_author_id)
+        result = []
+        end = end_support_business.count()
+        for support_business in end_support_business:
+            result_end = {}
+            result_end["id"] = support_business.id
+            result_end["author_id"] = support_business.support_business_author.id
+            result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+            result_end['support_business_name'] = support_business.support_business_name
+            result_end['support_business_poster'] = support_business.support_business_poster
+
+            result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            try:
+                if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                    number = str(round((Appliance.objects.filter(support_business_id=support_business.id).filter(
+                        is_submit=True)).count() / int(support_business.support_business_recruit_size), 1))
+                    if (number == "0.0"):
+                        number = "0"
+                    result_end["comp"] = number + " : 1"
+                else:
+                    result_end["comp"] = ""
+            except:
+                result_end["comp"] = ""
+            result.append(copy.deepcopy(result_end))
+    blind=""
+    blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(
+        support_business_author_id=support_business_author_id)
+    blind = blind_support_business.count()
+    if request.POST.get("kind")=="blind":
+        blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(
+            support_business_author_id=support_business_author_id)
+        blind= blind_support_business.count()
+        blind_set = []
+        result=[]
+        for support_business in blind_support_business:
+            result_end = {}
+            result_end["id"] = support_business.id
+            result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+            result_end['support_business_name'] = support_business.support_business_name
+            result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end['support_business_poster'] = support_business.support_business_poster
+            result_end["apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            try:
+                if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                    number = str(round((
+                                           Appliance.objects.filter(support_business_id=support_business.id).filter(
+                                               is_submit=True)).count() / int(
+                        support_business.support_business_recruit_size), 1))
+                    if number == "0.0":
+                        number = "0"
+                    result_end["comp"] = number + " : 1"
+                    pass
+                else:
+                    result_end["comp"] = ""
+            except:
+                result_end["comp"] = ""
+            result.append(copy.deepcopy(result_end))
+    writing=""
+    writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter(
+        support_business_author_id=support_business_author_id)
+    writing = writing_support_business.count()
+    if request.POST.get("kind")=="writing":
+
+        writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter(
+            support_business_author_id=support_business_author_id)
+        writing = writing_support_business.count()
+        writing_set = []
+        result=[]
+        for support_business in writing_support_business:
+            result_end = {}
+            result_end["id"] = support_business.id
+            result_end["support_business_award_date_ymd"] = \
+            str(support_business.support_business_update_at_ymdt).split(" ")[0]
+            result_end['support_business_name'] = support_business.support_business_name
+            result_end['support_business_poster'] = support_business.support_business_poster
+            result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            result_end["comp"] = ""
+            try:
+                if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                    number = str(round((
+                                           Appliance.objects.filter(support_business_id=support_business.id).filter(
+                                               is_submit=True)).count() / int(
+                        support_business.support_business_recruit_size), 1))
+                    if number == "0.0":
+                        number = "0"
+                    result_end["comp"] = number + " : 1"
+                    pass
+                else:
+                    result_end["comp"] = ""
+            except:
+                result_end["comp"] = ""
+            result.append(copy.deepcopy(result_end))
+    ing=""
+    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(
+        support_business_author_id=support_business_author_id).filter(
+        support_business_apply_end_ymdt__gt=timezone.now())
+    ing_set = []
+    ing = ing_support_business.count()
+    if request.POST.get("kind")=="ing":
+        ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(
+            support_business_author_id=support_business_author_id).filter(
+            support_business_apply_end_ymdt__gt=timezone.now())
+        ing_set = []
+        ing=ing_support_business.count()
+        for support_business in ing_support_business:
+
+            result_end = {}
+            result_end["id"] = support_business.id
+            result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+            result_end["author_id"] = support_business.support_business_author.id
+            result_end['support_business_name'] = support_business.support_business_name
+            result_end['support_business_poster'] = support_business.support_business_poster
+            result_end["support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            result_end["comp"] = ""
+            try:
+                if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                    number = str(round((
+                                           Appliance.objects.filter(support_business_id=support_business.id).filter(
+                                               is_submit=True)).count() / int(
+                        support_business.support_business_recruit_size), 1))
+                    if number == "0.0":
+                        number = "0"
+                    result_end["comp"] = number + " : 1"
+
+                else:
+                    result_end["comp"] = ""
+            except:
+                result_end["comp"] = ""
+            result.append(copy.deepcopy(result_end))
+    return JsonResponse({"result_set":result,"set_num":{"ing": ing, "blind":blind ,"writing":writing, "end":end }}, safe=False)
+
+@csrf_exempt
+def vue_get_opr_dashboard(request):
+    check_result = gca_check_session(request)
+    if check_result == False:
+        return HttpResponse(status=401)
+    else:
+        user_auth_id = check_result
+    mng_list = []
+
+    for a in AdditionalUserInfo.objects.get(id=user_auth_id).additionaluserinfo_set.all():
+        mng_list.append(a.id)
+    result = []
+    # 모집 마감된 공고
+
+    end = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
+            Q(support_business_status="4") | Q(support_business_status="3")).filter(
+            support_business_author_id__in=mng_list).count()
+
+    if(request.POST.get("kind") == "end"):
+        end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
+            Q(support_business_status="4") | Q(support_business_status="3")).filter(
+            support_business_author_id__in=mng_list)
+        end_set = []
+        for support_business in end_support_business:
+            result_end = {}
+            result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+            result_end['opr_support_business_name'] = support_business.support_business_name
+            result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["opr_id"] = support_business.id
+            result_end["opr_support_business_author_id"] = support_business.support_business_author.id
+            result_end["opr_support_business_poster"] = support_business.support_business_poster
+            result_end["opr_apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                try:
+                    number = str(round((
+                                           Appliance.objects.filter(support_business_id=support_business.id).filter(
+                                               is_submit=True)).count() / int(
+                        support_business.support_business_recruit_size), 1))
+                    if number == "0.0":
+                        number = "0"
+                    result_end["opr_comp"] = number + " : 1"
+                except:
+                    result_end["opr_comp"] = str((
+                                                     Appliance.objects.filter(
+                                                         support_business_id=support_business.id).filter(
+                                                         is_submit=True)).count()) + " : 1"
+            else:
+                result_end["opr_comp"] = str((Appliance.objects.filter(support_business_id=support_business.id).filter(
+                    is_submit=True)).count()) + " : 1"
+            result.append(copy.deepcopy(result_end))
+
+
+    wating =  waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter(
+            support_business_author_id__in=mng_list).count()
+    if(request.POST.get("kind") == "waiting") :
+        # 승인 요청중인 공고
+        waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter(
+            support_business_author_id__in=mng_list)
+        waiting_set = []
+        for support_business in waiting_support_business:
+            result_end = {}
+            result_end["opr_id"] = support_business.id
+            result_end["opr_support_business_award_date_ymd"] = \
+            str(support_business.support_business_update_at_ymdt).split(" ")[0]
+            result_end['opr_support_business_name'] = support_business.support_business_name
+            result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
+            result_end["opr_support_business_poster"] = support_business.support_business_poster
+            result_end["opr_apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
+            result_end["opr_comp"] = "0 : 1"
+            result.append(copy.deepcopy(result_end))
+    ing =  SupportBusiness.objects.filter(support_business_status="3").filter(
+            support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list).count()
+    if(request.POST.get("kind") == "ing"):
+        # 공고중인 공고
+        ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(
+            support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list)
+        ing_set = []
+        for support_business in ing_support_business:
+            result_end = {}
+            result_end["opr_id"] = support_business.id
+            result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
+            result_end['opr_support_business_name'] = support_business.support_business_name
+            result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
+            result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
+            result_end["opr_support_business_poster"] = support_business.support_business_poster
+            result_end["opr_apply_num"] = (
+            Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
+            result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
+            result_end["opr_support_business_author_id"] = support_business.support_business_author.id
+            result_end["opr_open_date"] = (support_business.support_business_created_at_ymdt)
+            if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
+                try:
+                    number = str(round((
+                                           Appliance.objects.filter(support_business_id=support_business.id).filter(
+                                               is_submit=True)).count() / int(
+                        support_business.support_business_recruit_size), 1))
+                    if number == "0.0":
+                        number = "0"
+                    result_end["opr_comp"] = number + " : 1"
+                except:
+                    result_end["opr_comp"] = str((
+                                                     Appliance.objects.filter(
+                                                         support_business_id=support_business.id).filter(
+                                                         is_submit=True)).count()) + " : 1"
+            else:
+                result_end["opr_comp"] = ""
+            result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
+            result.append(copy.deepcopy(result_end))
+    return JsonResponse({ "result_set" : result, "set_num":{"end":end, "ing":ing, "waiting" : wating,} }, safe=False)
+
+
+
+
+
+
+
+
+
+
+

@@ -38,6 +38,8 @@ urlpatterns = [
     url(r'^email_check', views.email_check, name='email_check', ),
     url(r'^excel_down_support_business_gwanri_aw', views.excel_down_support_business_gwanri_aw, name='excel_down_support_business_gwanri_aw', ),
     url(r'^check_company_name', views.check_company_name,  name='check_company_name', ),
+url(r'^get_opr_support_business_statics_number', views.get_opr_support_business_statics_number,  name='get_opr_support_business_statics_number', ),
+
 
 
     url(r'^vue_get_name', views.vue_get_name, name='vue_get_name', ),
@@ -137,7 +139,7 @@ urlpatterns = [
 
 
 #     기관관리자
-    url(r'^vue_get_opr_dashboard/', views.vue_get_opr_dashboard, name='vue_get_opr_dashboard', ),
+    url(r'^vue_get_opr_dashboard/', views_paging.vue_get_opr_dashboard, name='vue_get_opr_dashboard', ),
     url(r'^vue_get_opr_acc/', views.vue_get_opr_acc, name='vue_get_opr_acc', ),
     url(r'^opr_vue_get_startup_account/', views.opr_vue_get_startup_account, name='opr_vue_get_startup_account', ),
     url(r'^opr_vue_get_support_business_list/', views.opr_vue_get_support_business_list,
@@ -231,8 +233,7 @@ urlpatterns = [
     url(r'delete_support_business/', views.delete_support_business, name='delete_support_business', ),
     url(r'delete_support_business_file', views.delete_support_business_file, name='delete_support_business_file', ),
     url(r'superuser_grant_check', views.superuser_grant_check, name='superuser_grant_check', ),
-
-
+    url(r'get_vue_mng_dashboard', views_paging.get_vue_mng_dashboard, name='get_vue_mng_dashboard', ),
 
 
 

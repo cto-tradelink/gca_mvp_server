@@ -153,14 +153,14 @@ def cert_email(request):
         try:
             send_mail(
                 '[G-connect] 인증메일입니다.',
-                '인증코드는 [' + '111111' + "] 입니다.", # random_code
+                '인증코드는 [' + str(random_code) + "] 입니다.", # random_code
                 'neogelon@gmail.com',
                 ["kshradio@naver.com"],
                 fail_silently=False,
             )
             EmailConfirmation(
                 email=target,
-                confirmation_code=111111 #random_code
+                confirmation_code=random_code #random_code
             ).save()
             return HttpResponse("ok")
         except Exception as e:
@@ -544,112 +544,6 @@ def vue_add_mng_acc(request):
 # 변수 체크 여부 : py(), VS(), mysql(O)
 #-----------------------------------------------------------------------------------------------------------------------
 @csrf_exempt
-def vue_get_opr_dashboard(request):
-    check_result = gca_check_session(request)
-    if check_result == False:
-        return HttpResponse(status=401)
-    else:
-        user_auth_id =  check_result
-    mng_list = []
-    print(request.POST)
-
-    for a in AdditionalUserInfo.objects.get(id=user_auth_id).additionaluserinfo_set.all():
-        mng_list.append(a.id)
-    result = {}
-    # 모집 마감된 공고
-    end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(Q(support_business_status="4")|Q(support_business_status="3")).filter(
-        support_business_author_id__in=mng_list)
-    end_set=[]
-    for support_business in end_support_business:
-        result_end = {}
-        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
-        result_end['opr_support_business_name'] = support_business.support_business_name
-        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
-        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_id"]= support_business.id
-        result_end["opr_support_business_author_id"] = support_business.support_business_author.id
-        result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
-        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            try:
-                number = str(round((
-                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
-                    support_business.support_business_recruit_size), 1))
-                if number == "0.0":
-                    number = "0"
-                result_end["opr_comp"] = number + " : 1"
-            except:
-                result_end["opr_comp"] = str((
-                    Appliance.objects.filter(support_business_id=support_business.id).filter(
-                        is_submit=True)).count()) + " : 1"
-        else:
-            result_end["opr_comp"] = str((Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() )+" : 1"
-
-
-
-
-        end_set.append(copy.deepcopy(result_end))
-    # 승인 요청중인 공고
-    waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter(support_business_author_id__in=mng_list)
-    waiting_set = []
-    for support_business in waiting_support_business:
-        result_end = {}
-        result_end["opr_id"] = support_business.id
-        result_end["opr_support_business_award_date_ymd"] = str(support_business.support_business_update_at_ymdt).split(" ")[0]
-        result_end['opr_support_business_name'] = support_business.support_business_name
-        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
-        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_support_business_update_at_ymdt"] = support_business.support_business_update_at_ymdt
-        result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
-        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
-
-        result_end["opr_comp"] = "0 : 1"
-
-        waiting_set.append(copy.deepcopy(result_end))
-
-
-    # 공고중인 공고
-    ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list)
-    ing_set = []
-    print("공고중인 공고")
-    print(ing_support_business)
-    
-    for support_business in ing_support_business:
-        result_end = {}
-        result_end["opr_id"] = support_business.id
-        result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
-        result_end['opr_support_business_name'] = support_business.support_business_name
-        result_end["opr_support_business_apply_start_ymd"] = support_business.support_business_apply_start_ymd
-        result_end["opr_support_business_apply_end_ymdt"] = support_business.support_business_apply_end_ymdt
-        result_end["opr_support_business_poster"] = support_business.support_business_poster
-        result_end["opr_apply_num"] = (Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count()
-        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
-        result_end["opr_support_business_author_id"] = support_business.support_business_author.id
-        result_end["opr_open_date"] = (support_business.support_business_created_at_ymdt)
-        if support_business.support_business_recruit_size != "" and support_business.support_business_recruit_size != 0 and support_business.support_business_recruit_size != None:
-            try:
-                number = str(round((
-                    Appliance.objects.filter(support_business_id=support_business.id).filter(is_submit=True)).count() / int(
-                    support_business.support_business_recruit_size), 1))
-                if number == "0.0":
-                    number = "0"
-                result_end["opr_comp"] = number + " : 1"
-            except:
-                result_end["opr_comp"] = str((
-                    Appliance.objects.filter(support_business_id=support_business.id).filter(
-                        is_submit=True)).count()) + " : 1"
-
-        else:
-            result_end["opr_comp"] = ""
-        result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
-        ing_set.append(copy.deepcopy(result_end))
-    result["opr_end_set"] = end_set
-    result["opr_ing_set"] = ing_set
-    result["opr_waiting_set"] = waiting_set
-
-    return JsonResponse(result)
 
 # ------------(기관관리자) 전체 지원사업 공고문의 상태와 정보를 불러온다.---------------------(고치기 : 변수/ 오류 수정)
 #-----[체크리스트]------------------------------------------------------------------------------------------------------
@@ -844,6 +738,7 @@ def vue_set_mng_acc(request):
 @csrf_exempt
 #postman 작동함
 def vue_get_dashboard(request):
+    print("서버 연산 시작")
     check_result = gca_check_session(request)
     if check_result == False:
         return HttpResponse(status=401)
@@ -932,7 +827,7 @@ def vue_get_dashboard(request):
     ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(support_business_author_id=support_business_author_id).filter(support_business_apply_end_ymdt__gt=timezone.now())
     ing_set = []
     for support_business in ing_support_business:
-        print(support_business.support_business_name)
+
         result_end = {}
         result_end["id"] = support_business.id
         result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
@@ -962,8 +857,9 @@ def vue_get_dashboard(request):
     result["blind_set"] = blind_set
     result["writing_set"] = writing_set
     result["ing_set"] = ing_set
-
-    return JsonResponse(result)
+    print("서버 연산 끝")
+    print(result)
+    return JsonResponse(result, safe=False)
 
 
 # ------------ (매니저) 본인이 올린 전체 지원사업에 대해서 정보와 상태를 불러오는 함수--------(고치기 : 변수/ 오류 수정)
@@ -3043,8 +2939,7 @@ def similar_support_business(request):
             obj["comp"] = ""
 
         obj["favorite"] = str((AdditionalUserInfo.objects.filter(favorite=support_business)).count())
-        obj["is_favored"] = is_in_favor_list("support_business", support_business.id, request.POST.get("id"))
-
+        obj["is_favored"] = is_in_favor_list("support_business", support_business.id, request.GET.get("gca_id"))
         obj["id"] = support_business.id
         obj["sim"]=0
         obj["selected_support_business_filter_list"]=[]
@@ -3184,7 +3079,6 @@ def get_support_business_detail(request):
     result["top_support_tag"]=[]
     result["files"]=[]
     for file in support_business.supportbusinessattachedfiles_set.all():
-        print(file)
         result["files"].append({"name":file.file_path.split("/")[-1], "path": file.file_path, "id":file.id})
 
     try:
@@ -11575,11 +11469,11 @@ def updated_support_statics(request):
             qs = OPRENDCountingTable.objects.filter(opr_id=request.GET.get("opr_id"))
             qs_startup = OPRENDCountingStartupListTable.objects.get(opr_id=request.GET.get("opr_id"))
             qs_filter = OPRENDCountingFilterListTable.objects.get(opr_id=request.GET.get("opr_id"))
-    try:
+    if int(support_business_id) > 0:
         result["support_business_min_date"]  = str(SupportBusiness.objects.get(id=support_business_id).support_business_update_at_ymdt).split(" ")[0]
-    except:
-        result["support_business_min_date"] = str(qs[-1].date).split(" ")[0]
-        print(qs[0].date)
+    else:
+        result["support_business_min_date"] = str(qs[0].date).split(" ")[0]
+
     result["support_business_detail_hit"] = list(qs.order_by("-date").annotate(number=F("hit_num")).values("date","number"))
     result["favored_support_business"] = list(qs.order_by("-date").annotate(number=F("fav_num")).values("date","number"))
     result["support_business_appliance"] =  list(qs.order_by("-date").annotate(number=F("apply_num")).values("date","number"))
@@ -12618,8 +12512,9 @@ def update_static_count_5():
 
 #####  통계 갱신 코드 수정
 
-@background(schedule=60)
-def get_opr_support_business_statics_number():
+# @background(schedule=60)
+def get_opr_support_business_statics_number(request):
+
     for opr in AdditionalUserInfo.objects.filter(auth="OPR") :
         get_opr_end_count(opr.id)
         get_opr_end_startup_list(opr.id)
@@ -12629,21 +12524,22 @@ def get_opr_support_business_statics_number():
         get_support_business_statics_number(sb.id)
         get_support_business_statics_filter_list(sb.id)
 
-get_opr_support_business_statics_number(repeat=1200, repeat_until=datetime(2019, 12, 31))
+# get_opr_support_business_statics_number(repeat=120, repeat_until=datetime(2019, 12, 31))
 def get_opr_end_count(opr_id):
     opr = AdditionalUserInfo.objects.get(id=opr_id)
     opr_mng = opr.additionaluserinfo_set.all()
-    OPRENDCountingTable.objects.all().delete()
+
     support_business_set = []
-    for mng in opr_mng:
-        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
+
+    support_business_set =  (SupportBusiness.objects.filter(support_business_author__in=opr_mng)
                                                            .filter(support_business_apply_end_ymdt__lte=datetime.now())
                                                            .filter(
             support_business_status__in=[3, 4, 5, "3", "4", "5"]))
-    for sb in support_business_set:
-        init_date = sb.support_business_created_at_ymdt.date()
+    try:
+        init_date = support_business_set.order_by("support_business_created_at_ymdt")[0].support_business_created_at_ymdt.date()
+        print(init_date)
         while init_date <= datetime.now().date():
-            res = OPRENDCountingTable()
+            res,created = OPRENDCountingTable.objects.get_or_create(opr_id=opr_id, date=init_date)
             hit_num = (HitLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
             fav_num = (
                 FavoriteLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
@@ -12656,20 +12552,25 @@ def get_opr_end_count(opr_id):
             res.apply_num = app_num
             init_date = init_date + timedelta(days=1)
             res.save()
-
+    except:
+        res = OPRENDCountingTable()
+        res.opr_id = opr_id
+        res.save()
 def get_opr_ing_count(opr_id):
     opr = AdditionalUserInfo.objects.get(id=opr_id)
     opr_mng = opr.additionaluserinfo_set.all()
-    OPRINGCountingTable.objects.all().delete()
-    support_business_set = []
-    for mng in opr_mng:
-        support_business_set = support_business_set + list(SupportBusiness.objects.filter(support_business_author=mng)
-                                                           .filter(support_business_apply_end_ymdt__gte=datetime.now())
-                                                           .filter(support_business_status__in=[3, "3"]))
-    for sb in support_business_set:
-        init_date = sb.support_business_created_at_ymdt.date()
+
+
+    support_business_set =  (SupportBusiness.objects.filter(support_business_author__in=opr_mng)
+                                                       .filter(support_business_apply_end_ymdt__gte=datetime.now())
+                                                       .filter(support_business_status__in=[3, "3"]))
+
+    try:
+        init_date = support_business_set.order_by("support_business_created_at_ymdt")[0].support_business_created_at_ymdt.date()
+        print(init_date)
         while init_date <= datetime.now().date():
-            res = OPRINGCountingTable()
+            print(init_date)
+            res, created = OPRINGCountingTable.objects.get_or_create(opr_id=opr_id, date=init_date)
             hit_num = (HitLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
             fav_num = (
                 FavoriteLog.objects.all().filter(support_business__in=support_business_set).filter(date=init_date)).count()
@@ -12681,7 +12582,13 @@ def get_opr_ing_count(opr_id):
             res.fav_num = fav_num
             res.apply_num = app_num
             init_date = init_date + timedelta(days=1)
+            print(res.__dict__)
             res.save()
+            print(res)
+    except:
+        res = OPRINGCountingTable()
+        res.opr_id = opr_id
+        res.save()
 def get_opr_end_startup_list(opr_id):
     opr = AdditionalUserInfo.objects.get(id=opr_id)
     opr_mng = opr.additionaluserinfo_set.all()
@@ -12696,7 +12603,6 @@ def get_opr_end_startup_list(opr_id):
 
     hit_startup = []
     for user in go:
-        print(user["user_id"])
         if user["user_id"] != None:
             add = AdditionalUserInfo.objects.get(id=user["user_id"])
             if add.auth == "USR":
@@ -12711,6 +12617,8 @@ def get_opr_end_startup_list(opr_id):
             if (filter.cat_1) == "소재지":
                 local.append(filter.filter_name)
             if( filter.cat_1) =="기업형태":
+                if startup.company_kind != filter.filter_name:
+                    print(startup)
                 startup.company_kind = filter.filter_name
                 startup.save()
         hit_startup_list.append({
@@ -12738,6 +12646,8 @@ def get_opr_end_startup_list(opr_id):
             if (filter.cat_1) == "소재지":
                 local.append(filter.filter_name)
             if (filter.cat_1) == "기업형태":
+                if startup.company_kind != filter.filter_name:
+                    print(startup)
                 startup.company_kind = filter.filter_name
                 startup.save()
         fav_startup_list.append({
@@ -12763,6 +12673,8 @@ def get_opr_end_startup_list(opr_id):
             if (filter.cat_1) == "소재지":
                 local.append(filter.filter_name)
             if (filter.cat_1) == "기업형태":
+                if startup.company_kind != filter.filter_name:
+                    print(startup)
                 startup.company_kind = filter.filter_name
                 startup.save()
         pre_app = Appliance.objects.filter(startup=startup).last()
@@ -12790,6 +12702,8 @@ def get_opr_end_startup_list(opr_id):
             if (filter.cat_1) == "소재지":
                 local.append(filter.filter_name)
             if (filter.cat_1) == "기업형태":
+                if startup.company_kind != filter.filter_name:
+                    print(startup)
                 startup.company_kind = filter.filter_name
                 startup.save()
         pre_app = Appliance.objects.filter(startup=startup).last()
@@ -12808,6 +12722,7 @@ def get_opr_end_startup_list(opr_id):
     hit_location_filter = []
     hit_genre_filter = []
     hit_area_filter = []
+    print(hit_startup)
     for st in hit_startup:
         startup = Startup.objects.get(id=st)
         hit_filter_list = list(startup.selected_company_filter_list.all())
@@ -12823,7 +12738,6 @@ def get_opr_end_startup_list(opr_id):
                 hit_area_filter.append(filter.filter_name)
                 # -> organize 로 각  필터 갯수 센것들이 들어가야 함.
     organized_hit_comtype_filter = organize(hit_comtype_filter)
-    print(organized_hit_comtype_filter)
     organized_hit_location_filter = organize(hit_location_filter)
     organized_hit_genre_filter = organize(hit_genre_filter)
     organized_hit_area_filter = organize(hit_area_filter)
@@ -12964,7 +12878,7 @@ def get_opr_end_startup_list(opr_id):
     cst.awarded_startup_list = aw_startup_list
     cst.save()
 
-    cft = OPRENDCountingFilterListTable.objects.get_or_create(opr=opr)
+    cft,created = OPRENDCountingFilterListTable.objects.get_or_create(opr=opr)
     cft.opr.id = opr.id
     filter_str = {}
     filter_str["all_comtype_filter"] = organized_all_comtype_filter
@@ -13039,8 +12953,6 @@ def get_opr_ing_startup_list(opr_id):
             "company_total_employee": startup.company_total_employee, "mark_tel": startup.mark_tel
         })
         k = k + 1
-    print(hit_startup_list)
-
     go = FavoriteLog.objects.filter(support_business__in=support_business_set).values("user_id").distinct()
     fav_startup = []
     fav_startup_list = []
@@ -13096,7 +13008,6 @@ def get_opr_ing_startup_list(opr_id):
             "app_id": pre_app.id
         })
         k = k + 1
-
     aw = Award.objects.filter(support_business__in=support_business_set)
     aw_startup = []
     aw_startup_list = []
@@ -13134,10 +13045,8 @@ def get_opr_ing_startup_list(opr_id):
         startup = Startup.objects.get(id=st)
         hit_filter_list = list(startup.selected_company_filter_list.all())
         for filter in hit_filter_list:
-            print()
             if filter.cat_1 == "기업형태":
                 hit_comtype_filter.append(filter.filter_name)
-                print(hit_comtype_filter)
             if filter.cat_1 == "소재지":
                 hit_location_filter.append(filter.filter_name)
             if filter.cat_0 == "기본장르":
@@ -13279,7 +13188,7 @@ def get_opr_ing_startup_list(opr_id):
     cst.applied_startup_list = app_startup_list
     cst.awarded_startup_list = aw_startup_list
     cst.save()
-    cft,created = OPRINGCountingFilterListTable.objects.get(opr=opr)
+    cft,created = OPRINGCountingFilterListTable.objects.get_or_create(opr=opr)
     cft.opr = opr
     filter_str = {}
     filter_str["all_comtype_filter"] = organized_all_comtype_filter
@@ -13318,7 +13227,7 @@ def get_support_business_statics_number(id):
     sb = SupportBusiness.objects.get(id=id)
     init_date = sb.support_business_created_at_ymdt.date()
     while  init_date <= datetime.now().date():
-        res,created = CountingTable.objects.get_or_create(support_business=sb)
+        res,created = CountingTable.objects.get_or_create(support_business=sb,date = init_date)
         hit_num = (HitLog.objects.filter(support_business = sb).filter(date = init_date)).count()
         fav_num = (FavoriteLog.objects.filter(support_business = sb).filter(date=init_date)).count()
         app_num = (Appliance.objects.filter(support_business= sb).filter(appliance_update_at_ymdt=init_date).filter(is_submit=True)).count()
@@ -13591,7 +13500,7 @@ def get_support_business_statics_filter_list(id):
     cst.awarded_startup_list = aw_startup_list
     cst.updated_at = datetime.now()
     cst.save()
-    cft,created = CountingFilterListTable.get_or_create(support_business=sb)
+    cft,created = CountingFilterListTable.objects.get_or_create(support_business=sb)
     cft.support_business = sb
     filter_str = {}
     filter_str["all_comtype_filter"] = organized_all_comtype_filter

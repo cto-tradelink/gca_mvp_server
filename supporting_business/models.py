@@ -719,9 +719,9 @@ class QuaterTableSupportBusiness(models.Model):
 class CountingTable(models.Model):
     support_business = models.ForeignKey("SupportBusiness")
     date = models.DateField(null=True, blank=True)
-    hit_num = models.IntegerField()
-    fav_num = models.IntegerField()
-    apply_num = models.IntegerField()
+    hit_num = models.IntegerField(default=0)
+    fav_num = models.IntegerField(default=0)
+    apply_num = models.IntegerField(default=0)
     updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class CountingStartupListTable(models.Model):
@@ -745,9 +745,9 @@ class CountingFilterListTable(models.Model):
 class OPRINGCountingTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
     date = models.DateField(null=True, blank=True)
-    hit_num = models.IntegerField()
-    fav_num = models.IntegerField()
-    apply_num = models.IntegerField()
+    hit_num = models.IntegerField(default=0)
+    fav_num = models.IntegerField(default=0)
+    apply_num = models.IntegerField(default=0)
     updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRINGCountingStartupListTable(models.Model):
@@ -771,9 +771,9 @@ class OPRINGCountingFilterListTable(models.Model):
 class OPRENDCountingTable(models.Model):
     opr = models.ForeignKey("AdditionalUserInfo")
     date = models.DateField(null=True, blank=True)
-    hit_num = models.IntegerField()
-    fav_num = models.IntegerField()
-    apply_num = models.IntegerField()
+    hit_num = models.IntegerField(default=0)
+    fav_num = models.IntegerField(default=0)
+    apply_num = models.IntegerField(default=0)
     updated_at = models.DateTimeField(default=datetime.datetime.now())
 
 class OPRENDCountingStartupListTable(models.Model):
