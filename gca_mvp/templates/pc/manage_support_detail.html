@@ -1,0 +1,170 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/new_support.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/manage_support_detail.css" %}"/>
+
+    <style>
+    </style>
+{% endblock %}
+
+
+
+
+{% block content %}
+
+    <div id="left_col">
+        <ul>
+            <li>
+                <a href="#">통계보기</a>
+            </li>
+            <li>
+                <a href="{% url "new_support" %}">지원사업 등록페이지</a>
+            </li>
+            <li>
+                <a href="{% url "manage_support" %}">지원사업 관리 페이지</a>
+            </li>
+        </ul>
+    </div>
+    <div id="body_content">
+               <div id="sp_hd">
+            <div id="category">공간지원 / 오피스 지원</div>
+            <div id="sp_ttl_con">
+                <span id="sp_ttl">{{ support.title }}</span><br>
+                <span id="due">모집기간 :  {{ support.from_date }} ~ {{ support.end_date }}</span>
+            </div>
+            <div id="loc">GCA(판교)</div>
+        </div>
+        <div id="sp_detail_con">
+            <div class="detail_seg">
+                <div class="detail_ttl">사업개요</div>
+                <div class="desc">
+                    {{ support.abstract | linebreaks }}
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">지원분야 및 대상</div>
+                <div class="desc">
+                    {{ support.target | linebreaks }}
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">지원조건</div>
+                <div class="desc">
+                    지원 조건
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">내용</div>
+                <div class="desc">
+                    {{ support.detail| linebreaks }}
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">지원절차</div>
+                <div class="desc">
+                    지원 절차
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">신청방법 및 서류</div>
+                <div class="desc">
+                    {{ support.apply_method | linebreaks }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl">주관기관 담당부서 및 담당자</div>
+                <div class="desc">
+                    테이블 내용
+
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">접수기관 담당부서 및 담당자</div>
+                <div class="desc">
+                    테이블 내용
+
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">기타사항</div>
+                <div class="desc">
+                    {{ support.etc | linebreaks }}
+
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl">지원자 리스트</div>
+                <div class="desc"  style="text-align: center; height: 200px;" >
+                    <table class="table">
+                        <tr>
+                            <th>
+                                01
+                            </th>
+                            <td>
+                                2018 판교 경기문화창조허브 …
+                            </td>
+                            <td>
+                                지원자명
+                            </td>
+                            <td>
+                                성별_나이
+                            </td>
+                            <td>
+                                지원 날짜
+                            </td>
+                            <td>
+                                다운로드
+                            </td>
+                        </tr>
+                    </table>
+                      <button class="sel_total_down">일괄 다운로드</button>
+                </div>
+            </div>
+
+            <div class="detail_seg" >
+                <div class="detail_ttl">선정자 리스트</div>
+                <div class="desc" style="text-align: center; height: 200px;" >
+                    <table class="table">
+                        <tr>
+                            <th>
+                                01
+                            </th>
+                            <td>
+                                2018 판교 경기문화창조허브 …
+                            </td>
+                            <td>
+                                지원자명
+                            </td>
+                            <td>
+                                성별_나이
+                            </td>
+                            <td>
+                                지원 날짜
+                            </td>
+                            <td>
+                                다운로드
+                            </td>
+                        </tr>
+                    </table>
+                    <button class="sel_total_down">일괄 다운로드</button>
+                    <button class="sel_total_down" onclick="location.href='{% url "pdf" id=id %}'">PDF 내보내기</button>
+
+                </div>
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+    </div>
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/mypage_apply.css" %}" rel="stylesheet/less">
+    <link rel="stylesheet/less" href="{% static "css/app_mypage_menu.css" %}">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $(".my_applicant_down").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+        })
+
+    </script>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a> &gt; <a href="{% url "my_profile" %}">지원관리</a> &gt; <a id="final"
+                                                                                                     href="#">지원관리</a>
+        </div>
+        {% include "pc/common/mypage_menu.html" %}
+        <div id="right_pane">
+            <div id="mp_nav">
+                <ul>
+                    <li><a class="nav_badge" data-for="int">관심지원사업</a></li>
+                    <li><a class="on" data-for="ing">지원서 작성중</a></li>
+                    <li><a data-for="comp">지원완료</a></li>
+                    <li><a data-for="result">결과발표</a></li>
+                    <li><a data-for="all">전체보기</a></li>
+                </ul>
+            </div>
+            <div id="result" class="sp_con">
+                <a href="/support/14/">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status off">공고종료</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">1차 지원 사업</div>
+                                <div class="sm_due">모집기간 : Feb. 1, 2018 ~ Feb. 28, 2018</div>
+                                <div class="tag_con">
+                                    <span class="tag">출판</span>
+                                    <span class="tag">만화</span>
+                                    <span class="tag">음악</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                    <div class="masking win">
+                        <div class="mask_ttl">축하합니다. 해당 지원사업에 선정되셨습니다.</div>
+                        <div class="btn_group">
+                            <div class="my_applicant">내 지원서</div>
+                            <div class="my_applicant_down">다운로드</div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/support/14/">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status off">공고종료</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">1차 지원 사업</div>
+                                <div class="sm_due">모집기간 : Feb. 1, 2018 ~ Feb. 28, 2018</div>
+                                <div class="tag_con">
+                                    <span class="tag">출판</span>
+                                    <span class="tag">만화</span>
+                                    <span class="tag">음악</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                    <div class="masking lose">
+                        <div class="mask_ttl">아쉽네요. 해당 지원사업에 선정되지 않았습니다.
+                            <span class="show_winner">선정기업 간단보기</span>
+                        </div>
+                        <div class="btn_group">
+                            <div class="my_applicant">내 지원서</div>
+                            <div class="my_applicant_down">다운로드</div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="#">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status off">공고종료</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">1차 지원 사업</div>
+                                <div class="sm_due">모집기간 : Feb. 1, 2018 ~ Feb. 28, 2018</div>
+                                <div class="tag_con">
+                                    <span class="tag">출판</span>
+                                    <span class="tag">만화</span>
+                                    <span class="tag">음악</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                    <div class="masking ing">
+                        <div class="mask_ttl">2018.02.18 15:25
+                        </div>
+                        <div class="btn_group">
+                            <div class="my_applicant">내 지원서</div>
+                            <div class="my_applicant_down">다운로드</div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="#">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status off">공고종료</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">1차 지원 사업</div>
+                                <div class="sm_due">모집기간 : Feb. 1, 2018 ~ Feb. 28, 2018</div>
+                                <div class="tag_con">
+                                    <span class="tag">출판</span>
+                                    <span class="tag">만화</span>
+                                    <span class="tag">음악</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                    <div class="masking inst">
+                        <div class="mask_ttl">2018.02.18 15:25
+                        </div>
+                        <div class="btn_group">
+                            <div class="my_applicant_down">다운로드</div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="#">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status off">공고종료</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">1차 지원 사업</div>
+                                <div class="sm_due">모집기간 : Feb. 1, 2018 ~ Feb. 28, 2018</div>
+                                <div class="tag_con">
+                                    <span class="tag">출판</span>
+                                    <span class="tag">만화</span>
+                                    <span class="tag">음악</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div id="down_window" class="hidden">
+        <div id="down_hd">
+            <span>내 지원서 다운로드</span>
+            <div id="close_btn"><img src="{% static "img/icon-cancel.png" %}"></div>
+        </div>
+        <div id="down_con">
+            <div id="li_con">
+                <ul>
+                    <li>
+                        지원서류 보기
+                        <ul>
+                            <li>
+                                <div class="checkbox checkbox-primary">
+                                    <input id="checkbox1" class="styled" type="checkbox" checked="">
+                                    <label for="checkbox1">
+                                        지원서
+                                    </label>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li>
+                        첨부파일
+                        <ul>
+                            <li>
+                                <div class="checkbox checkbox-primary">
+                                    <input id="checkbox2" class="styled" type="checkbox" checked="">
+                                    <label for="checkbox2">
+                                        사업자 등록증
+                                    </label>
+                                </div>
+
+                            </li>
+                            <li>
+                                <div class="checkbox checkbox-primary">
+                                    <input id="checkbox3" class="styled" type="checkbox" checked="">
+                                    <label for="checkbox3">
+                                        자산내역
+                                    </label>
+                                </div>
+
+                            </li>
+                            <li>
+                                <div class="checkbox checkbox-primary">
+                                    <input id="checkbox4" class="styled" type="checkbox" checked="">
+                                    <label for="checkbox4">
+                                        등기
+                                    </label>
+                                </div>
+                            </li>
+
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div id="down_btn_grp">
+                <div id="sel_down" style="margin-right: 6px;">
+                    선택 다운로드
+                </div>
+                <div id="all_down">
+                    전체 다운로드
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

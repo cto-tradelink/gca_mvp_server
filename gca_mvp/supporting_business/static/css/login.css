@@ -1,0 +1,161 @@
+#login_form {
+  margin-top: 191px;
+  width: 561px;
+  height: 445px;
+  border: solid 1px #979797;
+  margin-left: 245px;
+}
+#login_form #sns_login {
+  margin-top: 40px;
+  width: 403px;
+  margin-left: 79px;
+  height: 29px;
+}
+#login_form #sns_login a {
+  display: block;
+  float: left;
+  text-align: center;
+}
+#login_form #sns_login #face {
+  width: 127px;
+  height: 29px;
+  border-radius: 17px;
+  border: solid 1px #1b66f4;
+  color: #1b66f4;
+  font-size: 13px;
+  line-height: 29px;
+}
+#login_form #sns_login #kakao {
+  width: 120px;
+  height: 29px;
+  border-radius: 17px;
+  border: solid 1px #1b66f4;
+  color: #1b66f4;
+  font-size: 13px;
+  line-height: 29px;
+  margin-left: 18px;
+}
+#login_form #sns_login #naver {
+  width: 120px;
+  height: 29px;
+  border-radius: 17px;
+  border: solid 1px #1b66f4;
+  color: #1b66f4;
+  font-size: 13px;
+  line-height: 29px;
+  margin-left: 18px;
+}
+#login_form form {
+  margin-top: 55px;
+  margin-left: 105px;
+  width: 300px;
+}
+#login_form form li {
+  list-style: none;
+  margin-bottom: 35px;
+}
+#login_form form li label {
+  text-align: left;
+  display: block;
+  color: #2b2b2b;
+  font-size: 16px;
+  line-height: 21px;
+  margin-bottom: 6px;
+}
+#login_form #login_sub {
+  line-height: 20px;
+  width: 211px;
+  margin-left: 184px;
+}
+#login_form #login_sub #find_id {
+  float: left;
+  line-height: 20px;
+  width: 74px;
+  margin-top: 27px;
+  color: #b9b9b9;
+  text-align: left;
+}
+#login_form #login_sub #find_pass {
+  float: left;
+  line-height: 20px;
+  width: 88px;
+  margin-top: 27px;
+  color: #b9b9b9;
+}
+#login_form #login_sub .center_bar {
+  float: left;
+  width: 1px;
+  height: 20px;
+  border-left: 1px solid #000;
+  margin: 1px 20px 0px 24px;
+  margin-top: 27px;
+}
+#sign_up {
+  margin-left: 245px;
+  text-align: center;
+  height: 176px;
+  width: 561px;
+  background-color: #1b66f4;
+}
+#sign_up div {
+  color: #ffe130;
+  font-size: 15px;
+  padding-top: 39px;
+}
+#sign_up button {
+  margin-top: 18px;
+  width: 216px;
+  height: 40px;
+  background-color: #fff;
+  border: none;
+  color: #1b66f4;
+}
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+}
+#id_username {
+  width: 350px;
+  height: 38px;
+  border-radius: 4px;
+  background-color: #ffffff !important;
+  border: solid 1px #cccccc;
+  padding-left: 32px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  font-size: 16px;
+  line-height: 20px;
+}
+#id_username:focus {
+  border: none;
+  border-bottom: 1px solid #7a7a7a;
+}
+#id_password {
+  width: 350px;
+  height: 38px;
+  border-radius: 4px;
+  background-color: #ffffff !important;
+  border: solid 1px #cccccc;
+  padding-left: 32px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  font-size: 16px;
+  line-height: 20px;
+}
+#id_password:focus {
+  border: none;
+  border-bottom: 1px solid #7a7a7a;
+}
+input:-webkit-autofill {
+  background-color: #fff !important;
+}
+#login_btn {
+  height: 40px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 18px;
+  width: 150px;
+  background-color: #1b66f4;
+  border: none;
+  color: #fff;
+  margin-left: 100px;
+}

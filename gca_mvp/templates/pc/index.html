@@ -1,0 +1,1312 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/index.css" %}" rel="stylesheet/less">
+{% endblock %}
+{% block content %}
+    {% if user.is_authenticated %}
+        <script>
+{#            less.pageLoadFinished.then(#}
+{#                function () {#}
+{#                    console.log('completed');#}
+{#                    $(".sm_cd_filter_con").each(function () {#}
+{#                        var overflow_check_flag = true#}
+{#                        while (overflow_check_flag) {#}
+{#                            console.log($(this).find(".filter:last").offset().top)#}
+{#                            console.log($(this).find(".filter:last").height())#}
+{#                            if ($(this).find(".filter:last").offset().top + $(this).find(".filter:last").height() > $(this).offset().top + $(this).height()) {#}
+{#                                $(this).find(".filter:last").remove()#}
+{#                                console.log($(this).find(".filter").text())#}
+{#                            } else {#}
+{#                                overflow_check_flag = false#}
+{#                            }#}
+{#                        }#}
+{#                    })#}
+{#                }#}
+{#            );#}
+
+            $(document).ready(function () {
+
+                {%  if messages %}
+                    {% for  message in messages|slice:":1"%}
+                        alert("{{ message }}")
+                    {% endfor %}
+                    {% endif %}
+
+                $(".sm_cd_filter_con").each(function () {
+                    var overflow_check_flag = true
+                    while (overflow_check_flag) {
+                        console.log($(this).find(".filter:last").offset().top)
+                        console.log($(this).find(".filter:last").height())
+                        if ($(this).find(".filter:last").offset().top + $(this).find(".filter:last").height() > $(this).offset().top + $(this).height()) {
+                            $(this).find(".filter:last").remove()
+                            console.log($(this).find(".filter").text())
+                        } else {
+                            overflow_check_flag = false
+                        }
+                    }
+                })
+
+                {% if user.additionaluserinfo.auth != "4" and   user.additionaluserinfo.auth != "5" %}
+                    $(".int").on("click", function () {
+                        var target = this;
+                        $.ajax({
+                            url: '../../add_interest/',
+                            method: "post",
+                            data: {"val": $(target).attr("data-id")},
+                            success: function (data) {
+                            if (data==="ok-add"){
+                                    $("div[data-id='" + $(target).attr("data-id") + "']").find("img").attr("src", "{% static "img/icon-fav-full@2x.png" %}")
+                                     alert("관심 목록에 등록되었습니다.");
+                                }
+                                else {
+                                    $("div[data-id='" + $(target).attr("data-id") + "']").find("img").attr("src", "{% static "img/icon-fav-none.png" %}")
+                                     alert("관심 목록에서 제외되었습니다.");
+                                }
+                                return false;
+                            },
+                            error: function (e) {
+                                console.log(e);
+                            }
+                        })
+                        return false;
+                    })
+                {% endif %}
+
+                try {
+                    var filter_url_list = getParameter("filter").split(",")
+                    for (var k = 0; k < filter_url_list.length; k++) {
+                        $("span[data-id='" + filter_url_list[k] + "']").addClass("on");
+                    }
+                }
+                catch (e) {
+                    console.log(e)
+                }
+
+                $("td > .filter").on("click", function () {
+                    console.log(absolute_url)
+                       if($(this).attr("data-case")!=""){
+                            $("."+$(this).attr("data-case")).removeClass("on")
+                        }
+                    if ($(this).hasClass("on")) {
+                        $(this).removeClass("on")
+                    } else {
+                        $(this).addClass("on")
+                    }
+                    var filter_list = []
+                    for (var k = 0; k < $(".on").length; k++) {
+                        filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                        console.log($(".on:eq(" + k + ")").attr("data-id"))
+                    }
+                    console.log(filter_list.join(","))
+                    $("#filter_list").val(filter_list.join(","))
+                    //location.href = absolute_url + "?filter=" + filter_list.join(",")
+                })
+
+
+                $("#close_btn").on("click", function () {
+                    $("#filter_wnd").addClass("hidden");
+                })
+                $("#filter_cursor").on("click", function () {
+                    $("#filter_wnd").removeClass("hidden");
+                })
+                for (var k = 0; k < $(".sb_row").length; k++) {
+                    $($(".sb_row:eq(" + k + ")")).find(".sm_cd_a:eq(2)").css("margin-right", "0")
+                }
+
+                for (var k = 0; k < $(".gca_rec").length; k++) {
+                    $($(".gca_rec:eq(" + k + ")")).find(".sm_cd_a:eq(2)").css("margin-right", "0")
+                }
+                var status = "card"
+                $("#list").on("click", function () {
+                    $(".sb_row").find(".sm_cd_a").addClass("hidden");
+                    $(".sb_row").find(".sm_l_a").removeClass("hidden")
+                    $("#card>img").attr("src", "{% static "img/icon_card_gray.png" %}")
+                    $("#list>img").attr("src", "{% static "img/icon_list.png" %}")
+                    status = "list"
+                })
+                $("#card").on("click", function () {
+                    $(".sb_row").find(".sm_cd_a").removeClass("hidden");
+                    $(".sb_row").find(".sm_l_a").addClass("hidden")
+                    $("#list>img").attr("src", "{% static "img/icon_list_gray.png" %}")
+                    $("#card>img").attr("src", "{% static "img/icon_card.png" %}")
+                    status = "card"
+                })
+                $("#save").on("click", function () {
+
+                    $.ajax({
+                        url: '../../save_filter/',
+                        method: "post",
+                        data: {"val": $("#filter_list").val(), "em": $("#range_01").val().replace("명 이하", "")},
+                        success: function (data) {
+                            alert("저장되었습니다.")
+                            location.href = absolute_url
+                        },
+                        error: function (e) {
+                            console.log(e);
+                        }
+                    })
+                })
+
+                var filter_string = "{{ filter_string }}"
+                $("#filter_list").val(filter_string)
+                console.log(filter_string)
+                for (var k = 0; k < filter_string.split(",").length; k++) {
+                    $("span[data-id='" + filter_string.split(",")[k] + "']").addClass("on")
+                }
+
+            })
+        </script>
+        {% if user.startup %}
+            <div class="row" style="background-color: #1b66f4; height:80px;">
+                <div class="container" id="hd_banner">
+                    <span id="filter_cursor">나에게 맞는 <span id="bussiness"></span>사업은&nbsp;</span>
+                    <div><span id="num_sc_con">{{ sb_total }}</span>
+                    </div>
+                    개 입니다.<input type="hidden" id="filter_list">
+                </div>
+            </div>
+
+            {% include 'pc/common/matching_filter.html' %}
+
+            <script>
+                console.log("data")
+                var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+                $('#num_sc_con').animateNumber(
+                    {
+                        number: {{ sb_total.count }},
+                        numberStep: comma_separator_number_step
+                    }, 3000
+                );
+            </script>
+
+
+            {% if sb_0.count != 0 %}
+
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>자금지원({{ sb_0.count }})</span>
+                            <a href="category/finance/"><img class="view_detail"
+                                                             src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_0|slice:":3" %}
+                                <a class="sm_cd_a" href="{{ q.get_absolute_url }}">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">
+                                                {% if q in interest %}
+                                                    <img
+                                                            src="{% static "img/icon-fav-full@2x.png" %}"
+                                                            style="width: 24px;cursor: pointer">
+                                                {% else %}
+                                                    <img
+                                                            src="{% static "img/icon-fav-none.png" %}"
+                                                            style="width: 24px;cursor: pointer">
+                                                {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                        <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_1.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>엑셀러레이팅 투자연계({{ sb_1.count }})</span>
+                            <a href="category/accel/"> <img class="view_detail" src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_1|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_2.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>교육({{ sb_2.count }})</span>
+                            <a href="category/edu/"> <img class="view_detail"
+                                                          src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_2|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_3.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>판로({{ sb_3.count }})</span>
+                            <a href="category/channel/"><img class="view_detail"
+                                                             src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_3|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_4.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>네트워킹({{ sb_4.count }})</span>
+                            <a href="category/network/"><img class="view_detail"
+                                                             src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_4|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_5.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>공간지원({{ sb_5.count }})</span>
+                            <a href="category/space/"><img class="view_detail" src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_5|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">
+                                                {% if q in interest %}
+                                                    <img
+                                                            src="{% static "img/icon-fav-full@2x.png" %}"
+                                                            style="width: 24px;cursor: pointer">
+                                                {% else %}
+                                                    <img
+                                                            src="{% static "img/icon-fav-none.png" %}"
+                                                            style="width: 24px;cursor: pointer">
+                                                {% endif %}
+                                            </div>
+
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_6.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>기타지원({{ sb_6.count }})</span>
+                            <a href="category/etc/"><img class="view_detail"
+                                                         src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_6|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if sb_7.count != 0 %}
+                <div class="row sb_row">
+                    <div class="container sb_container">
+                        <div class="sb_ttl">
+                            <span>피칭({{ sb_6.count }})</span>
+                            <a href="/category/piching/"><img class="view_detail"
+                                                              src="{% static "img/icon_plus.png" %} "></a>
+                        </div>
+                        <div class="sb_con">
+                            {% for q in sb_7|slice:":3" %}
+                                <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                    <div class="sm_cd">
+                                        <div class="sm_cd_hd">
+                                            <span>{{ q.title|truncatechars:22 }}</span>
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                        </div>
+                                        <div class="sm_cd_con">
+                                            <div class="sm_cd_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div class="sm_ttl">
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="sm_detail">
+                                                <div class="sm_detail_hd">
+                                                    <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                    <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                              <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                                    </div>
+                                                    <div class="view_cnt">
+                                                        <img class="view_cnt_ic"
+                                                             src="{% static "img/ic_visibility.png" %}">
+                                                        <div>{{ q.hit }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="sm_cd_filter_con">
+                                                    {% for f in q.filter.all|slice:":6" %}
+                                                        <span class="filter">{{ f.name }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="loc">
+                                                {{ q.user.department }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="{{ q.get_absolute_url }}" class="sm_l_a hidden">
+                                    <div class="sm_l">
+                                        <div class="sm_f">
+                                            <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                                <img
+                                                        src="{% static "img/icon-fav-full@2x.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% else %}
+                                                <img
+                                                        src="{% static "img/icon-fav-none.png" %}"
+                                                        style="width: 24px;cursor: pointer">
+                                            {% endif %}</div>
+                                            <div class="l_cp">
+                                                <img class="sm_img"
+                                                     src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                                <div>
+                                                    {{ q.short_desc }}
+                                                </div>
+                                            </div>
+                                            <div class="view_cnt">
+                                                <img class="view_cnt_ic"
+                                                     src="{% static "img/ic_visibility.png" %}"> {{ q.hit }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_s">
+                                            <div class="sb_title">{{ q.title }}</div>
+                                            <div class="sb_due">{{ q.apply_end|date:"Y n d"|calc_day }}<span>{{ q.is_past_due }} </span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span>
+                                            </div>
+                                            <div class="filter_con">
+                                                {% for f in q.filter.all|slice:":8" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="sm_t">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="row gca_rec" style="margin-top: 60px;">
+                <div class="y_row">
+                    <span>다른사람은 어떤 지원사업을 많이 봤을까요?</span>
+                </div>
+                <div class="container">
+                    <div class="sb_con">
+                        {% for q in many_view %}
+                            <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                <div class="sm_cd">
+                                    <div class="sm_cd_hd">
+                                        <span>{{ q.title|truncatechars:22 }}</span>
+                                        <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                            <img
+                                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% else %}
+                                            <img
+                                                    src="{% static "img/icon-fav-none.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% endif %}</div>
+                                    </div>
+                                    <div class="sm_cd_con">
+                                        <div class="sm_cd_cp">
+                                            <img class="sm_img"
+                                                 src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                            <div class="sm_ttl">
+                                                {{ q.short_desc }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_detail">
+                                            <div class="sm_detail_hd">
+                                                <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}
+                                                    <span>{{ q.is_past_due }}</span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span></div>
+                                                <div class="view_cnt">
+                                                    <img class="view_cnt_ic" src="{% static "img/ic_visibility.png" %}">
+                                                    <div>{{ q.hit }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="sm_cd_filter_con">
+                                                {% for f in q.filter.all|slice:":6" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="loc">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="row gca_rec" style="">
+                <div class="y_row">
+                    <span>G-CONNECT가 추천하는 지원사업 입니다.</span>
+                </div>
+                <div class="container">
+                    <div class="sb_con" style="width:1050px;">
+                        {% for q in random %}
+                            <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                <div class="sm_cd">
+                                    <div class="sm_cd_hd">
+                                        <span>{{ q.title|truncatechars:22 }}</span>
+                                        <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                            <img
+                                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% else %}
+                                            <img
+                                                    src="{% static "img/icon-fav-none.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% endif %}</div>
+                                    </div>
+                                    <div class="sm_cd_con">
+                                        <div class="sm_cd_cp">
+                                            <img class="sm_img"
+                                                 src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                            <div class="sm_ttl">
+                                                {{ q.short_desc }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_detail">
+                                            <div class="sm_detail_hd">
+                                                <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                <div class="due_date">{{ q.apply_end|date:"Y n d"|calc_day }}
+                                                    <span>{{ q.is_past_due }}</span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span></div>
+                                                <div class="view_cnt">
+                                                    <img class="view_cnt_ic" src="{% static "img/ic_visibility.png" %}">
+                                                    <div>{{ q.hit }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="sm_cd_filter_con">
+                                                {% for f in q.filter.all|slice:":6" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="loc">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <script>
+                var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+                $(document).ready(function () {
+                    $('#total_money').animateNumber(
+                        {
+                            number: 52000000,
+                            numberStep: comma_separator_number_step
+                        }, 3000
+                    );
+                    $('#all_sb').animateNumber(
+                        {
+                            number: 234,
+                            numberStep: comma_separator_number_step
+                        }, 3000
+                    );
+                    $('#reg_startup').animateNumber(
+                        {
+                            number: 43,
+                            numberStep: comma_separator_number_step
+                        }, 3000
+                    );
+                    $('#matching').animateNumber(
+                        {
+                            number: 234,
+                            numberStep: comma_separator_number_step
+                        }, 3000
+                    );
+                })
+            </script>
+            <div class="row" id="main_dash">
+                <div class="container">
+                    <div id="dash_content">
+                        <div id="dash_hd">
+                            <div id="text">누적지원금액</div>
+                            <div id="scroll_num">
+                                <span>&#8361;</span>
+                                <span id="total_money">0</span>
+                            </div>
+                            <div id="dash_detail">
+                                <div class="detail_seg">
+                                    <span class="cp_txt">전체 등록된 지원사업</span>
+                                    <span class="cp_num" id="all_sb">234</span>
+                                </div>
+                                <div class="detail_seg">
+                                    <span class="cp_txt">등록된 스타트업</span>
+                                    <span class="cp_num" id="reg_startup">43</span>
+                                </div>
+                                <div class="detail_seg" style="border-right: none">
+                                    <span class="cp_txt">매칭된 지원사업</span>
+                                    <span class="cp_num" id="matching">234</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="go_reg_startup">
+                <div class="container">
+                    <div id="reg_cp">
+                        나에게 맞는 지원사업은 <span id="q">?</span> 개 입니다. <br> <span class="bl">기업등록</span>을 통해 확인해보세요.
+                    </div>
+                    <a href="{% url "company_profile" %}">
+                        <div class="go_startup">
+                            기업 등록하기
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="row gca_rec" style="margin-top: 45px;">
+                <div class="y_row">
+                    <span>다른사람은 어떤 지원사업을 많이 봤을까요?</span>
+                </div>
+                <div class="container">
+                    <div class="sb_con">
+                        {% for q in many_view %}
+                            <a href="{{ q.get_absolute_url }}" class="sm_cd_a">
+                                <div class="sm_cd">
+                                    <div class="sm_cd_hd">
+                                        <span>{{ q.title|truncatechars:22 }}</span>
+                                        <div data-id="{{ q.id }}" class="int">{% if q in interest %}
+                                            <img
+                                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% else %}
+                                            <img
+                                                    src="{% static "img/icon-fav-none.png" %}"
+                                                    style="width: 24px;cursor: pointer">
+                                        {% endif %}</div>
+                                    </div>
+                                    <div class="sm_cd_con">
+                                        <div class="sm_cd_cp">
+                                            <img class="sm_img"
+                                                 src="{% static "img/icon-main-"|add:q.icon_set|add:"-sp.png" %}">
+                                            <div class="sm_ttl">
+                                                {{ q.short_desc }}
+                                            </div>
+                                        </div>
+                                        <div class="sm_detail">
+                                            <div class="sm_detail_hd">
+                                                <img class="cal" src="{% static "img/ic-cal-dim.png" %}">
+                                                <div class="due_date">{{ q.apply_end|date:"Y n d "|calc_day }} <span>{{ q.is_past_due }}</span>
+                                                      <span class="d_day">{{ q.apply_end|date:"Y n d"|calc_d_day }}</span></div>
+                                                <div class="view_cnt">
+                                                    <img class="view_cnt_ic" src="{% static "img/ic_visibility.png" %}">
+                                                    <div>{{ q.hit }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="sm_cd_filter_con">
+                                                {% for f in q.filter.all|slice:":6" %}
+                                                    <span class="filter">{{ f.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="loc">
+                                            {{ q.user.department }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="sub_go_startup_reg" style="margin-bottom: 100px;">
+                <div class="container">
+                    <div id="sub_cp">
+                        G-CONNECT가 귀사에게 추천할 수 있도록<br>
+                        <span class="bl">기업등록</span> 을 해주세요.
+                    </div>
+                    <a href="{% url "company_profile" %}">
+                        <div class="go_startup" style="margin-top: 48px;">
+                            기업 등록하기
+                        </div>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <script>
+            var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+            $(document).ready(function () {
+                $('#total_money').animateNumber(
+                    {
+                        number: 52000000,
+                        numberStep: comma_separator_number_step
+                    }, 3000
+                );
+                $('#all_sb').animateNumber(
+                    {
+                        number: 234,
+                        numberStep: comma_separator_number_step
+                    }, 3000
+                );
+                $('#reg_startup').animateNumber(
+                    {
+                        number: 43,
+                        numberStep: comma_separator_number_step
+                    }, 3000
+                );
+                $('#matching').animateNumber(
+                    {
+                        number: 234,
+                        numberStep: comma_separator_number_step
+                    }, 3000
+                );
+            })
+        </script>
+        <div class="row">
+            <div class="container">
+                <div id="no_login_cp">G-CONNECT에서 <span class="bl">회원가입</span>을 통해<br>
+                    당신의 기업에게 맞는 지원사업을 찾아보세요.
+                </div>
+                <div id="signup_btn" onclick="location.href='{% url "signup" %}'">회원가입하기</div>
+                <div id="num_scroll_con">
+                    <div class="dash_hd">
+                        <div class="text">누적지원금액</div>
+                        <div class="scroll_num">
+                            <span>&#8361;</span>
+                            <span id="total_money">0</span>
+                        </div>
+                        <div class="dash_detail">
+                            <div class="detail_seg">
+                                <span class="cp_txt">전체 등록된 지원사업</span>
+                                <span class="cp_num" id="all_sb">234</span>
+                            </div>
+                            <div class="detail_seg">
+                                <span class="cp_txt">등록된 스타트업</span>
+                                <span class="cp_num" id="reg_startup">43</span>
+                            </div>
+                            <div class="detail_seg" style="border-right: none">
+                                <span class="cp_txt">매칭된 지원사업</span>
+                                <span class="cp_num" id="matching">234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

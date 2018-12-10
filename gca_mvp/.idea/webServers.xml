@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="d2c4c7ce-3cda-425e-872e-2ee50506138b" name="gca" url="http://52.78.39.213">
+        <fileTransfer host="52.78.39.213" port="22" privateKey="C:\Users\user\Downloads\gca_prj.ppk" rootFolder="/home/ubuntu/workspace" accessType="SFTP" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

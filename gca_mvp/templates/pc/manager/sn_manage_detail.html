@@ -1,0 +1,309 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/_sb_manage_detail.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $("#pick_award").on("click", function () {
+                $("#masking").width($(document).width());
+                $("#masking").height($(document).height());
+                $("#pick_window").removeClass("hidden");
+            })
+            $(".close_btn").on("click", function () {
+                console.log("asdfasfd")
+                $("#masking").width(0);
+                $("#masking").height(0);
+                $("#pick_window").addClass("hidden")
+            })
+                 if($(".inter_row").length==0){
+                $("#applicant_list_2").find(".total_download").attr("onclick","")
+                 $("#applicant_list_2").find(".total_download").addClass("dim")
+            }
+            if($(".app_row").length==0){
+                $("#applicant_hd").find(".total_download").attr("onclick","")
+                $("#applicant_hd").find("#pick_award").attr("onclick","")
+                $("#applicant_hd").find(".total_download").addClass("dim")
+            }
+
+
+
+
+
+        })
+    </script>
+        <style>
+    .dim{
+        border: #ddd!important;
+        color: #ddd!important;
+    }
+    </style>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <div id="sb_con">
+            <div id="tp_btn">
+                <div style="cursor: pointer" onclick="history.back()" id="back"><img
+                        src="{% static "img/icon_arrow-left.png" %}"></div>
+                <div id="edit"><a href="{% url "sb_edit" id=sp.id %}" onclick="var re = confirm('수정시 다시 승인을 받아야 합니다.'); if(re==false)return false"><img src="{% static "img/icon_edit.png" %}"></a>
+                </div>
+                <div onclick="location.href='{% url "sb_detail_pdf_down" id=sp.id %}'" class="export">내보내기<img
+                        style="margin-top: -3px; margin-left: 2px"
+                        src="{% static "img/pdf.png" %}"></div>
+
+                <div class="show_static   {% if sp.is_pre == True %}dim{% else %}{% endif %}"><a href="{% if sp.is_pre == True %}{% else %}#static_hd{% endif %}">통계보기<img style="margin-top: -3px; margin-left: 2px"
+                                                                       src="{% static "img/icon_piechart.png" %}"></a></div>
+            </div>
+            <a style="cursor: pointer" onclick="window.open('{{ sp.get_absolute_url }}','_blank')" class="sm_l_a">
+                <div class="sm_l">
+                    <div class="sm_f">
+                        <div class="l_cp">
+                            <img class="sm_img" src="{% static "img/icon-main-"|add:sp.icon_set|add:"-sp.png" %}">
+                            <div>
+                                {{ sp.short_desc }}
+                            </div>
+                        </div>
+                        <div class="apply_cnt">
+                            <img class="view_cnt_ic"
+                                 src="{% static "img/ic_done.png" %}"> {{ sp.appliance_set.count }}
+                        </div>
+                        <div class="view_cnt">
+                            <img class="view_cnt_ic"
+                                 src="{% static "img/ic_visibility.png" %}"> {{ sp.hit }}
+                        </div>
+                    </div>
+                    <div class="sm_s">
+                        <div class="sb_title">{{ sp.title }}</div>
+                        <div class="sb_due">{{ sp.apply_end|date:"Y-m-d"|calc_day }}&nbsp;&nbsp;<span>{% if sp.is_past %}마감 {% else %}
+                            모집중{% endif %}</span>
+                        </div>
+                        <div class="filter_con">
+                            {% for f in qs.filter.all|slice:":8" %}
+                                <span class="filter">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="sm_t">
+                        {{ sp.user.department }}
+                    </div>
+                </div>
+            </a>
+            <div id="applicant_list">
+                <div id="applicant_hd">
+                    <span>지원자 리스트</span>
+                    <div class="upward"><img src="{% static "img/arrow-up.png" %}"></div>
+                    <div onclick="location.href='{% url "appliance_all_download" sb=sp.id %}'" class="total_download">일괄
+                        다운로드
+                    </div>
+                </div>
+                <div id="applicant_list_con">
+                    <table class="table border-less">
+                        <tr>
+                            <th>
+                                순서
+                            </th>
+                            <th>
+                                기업명
+                            </th>
+                            <th>
+                                업종
+                            </th>
+                            <th>
+                                대표자명
+                            </th>
+                            <th>
+                                사업자 등록번호
+                            </th>
+                            <th>
+                                연락처
+                            </th>
+                            <th>
+                                지원서 제출일
+                            </th>
+                            <th>
+                                다운로드
+                            </th>
+                        </tr>
+                        {% for ap in   ap %}
+                            <tr class="app_row">
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ ap.name }}</td>
+                                <td>{{ ap.service_category }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.name }}</td>
+                                <td>{{ ap.business_number }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.tel }}</td>
+                                <td>{{ ap.update_at | date:"Y-m-d" }}</td>
+                                <td onclick="location.href='{% url "appliance_download" apid=ap.id %}'" class="down">
+                                    다운로드
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+
+            <div id="applicant_list_2">
+                <div id="applicant_hd_2">
+                    <span>관심 표시한 유저 리스트</span>
+
+                    <div class="upward"><img src="{% static "img/arrow-up.png" %}"></div>
+                    <div class="total_download" onclick="location.href='{% url "get_all_inter" sbid=sp.id %}'">엑셀 내보내기
+                    </div>
+                </div>
+                <div id="applicant_list_con_2">
+                    <table class="table border-less">
+                        <tr>
+                            <th>번호</th>
+                            <th>회사 이름</th>
+                            <th>회원 아이디</th>
+                            <th>연락처</th>
+                            <th>메일주소</th>
+
+                        </tr>
+                        {% for ap in inter %}
+                            <tr class="inter_row">
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ ap.user.startup.name }}</td>
+                                <td>{{ ap.user.username }}</td>
+                                <td>{{ ap.tel }}</td>
+                                <td>{{ ap.user.startup.email }}</td>
+
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+
+            <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+            <script type="text/javascript">
+                google.charts.load('current', {'packages': ['corechart']});
+                google.charts.setOnLoadCallback(drawChart);
+
+                function drawChart() {
+
+                    var data_date = {{ date_arr|safe }}
+                        data_date = data_date.reverse()
+                    var hit_set = [{% for hit in hitlog  reversed %}"{{ hit }}",{% endfor %}]
+                    var app_set = [{% for hit in applog  reversed %}"{{ hit }}",{% endfor %}]
+
+
+                    var data_origin = [
+                        ['일자', '뷰수',],
+                    ]
+
+                    var data_origin2 = [
+                        ['일자', '지원자 수',],
+                    ]
+                    for (var k = 0; k < 29; k++) {
+                        var seg = []
+                        seg.push(data_date[k])
+                        seg.push(parseInt(hit_set[k]))
+                        data_origin.push(seg)
+                    }
+
+
+                    for (var k = 0; k < 29; k++) {
+                        var seg = []
+                        seg.push(data_date[k])
+                        seg.push(parseInt(app_set[k]))
+                        data_origin2.push(seg)
+                    }
+
+
+                    var options = {
+                        vAxis: {minValue: 0}
+                    };
+
+                    var data = google.visualization.arrayToDataTable(data_origin);
+                    var chart = new google.visualization.ComboChart(document.getElementById('app_gr_2'));
+                    chart.draw(data, options);
+
+                    var data2 = google.visualization.arrayToDataTable(data_origin2);
+                    var chart2 = new google.visualization.ComboChart(document.getElementById('app_gr_1'));
+                    chart2.draw(data2, options);
+
+                      var data = google.visualization.arrayToDataTable([
+                        ['필터 항목', '선택 수'],
+                        {% for k,v in filter_pi.items %}
+                            ['{{ k }}', {{ v }}],
+                        {% endfor %}
+                    ]);
+                    var options = {};
+                    var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+                    chart.draw(data, options);
+
+                    var data = google.visualization.arrayToDataTable([
+                        ['필터 항목', '선택 수'],
+                        {% for k,v in local_filter_pi.items %}
+                            ['{{ k }}', {{ v }}],
+                        {% endfor %}
+                    ]);
+                    var options = {};
+                    var chart = new google.visualization.PieChart(document.getElementById('piechart2'));
+                    chart.draw(data, options);
+
+                       var data = google.visualization.arrayToDataTable([
+                        ['필터 항목', '선택 수'],
+                        {% for k,v in case_filter_pi.items %}
+                            ['{{ k }}', {{ v }}],
+                        {% endfor %}
+                    ]);
+                    var options = {};
+                    var chart = new google.visualization.PieChart(document.getElementById('piechart3'));
+                    chart.draw(data, options);
+
+
+                }
+            </script>
+            <div id="static">
+                <div id="static_hd">
+                    해당 지원사업 통계(진행중)
+                </div>
+                <div id="static_content">
+                    <div id="cp_0" style="float: none; width:100px; height:30px; ">지원자수</div>
+                    <div id="app_gr_1" style="width: 600px; height: 250px; margin-left: 100px ">
+                    </div>
+                    <div id="cp_1" style=" float: none; margin-left: 0px;">해당공고를 본 유저수</div>
+                    <div id="app_gr_2" style="width: 600px; height: 250px;margin-left: 100px  ">
+                    </div>
+                      <div style="float: left">
+                        <div id="cp_1" style=" float: none; margin-left: 0px;">지원자들의 필터</div>
+                        <div id="piechart" style="width: 400px; height:400px;"></div>
+                    </div>
+                    <div style="float: left">
+                        <div id="cp_1" style=" float: none; margin-left: 0px;">지원자들의 지역</div>
+                        <div id="piechart2" style="width: 400px; height:400px;"></div>
+                    </div>
+                     <div style="float: left">
+                        <div id="cp_1" style=" float: none; margin-left: 0px;">지원자들의 기업형태</div>
+                        <div id="piechart3" style="width: 400px; height:400px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="masking"></div>
+
+{% endblock %}

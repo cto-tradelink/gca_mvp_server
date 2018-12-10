@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>G-connect</title>
+<script>
+    setTimeout(function () {
+        {% if target == "m" %}
+        location.href="{% url "dashboard" %}"
+        {% else %}
+        location.href="{% url "index" %}"
+        {% endif %}
+    }, 5000)
+</script>
+</head>
+
+<body>
+에러가 발생했습니다. 5초후에 메인 페이지로 이동합니다.
+</body>
+</html>

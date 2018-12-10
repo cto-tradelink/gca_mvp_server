@@ -1,0 +1,236 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/startup_list_d.css" %}"/>
+    <style>
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    <script>
+
+        function search_url_gen() {
+            location.href = absolute_url + "?filter=" + $("#filter_string").val() + "&search=" + $("#search_bar").val()
+        }
+
+        $(document).ready(function () {
+            try {
+                var filter_url_list = getParameter("filter").split(",")
+                for (var k = 0; k < filter_url_list.length; k++) {
+                    $("span[data-id='" + filter_url_list[k] + "']").addClass("on");
+                }
+                $("#filter_string").val(getParameter("filter"))
+            }
+            catch (e) {
+                console.log(e)
+            }
+            $("#search_bar").keypress(function (e) {
+                if (e.which == 13) {
+                    console.log($(this).val())
+                    search_url_gen()
+                }
+            });
+            $("#search_btn").on("click", function () {
+
+                search_url_gen()
+            })
+            try {
+                $("#search_bar").val(getParameter("search"))
+            } catch (e) {
+                console.log(e)
+            }
+            $("#down_btn").on("click", function () {
+                $("#search_menu_con").addClass("hidden")
+                $("#filter_tbl").removeClass("hidden")
+                $("#search_cp").empty()
+                if ($(".filter.on").length != 0) {
+                    $("#search_cp").append($(".filter.on").clone())
+                } else {
+                    $("#search_cp").html("필터를 선택하세요.")
+                }
+
+
+            })
+            $("#up_btn").on("click", function () {
+                $("#search_menu_con").removeClass("hidden")
+                $("#filter_tbl").addClass("hidden")
+                   $("#search_cp").empty()
+                if ($(".filter.on").length != 0) {
+                    $("#search_cp").append($(".filter.on").clone())
+                } else {
+                    $("#search_cp").html("필터를 선택하세요.")
+                }
+            })
+            $("td > .filter").on("click", function () {
+
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                console.log(filter_list.join(","))
+                $("#filter_string").val(filter_list.join(","))
+                search_url_gen()
+
+            })
+            $("#list").on("click", function () {
+                $(this).find("img").attr("src", "{% static "img/icon_list.png" %}")
+                $("#card").find("img").attr("src", "{% static "img/icon_card_gray.png"%}")
+                $(".st_lst").removeClass("hidden")
+                $(".st_cd").addClass("hidden")
+            })
+            $("#card").on("click", function () {
+                $(this).find("img").attr("src", "{% static "img/icon_card.png" %}")
+                $("#list").find("img").attr("src", "{% static "img/icon_list_gray.png"%}")
+                $(".st_lst").addClass("hidden")
+                $(".st_cd").removeClass("hidden")
+            })
+
+
+        })
+    </script>
+    <div class="container">
+        <input type="hidden" id="filter_string">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a> &gt; <a href="#">스타트업</a>
+        </div>
+        <div id="seach_text">
+            <input type="text" id="search_bar" placeholder="기업명으로 검색">
+            <div id="search_btn" style="display: inline-block"><i class="fas fa-search"></i></div>
+        </div>
+        <table id="filter_tbl" class="" style="clear:both;">
+            <tr>
+                <th>
+                    기본장르
+                </th>
+                <td colspan="2">
+                    {% for filter in filter_0 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    영역
+                </th>
+                <td style="width:383px;">
+                    <span class="cat_label">창작</span>
+                    {% for filter in filter_1 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                    <br>
+                    <span class="cat_label">창업</span>
+                    {% for filter in filter_3 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">신규산업</span>
+                    {% for filter in filter_5 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+                <td style="width:363px;">
+                    <span class="cat_label">IT 관련</span>
+                    {% for filter in filter_2 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">제조/융합</span>
+                    {% for filter in filter_4 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">기타</span>
+                    {% for filter in filter_6 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="padding: 0px;">
+                    <img id="up_btn"
+                         style=" cursor: pointer; float: right; margin-right: 16px; margin-top: 6px;margin-bottom: 9px;"
+                         src="{% static "img/arrow-up.png" %}">
+                </td>
+            </tr>
+        </table>
+        <div id="search_menu_con" class="hidden">
+            <div id="search_cp">필터를 선택하세요.</div>
+            <div id="filter_con"></div>
+            <div style="cursor: pointer" id="down_btn"><img src="{% static "img/arrow-down.png" %}"></div>
+        </div>
+
+        <div id="view_btn">
+            <div id="list"><img src="{% static "img/icon_list_gray.png" %}"></div>
+            <div id="card"><img src="{% static "img/icon_card.png" %}"></div>
+        </div>
+        <div id="startup_list">
+            {% for q in qs %}
+                <a class="st_lst hidden" href="{{ q.get_absolute_url }}">
+                    <div class="seg">
+                        <div class="seg_con">
+                            <div class="thumb">    {% if q.thumbnail %}
+                                <img src="{{ q.thumbnail.url }}">
+                            {% endif %}</div>
+                            <div class="text_con">
+                                <div class="startup_ttl">{{ q.name }}</div>
+                                <div class="startup_cap">{{ q.short_desc|truncatechars:60 }}</div>
+                                <div class="tag_con">
+                                    {% for tag in q.filter.all|slice:":6" %}
+                                        {% if tag.cat_0 != "지원형태" and  tag.cat_0 != "조건" %}
+                                            <span class="filter">
+                                                {{ tag.name }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for tag in q.tag.all|slice:":6" %}
+                                        {% if tag.name != "" %}
+                                            <span class="tag">
+                                    #{{ tag.name }}
+                                    </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                <a class="st_cd" style="margin-left: 0px" href="{{ q.get_absolute_url }}">
+                    <div class="cd_con">
+                        <div class="thumb">
+                            {% if q.thumbnail %}
+                                <img src="{{ q.thumbnail.url }}">
+                            {% endif %}
+                            <div class="startup_ttl">{{ q.name }}</div>
+                        </div>
+                        <div class="text_con">
+                            <div class="startup_cap">{{ q.short_desc|truncatechars:50 }}</div>
+                            <div class="filter_con">
+                                {% for tag in q.filter.all|slice:":6" %}
+                                    {% if tag.cat_0 != "지원형태" and  tag.cat_0 != "조건" %}
+                                        <span class="filter">
+                                                {{ tag.name }}
+                                            </span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="tag_con">
+                                {% for tag in q.tag.all|slice:":6" %}
+                                    {% if tag.name != "" %}
+                                        <span class="tag">
+                                    #{{ tag.name }}
+                                    </span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

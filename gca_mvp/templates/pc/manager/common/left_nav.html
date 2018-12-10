@@ -1,0 +1,64 @@
+<style>
+    .nav_on {
+        color: #1b66f4;
+        background-color: f7f7f7;
+        border-bottom: 1px solid #1b66fe;
+    }
+
+    ul {
+        padding-left: 0px !important;
+    }
+
+    ul#m_left_nav > li {
+        padding-left: 26px;
+        width: 150px;
+        height: 71px;
+        line-height: 71px;
+        font-size: 15px;
+        list-style: none;
+        cursor: pointer;
+    }
+
+    ul#m_left_nav > li:hover {
+        color: #1b66f4;
+        background-color: #f7f7f7;
+    }
+
+    #left_nav {
+        width: 150px;
+        border-right: 1px solid #ced4da;
+        float: left;
+    }
+</style>
+<div id="left_nav" style="background-color: #fdfdfd; position: fixed; padding-top: 40px;top:0px;">
+    <ul id="m_left_nav">
+        <li>
+            <a {% if  request.path == "/manager/" or request.path == "/manager/account/edit/" %}class="nav_on" {% endif %}
+               href="{% url "manager" %}"> 내 계정 관리</a>
+        </li>
+        <li>
+            <a {% if request.path == "/manager/dashboard/" %}class="nav_on" {% endif %} href="{% url "dashboard" %}">대시보드</a>
+        </li>
+        <li>
+            <a {% if "manager/sb_list" in request.path  or "manager/sb_detail" in request.path  or "support/edit" in request.path or "select" in request.path  or "sb_example" in request.path or "write" in request.path %}class="nav_on" {% endif %}
+               href="{% url "sb_list" %}?cat=all"> 지원 사업 관리</a>
+        </li>
+        <li>
+            <a {% if "/manager/all/sb_list/" in request.path %} class="nav_on"{% endif %}
+                                                                href="{% url "sb_list_all" %}?cat=3"> 전체 지원사업</a>
+        </li>
+        <li>
+            <a
+                    {% if request.resolver_match.url_name == "startup_sb_manage" or  request.resolver_match.url_name == "startup_sb_manage_all" or request.resolver_match.url_name == "startup_p_manage_all" %}
+                        class="nav_on"{% endif %} href="{% url "startup_sb_manage" %}"> 전체 회원기업</a>
+        </li>
+
+        {% if user.additionaluserinfo.auth == "5" or user.additionaluserinfo.auth == "4" %}
+            {% if user.additionaluserinfo.get_depth != 0 and user.additionaluserinfo.get_depth != 3 %}
+                <li {% if request.resolver_match.url_name == "manager_account" %}class="on" {% endif %}>
+                    <a href="/manage/manager_account">매니저 회원 관리<span id="ac"></span></a>
+                </li>
+            {% endif %}
+        {% endif %}
+    </ul>
+</div>

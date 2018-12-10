@@ -1,0 +1,134 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="">홈</a>&nbsp;&gt;&nbsp;<a href="#">지원사업</a> &nbsp;&gt;&nbsp; <a href="#">지원완료</a>&nbsp;&gt;&nbsp;<a
+                id="final" href="#">2018 북부 경기문화창조허브 가상오피스 하반기 모집 공고</a>
+        </div>
+        <div id="sp_hd">
+            <div id="sp_cat">
+                <div id="sp_status">모집중</div>
+                <div id="category">공간지원</div>
+            </div>
+            <div id="sp_ttl_con">
+                <span id="sp_ttl">{{ support.title }}</span><br>
+                <span id="due">모집기간 :  {{ support.from_date }} ~ {{ support.end_date }}</span>
+                <div id="sp_tag_con">
+                    <span class="tag">공간지원</span><span class="tag">융자지원</span>
+                </div>
+            </div>
+            <div id="loc">GCA(판교)</div>
+        </div>
+        <div id="sp_detail_con">
+            <div class="detail_seg">
+                <div class="detail_ttl">회사소개</div>
+                <div class="desc">
+                    안녕하셉니까 창업가 여러분의 행보에 찬사를 보냅니다. (재)경기콘텐츠진흥원 북부 경기문화창조허브에서는 문화콘텐츠산업 창업활성화를 <br>
+                    목적으로 사무 공간 확보가 열악한 초기단계 창업(예비)자를 대상으로 창업 공간 및 우편함 지원 등 비상주 사업자등록 주소지<br>
+                    지원, 일명 가상오피스 지원을 시행합니다. 많은 참여바랍니다.
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">사업소개</div>
+                <div class="desc">
+                    문화콘텐츠산업 창업(예비)자 중 개인사업자 ※ 법인사업자 제외함<br><br>
+
+                    (1) 문화체육관광부와 한국콘텐츠진흥원이 작성하는 정부승인통계인 ‘콘텐츠 산업통계’에 따라 총 12개 분야 및 ICT융복합 분야<br>
+                    (2) 신청서 작성 시 지원대상 업종표의 중분류, 소분류, 분류체계의 정의를 참고하여 해당 대분류 선택. 해당사항이 없을 경우 유사 분야를 선택하시거나 <br>
+                    혹은 기타분야로서 상세히 기재<br>
+                    <br>
+                    ※ 붙임 [참고]지원대상 업종 분류 참조
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">진행단계</div>
+                <div class="desc">
+                    (1) 경기도내 거주자 ※ 주민등록등본 상 주소지<br>
+                    (2) 문화콘텐츠산업 창업(예정)자 ※ 붙임[참고] 자료 참조<br>
+                    (3) 개인사업자등록(예정)자 ※ 법인사업자로 전환 시 지원계약 해제<br>
+                    (4) 경기도내 주소지 사업자등록(예정)자<br>
+                    (5) 창업수행 사무공간으로 스마트오피스 이용이 절실히 필요한 자
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">투자유치 현황</div>
+                <div class="desc">
+                    가. 비상주 사업자등록 주소지 사용 허가<br>
+                    (1) 사업자등록 시 사업장 소재(주소지) 사용 ※ 주소지 : 북부 경기문화창조허브<br>
+                    (2) 사업자등록을 위한 스마트오피스 임대차 계약서<br>
+                    ※ 계약기간 : 계약시점으로부터 1년<br>
+                    <br>
+                    ​나. 사용 대차 내용<br>
+                    (1) 스마트오피스 개인좌석(3.3㎡) ※ 공용좌석으로 지정석은 아님<br>
+                    (2) 우편함 ※ 지원대상 선정 창업(예정)자에 한하여 우편함 지정 제공<br>
+                    <br>
+                    ​다. 사용대차 비용 : 무상대여
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">향후 추진 계획</div>
+                <div class="desc">
+                    ​가. 가상오피스 지원에 따른 계약체결<br>
+                    나. 임대차 계약 체결 후 담당자가 요청한 기간 내에 북부 경기문화창조허브로 사업자 주소지 등록(변경) 후 사업자 등록증 제출<br>
+                    다. 임대차 계약 기간 중 필요한 경우 대면상담 또는 서면을 통한 창업수행 현황 보고서 제출<br>
+                    (1) 창업기업 구성원(명)수<br>
+                    (2) 당월 매출실적<br>
+                    (3) 사업자등록현황<br>
+                    (4) 기타 창업수행 관련 재단이 요구하는 자료<br>
+                    <br>
+                    ※ 가상오피스 지원 신청자 중 이미 사업자등록(개인)을 소지한 창업자는 지원계약 체결 후 사업장 소재(주소지)를 북부 경기문화창조허브로 변경해야 함
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">협력 방안</div>
+                <div class="desc">
+                    (1) 재단이 요구하는 증빙자료 구비 (최근 3개월 이내)<br>
+                    (2) 작성/날인 문서 및 증빙서류를 하나의 파일로 변환 (.pdf 또는 .zip)<br>
+                    (3) 하단의 지원하기를 통해 지원서 작성 후 (2)의 파일 첨부 <br>
+                </div>
+            </div>
+            {% comment %}
+            <div class="detail_seg">
+                <div class="detail_ttl">선정자 리스트</div>
+                <div class="desc">
+                    <table class="table">
+                        <tr>
+                            <th>
+                                01
+                            </th>
+                            <td>
+                                2018 판교 경기문화창조허브 …
+                            </td>
+                            <td>
+                                지원자명
+                            </td>
+                            <td>
+                                성별_나이
+                            </td>
+                            <td>
+                                지원 날짜
+                            </td>
+                            <td>
+                                다운로드드
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endcomment %}
+
+        </div>
+        <div class="attached_file">첨부서류</div>
+
+
+
+    </div>
+{% endblock %}

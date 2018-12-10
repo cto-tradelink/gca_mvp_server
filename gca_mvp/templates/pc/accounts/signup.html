@@ -1,0 +1,156 @@
+{% extends "pc/common/base_d.html" %}
+{% load socialaccount staticfiles %}
+
+{% block css %}
+    <link href="{% static "css/signup.css" %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    <style>
+        .errorlist {
+            height: 43px;
+            width: 207px;
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            var confirm_email = false;
+            $("form").on("submit", function () {
+                if ($("#id_password").val() != $("#id_password2").val()) {
+                    alert("비밀번호가 일치하지 않습니다. 비밀번호를 확인해주세요.")
+                    return false
+                }
+                if (confirm_email === false) {
+                    alert("이메일 인증을 진행해주세요.")
+                    return false
+                }
+            })
+            var $seg = $("#cert_btn").detach()
+            var con = $("#cert_con").parent().detach()
+            $($seg).insertAfter($("#id_username"))
+            $(con).insertAfter($("#id_username").parent())
+            $("#id_username").css("width", "455px")
+            $("#cert_btn").on("click", function () {
+                 alert("메일 발송중입니다. 조금만 기다려주세요.")
+                var target = this
+                $(target).text("재전송")
+                $("#cert_con").parent().removeClass("hidden")
+                $.ajax({
+                    url: '/signup/',
+                    method: "post",
+                    data: {"type": "confirm", "val": $("#id_username").val()},
+                    success: function (data) {
+                        if (data == "ok")
+                        alert("인증 메일을 발송하였습니다. 메일함을 확인해주세요.")
+                        else{
+                               alert("메일발송중 오류가 발생하였습니다. 오류가 지속될 경우 사이트 관리자에게 문의하세요.")
+                        }
+                    },
+                    error: function (e) {
+                        console.log(e);
+                        alert("메일발송중 오류가 발생하였습니다. 오류가 지속될 경우 사이트 관리자에게 문의하세요.")
+                    }
+                })
+            })
+
+            $("#cert_btn_2").on("click", function () {
+                var target = this
+                $.ajax({
+                    url: '/signup/',
+                    method: "post",
+                    data: {
+                        "type": "confirm2",
+                        "target": $("#id_username").val(),
+                        "confirmation_code": $("#confirmation_code").val()
+                    },
+                    success: function (data) {
+                        console.log(data)
+                        if (data == "ok") {
+                            alert("이메일 인증에 성공하였습니다. 회원가입을 진행해주세요.")
+                            confirm_email = true
+                            $("#cert_con").parent().removeClass("hidden")
+                            $("#cert_con").parent().addClass("hidden")
+                        }
+                        else {
+                            alert("이메일 인증에 실패하였습니다. 인증코드를 확인해주세요.")
+                        }
+                    },
+                    error: function (e) {
+                        console.log(e);
+                    }
+                })
+            })
+
+        })
+    </script>
+    <div class="container">
+        <div id="cp">G-CONNECT에서 <span>회원가입</span>을 통해<br>
+            당신의 기업에게 맞는 지원사업을 찾아보세요.
+            <div id="social_login">
+                {% get_providers as providers %}
+                {% for provider in providers %}
+
+                    {% if provider.name == "Facebook" %}
+                        <a id="face" title="{{ provider.name }}"
+                           href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                           class="">
+                            페이스북 로그인
+                        </a>
+                    {% elif provider.name == "Kakao" %}
+                        <a id="kakao" title="{{ provider.name }}"
+                           href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                           class="">
+                            카카오 로그인
+                        </a>
+                    {% else %}
+                        <a id="naver" title="{{ provider.name }}"
+                           href="{% provider_login_url provider.id process="login" scope=scope auth_params=auth_params %}"
+                           class="">
+                            네이버 로그인
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div id="signup_content">
+            <form method="POST" style="position: relative">
+                {% csrf_token %}
+                {{ form.as_ul }}
+                <li><label for="id_password2">비밀번호 확인</label> <input type="password" name="password1" required=""
+                                                                     placeholder="비밀번호를 입력하세요" id="id_password2"></li>
+                <span id="cp_email">회사 이메일 주소로 가입해 주세요.</span>
+                <li style="margin-top: 10px;; margin-bottom: 23px;" class="hidden">
+                    <style>
+                        #cert_btn {
+                            width: 75px;
+                            text-align: center;
+                        }
+                    </style>
+                    <div id="cert_btn"
+                         style="display: inline-block; padding: 8px 10px; border-radius: 4px; color: #1b66fe; border:1px solid #1b66fe; cursor: pointer; margin-left: 5px;">
+                        인증하기
+                    </div>
+                    <div id="cert_con">
+                        <input id="confirmation_code" name="confirmation_code" placeholder="인증코드를 입력해주세요." type="text"
+                               style="margin-top: 6px; width: 455px; height: 38px; border-radius: 4px;  background-color: #ffffff;    border: 1px solid #ccc;  padding-left: 10px;">
+                        <div id="cert_btn_2"
+                             style="display: inline-block; padding: 8px 10px; border-radius: 4px; color: #1b66fe; border:1px solid #1b66fe; cursor: pointer; margin-left: 5px;">
+                            인증하기
+                        </div>
+                    </div>
+                </li>
+                <button id="submit_btn">회원가입</button>
+            </form>
+        </div>
+    </div>
+    <style>
+        #cp_email {
+            display: block;
+            position: absolute;
+            top: 0px;
+            left: 343px;
+            color: #1b66f4;
+            font-size: 13px;
+        }
+    </style>
+
+{% endblock %}

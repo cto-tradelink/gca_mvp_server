@@ -1,0 +1,43 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/new_support.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+
+
+{% block content %}
+
+    <div id="left_col">
+        <ul>
+            <li>
+                <a href="#">통계보기</a>
+            </li>
+            <li>
+                <a href="{% url "new_support" %}">지원사업 등록페이지</a>
+            </li>
+            <li>
+                <a href="{% url "manage_support" %}">지원사업 관리 페이지</a>
+            </li>
+        </ul>
+    </div>
+    <div id="body_content">
+        {% for q in qs %}
+            <div class="sp_seg">
+                <div class="status">{{ q.is_past_due }}</div>
+                <div class="create_date">등록일 {{ q.createdate }}</div>
+                <div class="sp_category">공간지원 > 오피스 지원</div>
+                <div class="sp_title">{{ q.title }}</div>
+                <div class="view">조회수 {{ q.hit }}</div>
+                <div class="applier">현재 지원자 {{ q.apply_num }}</div>
+                <div class="due">모집기간 {{ q.from_date }}~{{ q.end_date }}</div>
+                <div class="btn_group">
+                    <button class="sp_btn" onclick="location.href= '{{ q.get_absolute_url_manage }}' ">상세 보기</button>
+                    <button class="sp_btn">통계로 보기</button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

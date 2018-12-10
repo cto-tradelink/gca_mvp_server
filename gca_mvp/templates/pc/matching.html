@@ -1,0 +1,124 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/search.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <div id="ttl">
+            지원사업 현황
+        </div>
+        {% if user.is_authenticated %}
+            {% if request.user.startup %}
+                <div id="search_hd">
+                    <div id="hd_ttl">000 님의 기업은 <span class="tag">IT</span> <span class="tag">5년차 미만</span> 입니다.</div>
+                </div>
+            {% else %}
+                <div id="search_hd">
+                    <div id="hd_ttl">000 님! 기업 대표이신가요?</div>
+                    <div id="register_startup">기업 등록하러가기</div>
+                </div>
+            {% endif %}
+        {% endif %}
+        <div id="search_bot">
+            <script>
+                function navi(num) {
+                    location.href = absolute_url + "?cat=" + num
+                }
+            </script>
+            {% if user.is_authenticated %}
+                {% if request.user.startup %}
+                    <span>해당 조건에 맞는 추천 지원 사업</span>
+                {% endif %}
+            {% endif %}
+            <div id="nav_con">
+                <table>
+                    <tr>
+                        <td><img src="{% static "img/icon_main_1.png" %}"></td>
+                        <td style="width:46px;"></td>
+                        <td><img src="{% static "img/icon_main_2.png" %}"></td>
+                        <td style="width:48px;"></td>
+                        <td><img src="{% static "img/icon_main_3.png" %}"></td>
+                        <td style="width:37px;"></td>
+                        <td><img src="{% static "img/icon_main_4.png" %}"></td>
+                        <td style="width:26px;"></td>
+                        <td><img src="{% static "img/icon_main_5.png" %}"></td>
+                        <td style="width:37px;"></td>
+                        <td><img src="{% static "img/icon_main_6.png" %}"></td>
+                        <td style="width:37px;"></td>
+                        <td><img src="{% static "img/icon_main_7.png" %}"></td>
+                    </tr>
+                    <tr>
+                        <td>자금지원</td>
+                        <td></td>
+                        <td>엑셀러레이팅<br>투자연계</td>
+                        <td></td>
+                        <td>교육</td>
+                        <td></td>
+                        <td>판로</td>
+                        <td></td>
+                        <td>네트워킹</td>
+                        <td></td>
+                        <td>기타지원</td>
+                        <td></td>
+                        <td>공간지원</td>
+                    </tr>
+                    <tr class="num">
+                        <td>({{ num_0 }})</td>
+                        <td></td>
+                        <td>({{ num_1 }})</td>
+                        <td></td>
+                        <td>({{ num_2 }})</td>
+                        <td></td>
+                        <td>({{ num_3 }})</td>
+                        <td></td>
+                        <td>({{ num_4 }})</td>
+                        <td></td>
+                        <td>({{ num_5 }})</td>
+                        <td></td>
+                        <td>({{ num_6 }})</td>
+                    </tr>
+                </table>
+                {% comment %}   <div class="nav_itm" onclick="navi(0)">자금지원<br>({{ num_0 }})</div>
+                <div class="nav_itm" onclick="navi(1)">엑셀러레이팅<br>
+                    투자연계<br>({{ num_1 }})
+                </div>
+                <div class="nav_itm" onclick="navi(2)">교육<br>({{ num_2 }})</div>
+                <div class="nav_itm" onclick="navi(3)">판로<br>({{ num_3 }})</div>
+                <div class="nav_itm" onclick="navi(4)">네트워킹<br>({{ num_4 }})</div>
+                <div class="nav_itm" onclick="navi(6)">공간지원<br>({{ num_6 }})</div>
+                <div class="nav_itm" onclick="navi(5)">기타지원<br>({{ num_5 }})</div>{% endcomment %}
+            </div>
+        </div>
+        <div class="sm_sp">
+            {% for q in qs %}
+                <a href="{{ q.get_absolute_url }}">
+                    <div class="sm_con">
+                        <div class="sm_cat">
+                            <div class="status">{{ q.is_past_due }}</div>
+                            <div class="cat_ttl">공간지원</div>
+                        </div>
+                        <div class="sp_ttl">
+                            <div>
+                                <div class="sm_sp_ttl">{{ q.title }}</div>
+                                <div class="sm_due">모집기간 : {{ q.from_date }} ~ {{ q.end_date }}</div>
+                                <div class="tag_con">
+                                    {% for f in q.filter.all %}
+
+                                        <span class="tag">{{ f.name }}</span>
+
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sm_loc">GCA(판교)</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

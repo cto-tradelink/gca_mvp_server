@@ -1,0 +1,549 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <style>
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+        function apply_sb() {
+            $.ajax({
+                url: '../../apply/',
+                method: "post",
+                data: {"val": "{{support.id}}"},
+                success: function (data) {
+                    alert("지원하였습니다.")
+                },
+                error: function (e) {
+                    console.log(e)
+                }
+            })
+        }
+
+        $(document).ready(function () {
+            {% if  request.resolver_match.url_name == "preview_pdf" %}
+                $("#header , #rate").css("display", "none")
+            {% endif %}
+
+            {% if user.additionaluserinfo.auth != "4"   %}
+                $(".int").on("click", function () {
+                    {% if user.is_authenticated %}
+                    var target = this
+                    $.ajax({
+                        url: '../../add_interest/',
+                        method: "post",
+                        data: {"val": $(target).attr("data-id")},
+                        success: function (data) {
+                            alert("저장하였습니다..");
+                            $(target).find("img").attr("src", "{% static "img/icon-fav-full@2x.png" %}")
+                            return false;
+                        },
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+                        {% else %}
+                        alert("로그인 해주세요.")
+                        return false;
+                        {% endif %}
+                })
+            {% endif %}
+
+            $(".opt").each(function () {
+                if ($(this).html().trim() === "") {
+                    $(this).parent().remove()
+                }
+            })
+        })
+    </script>
+    <div class="container">
+
+        <a class="sm_l_a ">
+            <div class="sm_l">
+                <div class="sm_f">
+
+                    <div class="int" data-id="{{ support.id }}">
+
+                        {% if support in interest %}
+                            <img
+                                    src="{% static "img/icon-fav-full@2x.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% else %}
+                            <img
+                                    src="{% static "img/icon-fav-none.png" %}"
+                                    style="width: 24px;cursor: pointer">
+                        {% endif %}
+
+
+                    </div>
+                    <div class="l_cp">
+                        <img src="{% static "img/icon-main-"|add:support.icon_set|add:"-sp.png" %}">
+                        <div>
+                            {{ support.short_desc|default:"" }}
+                        </div>
+                    </div>
+                    <div class="view_cnt">
+                        <img class="view_cnt_ic"
+                             src="{% static "img/ic_visibility.png" %}"> {{ support.hit }}
+                    </div>
+                </div>
+                <div class="sm_s">
+                    <div class="sb_title">{{ support.title|default:"" }}</div>
+                    <div class="sb_due">{{ support.apply_end|date:"Y n d"|calc_day }}
+                        <span>{{ support.is_past_due }} </span>
+                    </div>
+                    <div class="filter_con">
+                        {% for f in support.filter.all|slice:":8" %}
+                            <span class="filter">{{ f.name|default:"" }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="sm_t">
+                    {{ support.user.department|default:"" }}
+                </div>
+            </div>
+        </a>
+
+        <div id="sp_detail_con">
+
+            <div class="hash_tag_area detail_seg" style="color: #1b66f4;">
+                <div class="detail_ttl" style="border-bottom: none"> {{ support.object_tag|default:"" }}</div></div>
+            <div class="detail_seg" style="margin-top: 15px;">
+                <div class="detail_ttl">지원사업명 <span class="sh_de"> {{ support.title_tag|default:"" }}</span></div>
+                <div class="desc">
+                    {{ support.title | linebreaks }}
+                </div>
+            </div>
+
+            {% if support.title_sub != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">지원사업명(하위) <span class="sh_de"> {{ support.title_sub_tag|default:"" }}</span>
+                    </div>
+                    <div class="desc">
+                        {{ support.title_sub| default:"" | linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl">진행 기간</div>
+                <div class="desc">
+                    {{ support.business_period_start|date:"Y-m-d" }} ~ {{ support.business_period_end|date:"Y-m-d" }}
+                </div>
+            </div>
+
+
+            {% if "place" in support.meta and support.place != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">진행 장소</div>
+                    <div class="desc">
+                        {{ support.place| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            {% if "subject" in support.meta and support.subject != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">사업목적 </div>
+                    <div class="desc">
+                        {{ support.subject|linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "detail" in support.meta and support.business_detail != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">사업내용 <span
+                            class="sh_de"> {{ support.business_detail_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.business_detail | linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail_seg">
+                <div class="detail_ttl">모집기간</div>
+                <div class="desc">
+                    {{ support.apply_start|date:"Y-m-d H:i" }} 부터 ~ {{ support.apply_end|date:"Y-m-d H:i" }} 까지
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집대상<span class="sh_de"> </span></div>
+                <div class="desc">
+                    {{ support.object | linebreaks }}
+                </div>
+            </div>
+        <style>
+            .opt{
+                margin-top: 5px!important;
+            }
+        </style>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집조건<span class="sh_de"> {{ support.condition_tag|default:"" }}</span></div>
+                <div class="desc">
+                    {{ support.condition }}
+                </div>
+                {% if "con0" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;">기업 연차</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "업력" %}
+                                    <span class="filter " >{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con1" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;"> 구성원</div>
+                        <div class="desc opt">
+                            {% if employee_num == 0 %}제한없음
+                            {% else %} {{ support.employee_num }}명{% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con2" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;"> 주소지</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "소재지" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con3" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;"> 형태</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "기업형태" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "con4" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;"> 제품단계</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_1 == "기업단계" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if "con5" in support.meta and support.condition_etc|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 모집조건 - 기타<span
+                            class="sh_de"> {{ support.condition_etc_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.condition_etc| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집분야<span class="sh_de"> {{ support.object_span_tag|default:"" }}</span></div>
+                <div class="desc">
+                    {{ support.object_span| linebreaks }}
+                </div>
+
+                {% if "kind0" in support.meta %}
+                    <div>
+                        <div class="" style="margin-left: 10px;"> 기본장르</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_0 == "기본장르" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "kind1" in support.meta %}
+                    <div style="margin-top: 15px;">
+                        <div class="" style="margin-left: 10px;"> 특수장르</div>
+                        <div class="desc opt">
+                            {% for f in support.filter.all %}
+                                {% if f.cat_0 == "영역" %}
+                                    <span class="filter">{{ f.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if "kind2" in support.meta and support.kind2_text != "" %}
+                    <div class="" style="margin-left: 10px;"> 기타</div>
+                    <div class="desc">
+                        {{ support.kind2_text }}
+                    </div>
+                {% endif %}
+
+
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 모집규모</div>
+                <div class="desc p">
+                    {{ support.recruit_size| default:""| linebreaks }} 팀
+                </div>
+            </div>
+            <style>
+                .p p {
+                    display: inline-block;
+                }
+            </style>
+            {% if "prefer" in support.meta and support.prefer|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 우대사항<span class="sh_de"> {{ support.prefer_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.prefer| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "constraint" in support.meta and support.constraint|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 제한사항<span class="sh_de"> {{ support.constraint_tag|default:"" }}</span>
+                    </div>
+                    <div class="desc">
+                        {{ support.constraint| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 선정 방법<span class="sh_de"> {{ support.pro_0_choose_tag|default:"" }}</span>
+                </div>
+                <div class="desc">
+                    {{ support.pro_0_choose| linebreaks }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 심사 일정</div>
+                <div class="desc">
+                    {{ support.pro_0_start|date:"Y-m-d" }} ~ {{ support.pro_0_end|date:"Y-m-d" }}
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 발표 일정</div>
+                <div class="desc">
+                    {{ support.pro_0_open|date:"Y-m-d" }}
+                </div>
+            </div>
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 1차 심사기준<span class="sh_de"> {{ support.pro_0_criterion_tag|default:"" }}</span>
+                </div>
+                <div class="desc">
+                    {{ support.pro_0_criterion| linebreaks }}
+                </div>
+            </div>
+
+            {% if "pro_1" in support.meta and support.pro_1_choose|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 선정 방법<span
+                            class="sh_de"> {{ support.pro_1_choose_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.pro_1_choose| linebreaks }}
+                    </div>
+                </div>
+
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 심사 일정</div>
+                    <div class="desc">
+                        {{ support.pro_1_start|date:"Y-m-d" }} ~ {{ support.pro_1_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 발표 일정</div>
+                    <div class="desc">
+                        {{ support.pro_1_open|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 2차 심사기준<span
+                            class="sh_de"> {{ support.pro_1_criterion_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.pro_1_criterion| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "pro_2" in support.meta and support.pro_2_choose|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 선정 방법<span
+                            class="sh_de"> {{ support.pro_2_choose_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.pro_2_choose| linebreaks }}
+                    </div>
+                </div>
+
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 심사 일정</div>
+                    <div class="desc">
+                        {{ support.pro_2_start|date:"Y-m-d" }} ~ {{ support.pro_2_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 발표 일정</div>
+                    <div class="desc">
+                        {{ support.pro_2_open|date:"Y-m-d" }}
+                    </div>
+                </div>
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 3차 심사기준<span
+                            class="sh_de"> {{ support.pro_2_criterion_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.pro_2_criterion| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 지원내용<span class="sh_de"> {{ support.supply_content_tag|default:"" }}</span>
+                </div>
+                <div class="desc">
+                    {{ support.supply_content| linebreaks }}
+                </div>
+            </div>
+
+            {% if "supply_condition" in support.meta and support.supply_condition|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 지원 조건<span class="sh_de"> {{ support.supply_condition_tag }}</span></div>
+                    <div class="desc">
+                        {{ support.supply_condition| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "ceremony" in support.meta and support.ceremony_start|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl">행사일정</div>
+                    <div class="desc">
+                        {{ support.ceremony_start|date:"Y-m-d" }} ~ {{ support.ceremony_end|date:"Y-m-d" }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "faq" in support.meta and  support.faq|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> FAQ<span class="sh_de"> {{ support.faq_tag|default:"" }}</span></div>
+                    <div class="desc">
+                        {{ support.faq| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if "additional_faq" in support.meta and support.additional_faq|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 추가문의처</div>
+                    <div class="desc">
+                        {{ support.additional_faq| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl"> 주관기관 담당부서 및 담당자</div>
+                <div class="desc">
+                    <table>
+                        <tr>
+                            <th>
+                                주관기관
+                            </th>
+                            <td>
+                                {{ support.user.department| linebreaks }}
+                            </td>
+                            <th>
+                                담당부서
+                            </th>
+                            <td>
+                                {{ support.user.belong_to| linebreaks }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                전화번호
+                            </th>
+                            <td>
+                                {{ support.user.tel| linebreaks }}
+                            </td>
+                            <th>
+                                담당자 메일
+                            </th>
+                            <td>
+                                {{ support.user.user.username| linebreaks }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                담당자명
+                            </th>
+                            <td>
+                                {{ support.user.name| linebreaks }}
+                            </td>
+                            <th>
+                                홈페이지URL
+                            </th>
+                            <td>
+                                {{ support.user.web| linebreaks }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if support.etc|default:"" != "" %}
+                <div class="detail_seg">
+                    <div class="detail_ttl"> 기타</div>
+                    <div class="desc">
+                        {{ support.etc| linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="detail_seg">
+                <div class="detail_ttl">해당 사업에 지원현황 간략보기</div>
+                <div class="status">
+                    <div>실시간 지원율 / 경쟁율 / 등</div>
+                </div>
+            </div>
+            <div class="detail_seg">
+                <div class="detail_ttl">해당 사업에 과거 지원현황 간략보기</div>
+                <div class="status">
+                    <div>지원률 / 경쟁률 / 과거 선정자 평균 간략 정보등</div>
+                </div>
+            </div>
+
+        </div>
+
+
+    </div>
+{% endblock %}

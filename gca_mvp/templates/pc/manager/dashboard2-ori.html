@@ -1,0 +1,1636 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_account.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/dash.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+        })
+
+
+    </script>
+    <style>
+        .pie_ch {
+            text-align: center;
+        }
+
+        #total {
+            font-weight: bold;
+            font-size: 20px;
+            color: #1b66f4;
+        }
+
+        .pie_ch > span {
+            font-size: 19px;
+        }
+
+        #dash_nav {
+            width: 1200px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+            text-align: center;
+        }
+
+        #dash_nav > div {
+            display: inline-block;
+            margin-right: 15px;
+            margin-left: 15px;
+            font-size: 18px;
+        }
+
+        #dash_nav > div:hover {
+            border-bottom: 2px solid #1B66F4;
+            cursor: pointer;
+        }
+    </style>
+    {% include "pc/manager/common/left_nav.html" %}
+
+    <script>
+        $(document).ready(function () {
+            var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+            $('#total').animateNumber(
+                {
+                    number: 32,
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $("#dash_nav>div").on("click", function (e) {
+
+                e.stopPropagation();
+                return false;
+            })
+
+        })
+
+        function open(num) {
+            $(".con").addClass("hidden");
+            $("#con_" + num).removeClass("hidden")
+            return false;
+        }
+
+
+    </script>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages': ['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+
+        function drawChart() {
+            var data_date = [{% for data in date_arr %}"{{ data | date:"Y-m-d" }}",{% endfor %}]
+
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', '창업기업수',],
+                ['2010', 100000,],
+                ['2011', 117000,],
+                ['2012', 112000,],
+                ['2013', 103000,],
+                ['2014', 100000,],
+                ['2015', 117000,],
+                ['2016', 112000,],
+                ['2017', 103000,]
+            ]);
+            var options = {
+                vAxis: {minValue: 0}
+            };
+            var chart = new google.visualization.ComboChart(document.getElementById('gr_2_1'));
+            chart.draw(data, options);
+
+            var chart2_1 = new google.visualization.ComboChart(document.getElementById('gr_1'));
+            chart2_1.draw(data, options);
+
+
+            var chart3_1 = new google.visualization.ComboChart(document.getElementById('gr_3_1'));
+            chart3_1.draw(data, options);
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', '평균 구성원수'],
+                ['2010', 10,],
+                ['2011', 20,],
+                ['2012', 25,],
+                ['2013', 10,],
+                ['2014', 15,],
+                ['2015', 7,],
+                ['2016', 5,],
+                ['2017', 8,],
+            ]);
+            var options = {
+                vAxis: {minValue: 0}
+            };
+            var chart2 = new google.visualization.LineChart(document.getElementById('gr_2'));
+            chart2.draw(data, options);
+
+            var sel_gr_em = new google.visualization.LineChart(document.getElementById('sel_gr_em'));
+            sel_gr_em.draw(data, options);
+            var local_avg_em = new google.visualization.LineChart(document.getElementById('local_avg_em'));
+            local_avg_em.draw(data, options);
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ all_rev_2|default:0 }}, {{ fund_gr.2015 }}, {{ all_exp_2|default:0 }}],
+                ['2016', {{ all_rev_1|default:0 }}, {{ fund_gr.2016 }}, {{ all_exp_1|default:0 }}],
+                ['2017', {{ all_rev_0|default:0 }}, {{ fund_gr.2017 }}, {{ all_exp_0|default:0 }}],
+            ]);
+            var options = {
+                seriesType: 'line',
+            };
+            var chart3 = new google.visualization.LineChart(document.getElementById('gr_3'));
+            chart3.draw(data, options);
+
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ sel_rev_2|default:0 }}, {{ sel_fund_gr.2015 }}, {{ sel_exp_2|default:0 }}],
+                ['2016', {{ sel_rev_1|default:0 }}, {{ sel_fund_gr.2016 }}, {{ sel_exp_1|default:0 }}],
+                ['2017', {{ sel_rev_0|default:0 }}, {{ sel_fund_gr.2017 }}, {{ sel_exp_0|default:0 }}],
+            ]);
+            var options = {
+                seriesType: 'line',
+            };
+            var chart4 = new google.visualization.LineChart(document.getElementById('sel_gr_rev'));
+            chart4.draw(data, options);
+            var data = google.visualization.arrayToDataTable([
+                ['년도', "매출액", "투자유치액", "수출액"],
+                ['2015', {{ local_rev_2|default:0 }}, {{ local_fund_gr.2015|default:0 }}, {{ local_exp_2|default:0 }}],
+                ['2016', {{ local_rev_1|default:0 }}, {{ local_fund_gr.2016|default:0 }}, {{ local_exp_1|default:0 }}],
+                ['2017', {{ local_rev_0|default:0}}, {{ local_fund_gr.2017|default:0 }}, {{ local_exp_0|default:0 }}],
+            ]);
+            var options = {
+                seriesType: 'line',
+            };
+            var chart5 = new google.visualization.LineChart(document.getElementById('local_gr_rev'));
+            chart5.draw(data, options);
+
+
+            var data_day_origin = [
+                ["일별 사용자"],
+                {% for q in q_day reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var day_chart = new google.visualization.LineChart(document.getElementById('day_user'));
+            day_chart.draw(data_day, options);
+
+
+            var data_day_origin = [
+                ["신규 방문자"],
+                {% for q in q_new reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var new_chart = new google.visualization.LineChart(document.getElementById('new_user'));
+            new_chart.draw(data_day, options);
+
+
+            var data_day_origin = [
+                ["사용자당 세션수"],
+                {% for q in q_session reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var new_chart = new google.visualization.LineChart(document.getElementById('session'));
+            new_chart.draw(data_day, options);
+
+
+            var data_day_origin = [
+                ["사용자당 세션수"],
+                {% for q in q_session_user reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var new_chart = new google.visualization.LineChart(document.getElementById('session_per_user'));
+            new_chart.draw(data_day, options);
+
+
+            var data_day_origin = [
+                ["사용자당 세션수"],
+                {% for q in q_pv reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var new_chart = new google.visualization.LineChart(document.getElementById('pageview'));
+            new_chart.draw(data_day, options);
+
+
+            var data_day_origin = [
+                ["사용자당 세션수"],
+                {% for q in page_per_session reversed  %}
+                    [{{ q.count }}],
+                {% endfor  %}
+            ]
+            data_day_origin[0].unshift("날짜")
+            for (var k = 1; k <= 7; k++) {
+                data_day_origin[k].unshift(data_date[7 - k])
+            }
+
+            var data_day = google.visualization.arrayToDataTable(data_day_origin);
+            var options = {
+                seriesType: 'line',
+            };
+            var new_chart = new google.visualization.LineChart(document.getElementById('page_per_session'));
+            new_chart.draw(data_day, options);
+
+            $("#static_site").css("display", "none")
+            $("#pan_1").css("display", "none")
+            $("#pan_2").css("display", "none")
+
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+            }
+
+
+        }
+
+        var comma_separator_number_step = $.animateNumber.numberStepFactories.separator(',');
+        $(document).ready(function () {
+            $('#seg_0').animateNumber(
+                {
+                    number: {{ total }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_1').animateNumber(
+                {
+                    number: {{ ing }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_2').animateNumber(
+                {
+                    number: {{  avg_apply_ent }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_3').animateNumber(
+                {
+                    number: {{ avg_award_ent }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_4').animateNumber(
+                {
+                    number: {{ total_startup }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_5').animateNumber(
+                {
+                    number: {{ total_person }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_6').animateNumber(
+                {
+                    number: {{ avg_apply }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+            $('#seg_7').animateNumber(
+                {
+                    number: {{ avg_award }},
+                    numberStep: comma_separator_number_step
+                }, 3000
+            );
+        })
+    </script>
+    <div class="content" style="width:1200px; margin-bottom: 200px;">
+        <div style="width: 1000px; text-align: center; border-bottom: 1px solid #ddd; ">
+            <ul style="width:300px;text-align: center;margin-left: 390px; height: 30px;    ">
+                <li style="float: left; margin-right: 20px; display: block; cursor: pointer" class="dash_on"
+                    onclick="$('.main_pan').css('display','none');$('#static_com').css('display',''); $('li').removeClass('dash_on'); $(this).addClass('dash_on')">
+                    사업통계/기업통계
+                </li>
+                <li style="float: left; display: block; cursor: pointer"
+                    onclick="$('.main_pan').css('display','none');$('#static_site').css('display',''); $('li').removeClass('dash_on'); $(this).addClass('dash_on')">
+                    사이트 분석
+                </li>
+            </ul>
+        </div>
+        <style>
+            .dash_on {
+                border-bottom: 2px solid #1b66ef;
+            }
+        </style>
+
+        <div id="static_com" class="main_pan ">
+            {% if user.additionaluserinfo.auth == "5" %}
+                <div class="category" style="font-size: 18px;margin-left: 0px; margin-top: 20px;margin-bottom: 20px">알림
+                </div>
+                <div style="height: auto; overflow:auto;">
+                    <div style="float: left; height: auto; overflow: auto">
+                        <div class="alarm_hd"
+                             style=" width: 500px;  height: 108px;  border: solid 1px #1b66f4;position: relative; cursor: pointer; "
+                             onclick="location.href='{% url "sb_list_all" %}'">
+                            <div class="cp" style="position: absolute;top: 18px; left: 22px; font-size: 15px;">승인 대기중인
+                                공고문이
+                                있습니다.
+                            </div>
+                            <div class="val"
+                                 style="position: absolute;top:47px; right:30px; font-size: 30px; color: #1b66fe ">{{ qs_0.count }}건
+                            </div>
+                        </div>
+                        <table style="margin-left: 0px;width: 500px; height: initial">
+                            {% for q in qs_0 %}
+                                <tr onclick="location.href='{{ q.get_absolute_url }}'"
+                                    style="border-bottom: 1px solid #ddd; cursor: pointer">
+                                    <td style="width:350px;height: 30px;">{{ q.title|truncatechars:30 }}</td>
+                                    <td>{{ q.apply_end|date:"Y-m-d" }}</td>
+                                    <td>{{ q.user.name }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+
+                    <div style="float: left; margin-left: 20px; height: auto; overflow: auto ">
+                        <div class="alarm_hd"
+                             style=" width: 500px; cursor: pointer; height: 108px;  border: solid 1px #d0021b;position: relative ; color: #d0021b"
+                             onclick="location.href='{% url "sb_list_all" %}'">
+                            <div class="cp" style="position: absolute;top: 18px; left: 22px; font-size: 15px;">블라인드 처리된
+                                공고문이
+                                있습니다.
+                            </div>
+                            <div class="val"
+                                 style="position: absolute;top:47px; right:30px; font-size: 30px;  ">{{ qs_1.count }}건
+                            </div>
+                        </div>
+                        <table style="margin-left: 0px;width: 500px; height: initial;">
+                            {% for q in qs_1|slice:":5" %}
+                                <tr style="border-bottom: 1px solid #ddd"
+                                    onclick="location.href='{{ q.get_absolute_url }}'">
+                                    <td style="width:350px;height: 30px; cursor: pointer">{{ q.title|truncatechars:30 }}</td>
+                                    <td style="; cursor: pointer">{{ q.apply_end|date:"Y-m-d" }}</td>
+                                    <td style="; cursor: pointer">{{ q.user.name }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="category"
+                 style="font-size: 18px;margin-left: 0px; margin-top: 20px;margin-bottom: 20px; clear: left">사업 통계
+            </div>
+            <div class="dash_con" style="margin-left: -10px;">
+                <style>
+                    .dash_con {
+                        width: 1200px;
+                        height: auto;
+                        overflow: auto;
+                    }
+
+                    .dash_seg {
+                        width: 500px;
+                        height: 133px;
+                        float: left;
+                        margin: 10px;
+                        position: relative;
+                    }
+
+                    .seg_ttl {
+                        font-size: 15px;
+                        position: absolute;
+                        top: 20px;
+                        left: 30px;
+                    }
+
+                    .num_dash {
+                        font-size: 50px;
+                        position: absolute;
+                        top: 35px;
+                        right: 30px;
+                        display: inline-block;
+                        font-weight: 200;
+                    }
+                </style>
+                <div class="dash_seg" style=" background-color: #1b66f4; cursor: pointer"
+                     onclick="location.href='/manager/all/sb_list/';">
+                    <span class="seg_ttl" style="color: #fff">총 등록사업(누적)</span>
+                    <span class="num_dash" style="color: #fff" id="seg_0">5,637,098</span>
+                </div>
+
+                <div class="dash_seg" onclick="location.href='/manager/all/sb_list/?cat=0';"
+                     style=" background-color: #1b66f4; cursor: pointer">
+                    <span class="seg_ttl" style="color: #fff">진행중 사업</span>
+                    <span class="num_dash" style="color: #fff" id="seg_1">37</span>
+                </div>
+                <div class="dash_seg" style="  background-color: #ffe130;">
+                    <span class="seg_ttl">사업당 참가기업수 평균</span>
+                    <span class="num_dash" id="seg_2">80</span>
+                </div>
+                <div class="dash_seg" style=" background-color: #ffe130;">
+                    <span class="seg_ttl">사업당 선정기업수 평균</span>
+                    <span class="num_dash" id="seg_3">29</span>
+                </div>
+            </div>
+            <div class="category"
+                 style="font-size: 18px;margin-left: 0px;clear: left;margin-top: 20px;margin-bottom: 20px;">기업 통계
+            </div>
+            <div style="width:1020px; height: 40px; border-bottom: 1px solid #ddd ; margin-bottom: 32px;" id="tab_c">
+                <ul id="tab_li">
+                    <li onclick="$('.pan').css('display','none'); $('#pan_0').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');"
+                        class="tab_on">
+                        회원등록기업(전체보기)
+                    </li>
+                    <li onclick="$('.pan').css('display','none'); $('#pan_1').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');">
+                        최종 선정기업(참가기업)
+                    </li>
+                    <li onclick="$('.pan').css('display','none'); $('#pan_2').css('display',''); $('#tab_li').find('li').removeClass('tab_on'); $(this).addClass('tab_on');">
+                        경기지역 기업 모아보기
+                    </li>
+                </ul>
+            </div>
+            <style>
+
+
+                #tab_li > li {
+                    float: left;
+                    display: inline-block;
+                    margin-right: 10px;
+                    cursor: pointer;
+                    height: 40px;
+                    line-height: 45px;
+                }
+
+                #tab_li > li:hover, #tab_li > li.tab_on {
+                    border-bottom: 2px solid #1b66f4;
+                }
+
+            </style>
+            <div class="pan" id="pan_0">
+                <div class="dash_con" style="margin-left: -10px;">
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">총 기업회원수</span>
+                        <span class="num_dash" id="seg_4">37,098</span>
+                    </div>
+
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">총 개인회원수</span>
+                        <span class="num_dash" id="seg_5">37</span>
+                    </div>
+                    <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                        <span class="num_dash" id="seg_6">80</span>
+                    </div>
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                        <span class="num_dash" id="seg_7">29</span>
+                    </div>
+
+                </div>
+                <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년
+                    이내 창업
+                    기업숫자
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="gr_1"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                                style="font-size: 20px;">개</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균
+                    구성원
+                    수
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="gr_2"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ avg_em|floatformat }} <span
+                                style="font-size: 20px;">명</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/
+                    수출액/
+                    투자유치액/
+                    평균(만원)
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="gr_3"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ total_rev|floatformat }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ total_fund|floatformat }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ total_exp|floatformat }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pan" id="pan_1" style="">
+                <div class="dash_con" style="margin-left: -10px;">
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">총 기업회원수</span>
+                        <span class="num_dash" id="">{{ total_select_com }}</span>
+                    </div>
+                    <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                        <span class="num_dash" id="">{{ total_apply_com_avg|floatformat }}</span>
+                    </div>
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                        <span class="num_dash" id="">{{ total_select_com_avg|floatformat }}</span>
+                    </div>
+                </div>
+                <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년
+                    이내 창업
+                    기업숫자
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="gr_2_1"
+                         style="width:600px;!important; height:250px;!important; margin-top: 32px;!important; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                                style="font-size: 20px;">개</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균
+                    구성원
+                    수
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="sel_gr_em"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ sel_avg_em|floatformat }} <span
+                                style="font-size: 20px;">명</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/
+                    수출액/
+                    투자유치액/
+                    평균(만원)
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="sel_gr_rev"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ sel_total_rev }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ sel_total_fund }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ sel_total_exp }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pan" id="pan_2" style="">
+                <div class="dash_con" style="margin-left: -10px;">
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">총 기업회원수</span>
+                        <span class="num_dash" id="">{{ local_num }}</span>
+                    </div>
+
+
+                    <div class="dash_seg" style="  border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 참가수</span>
+                        <span class="num_dash" id="">{{ local_apply_com_avg|floatformat }}</span>
+                    </div>
+                    <div class="dash_seg" style=" border: 1px solid #1b66f4;">
+                        <span class="seg_ttl">기업회원 1개당 평균 사업 선정수</span>
+                        <span class="num_dash" id="">{{ lcoal_select_com_avg|floatformat }}</span>
+                    </div>
+
+                </div>
+                <div style="width:1020px; height: 1px; border-bottom: 1px solid #ddd; margin-top: 20px;"></div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">최근 n 년
+                    이내 창업
+                    기업숫자
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="gr_3_1"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">190,000 <span
+                                style="font-size: 20px;">개</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">기업회원 평균
+                    구성원
+                    수
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="local_avg_em"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 20px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 250px;margin-top: 32px;margin-left: 10px;">
+                        <span class="gr_cp" style="position: absolute;font-size: 15px; top:32px; left: 24px; ">평균</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 50px; top:83px; right: 32px; font-weight: 200">{{ local_avg_em|floatformat }} <span
+                                style="font-size: 20px;">명</span> </span>
+                    </div>
+                </div>
+                <div class="category"
+                     style="font-size: 15px;margin-left: 0px;clear: left;margin-top: 30px;margin-bottom: 11px;">매출액/
+                    수출액/
+                    투자유치액/
+                    평균(만원)
+                </div>
+                <div class="gr" style="width:1000px; height: 314px; background-color: #f7f7f7">
+                    <div id="local_gr_rev"
+                         style="width:600px; height:250px; margin-top: 32px; float: left; margin-left: 10px;"></div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 32px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #d0021b; top:15px; left: 16px; ">매출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #d0021b;">{{ local_total_rev }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #0f0f0f; top:15px; left: 16px; ">투자유치액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #0f0f0f;">{{ local_total_fund }}</span>
+                    </div>
+                    <div class="gr_con"
+                         style="position: relative; float: left; background-color: #fff; width:349px;height: 73px;margin-top: 15px;margin-left: 10px;">
+                    <span class="gr_cp"
+                          style="position: absolute;font-size: 15px; color: #028366; top:15px; left: 16px; ">수출액(만원)</span>
+                        <span class="gr_result"
+                              style="position: absolute;font-size: 25px; top:20px; right: 20px; font-weight: 200;color: #028366;">{{ local_total_exp }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="static_site" class="main_pan ">
+            <div id="gr_con" class="md-card" style="width: 680px; height: 403px;" >
+                <div id="gr_con_0_hd" style="width:680px;height: 50px;">
+                    <ul>
+                        <li class="gr_hd_seg_0" style="width: 170px;"  data-attr="ga:users" onclick="show_gr_0(this)">사용자</li>
+                        <li class="gr_hd_seg_0" style="width: 170px;"  data-attr="ga:sessions" onclick=" show_gr_0(this)">세션수</li>
+                        <li class="gr_hd_seg_0" style="width: 170px;"  data-attr="ga:bounceRate" onclick=" show_gr_0(this)">이탈률</li>
+                        <li class="gr_hd_seg_0" style="width: 170px;"  data-attr="ga:sessionDuration" onclick="show_gr_0(this)">세션시간</li>
+                    </ul>
+                </div>
+                <div id="gr_0" style="width: 660px; height: 450px;margin-left: 10px; margin-right: 10px;"></div>
+
+            </div>
+
+            <div id="device_con" class="md-card" style="margin-left: 10px;">
+                지난 7일간 기기별  세션수
+                <div id="user_device"></div>
+            </div>
+
+
+            <div id="active_user"  class="md-card" style="width: 680px; height: 403px;">
+                <div id="gr_con_1_hd" style="width:680px;height: 50px;">
+                    <ul>
+                        <li class="gr_hd_seg_1" style="width: 170px;"  data-attr="ga:1dayUsers" onclick="show_gr_1(this)">1일간 활성 사용자수</li>
+                        <li class="gr_hd_seg_1" style="width: 170px;"  data-attr="ga:7dayUsers" onclick=" show_gr_1(this)">7일간 활성 사용자수</li>
+                        <li class="gr_hd_seg_1" style="width: 170px;"  data-attr="ga:14dayUsers" onclick=" show_gr_1(this)">14일간 활성사용자수</li>
+                        <li class="gr_hd_seg_1" style="width: 170px;"  data-attr="ga:28dayUsers" onclick="show_gr_1(this)">28일간 활성 사용자수</li>
+                    </ul>
+                </div>
+                <div id="gr_ac_1" style="width: 600px; height: 500px;"></div></div>
+
+                 <div id="active_user" style="width: 600px; height: 550px;">
+                <div id="gr_con_2_hd" style="width:600px;height: 50px;">
+                  사용자 위치
+                </div>
+                <div id="gr_ac_2" style="width: 600px; height: 550px;"></div></div>
+                <div id="chart" style="width: 1000px; margin-top: 50px;"></div>
+
+                사용자가 방문하는 페이지 파악
+            <div id="page"></div>
+
+            <div id="active_user_2" style="width: 600px; height: 550px;">
+                <div id="gr_con_3_hd" style="width:600px;height: 50px;">
+                    <ul>
+                        <li class="gr_hd_seg_3" data-attr="ga:channelGrouping" onclick="show_gr_3(this)">트래픽 채널</li>
+                        <li class="gr_hd_seg_3" data-attr="ga:source" onclick=" show_gr_3(this)">소스/매체</li>
+                        <li class="gr_hd_seg_3" data-attr="ga:socialNetwork" onclick=" show_gr_3(this)">추천</li>
+
+                    </ul>
+                </div>
+                <div id="gr_ac_3" style="width: 600px; height: 500px;"></div>
+            </div>
+
+            30일간 시간대별 사용자수
+{#            구글 애널리틱스 API 에서 히스토그램을 지원하지 않음.#}
+            <div id="hour"></div>
+            <script>
+
+                  function show_gr_3(t) {
+                    $(".gr_hd_seg_3").removeClass("on")
+                    $(t).addClass("on")
+                    var target = $(t).attr("data-attr")
+                    gapi.analytics.auth.authorize({
+                        'serverAuth': {
+                            'access_token': '{{ key }}'
+                        }
+                    });
+                    var dataChart1 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '30daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': "ga:users",
+                            'dimensions': target,
+                            'include-empty-rows':true
+                        },
+                        chart: {
+                            'container': 'gr_ac_3',
+                            'type': 'COLUMN',
+                            'options': {
+                                'width': '700',
+                                'height': "450"
+                            }
+                        }
+                    });
+                    dataChart1.execute();
+                }
+{#                  function show_gr_0(t) {#}
+{#                    $(".gr_hd_seg_0").removeClass("on")#}
+{#                    $(t).addClass("on")#}
+{#                    var target = $(t).attr("data-attr")#}
+{#                    gapi.analytics.auth.authorize({#}
+{#                        'serverAuth': {#}
+{#                            'access_token': '{{ key }}'#}
+{#                        }#}
+{#                    });#}
+{#                    var dataChart1 = new gapi.analytics.googleCharts.DataChart({#}
+{#                        query: {#}
+{#                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.#}
+{#                            'start-date': '30daysAgo',#}
+{#                            'end-date': 'yesterday',#}
+{#                            'metrics': target,#}
+{#                            'dimensions': 'ga:date'#}
+{#                        },#}
+{#                        chart: {#}
+{#                            'container': 'gr_0',#}
+{#                            'type': 'LINE',#}
+{#                            'options': {#}
+{#                                'width': '660',#}
+{#                                'height': "350"#}
+{#                            }#}
+{#                        }#}
+{#                    });#}
+{#                    dataChart1.execute();#}
+{#                }#}
+                function show_gr_1(t) {
+
+                    $(".gr_hd_seg_1").removeClass("on")
+                    $(t).addClass("on")
+                    var target = $(t).attr("data-attr")
+                    gapi.analytics.auth.authorize({
+                        'serverAuth': {
+                            'access_token': '{{ key }}'
+                        }
+                    });
+                    var dataChart2 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '30daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': target,
+                            'dimensions': 'ga:date'
+                        },
+                        chart: {
+                            'container': 'gr_ac_1',
+                            'type': 'LINE',
+                            'options': {
+                                'width': '660',
+                                'height': "350"
+                            }
+                        }
+                    });
+                    dataChart2.execute();
+                }
+            </script>
+            <style>
+                .gr_hd_seg_3, .gr_hd_seg_1,.gr_hd_seg_0  {
+                    display: block;
+                    float: left;
+                    width: 150px;
+                    height: 47px;
+                    border-top: 3px solid #fff;
+                    text-align: center;
+                    cursor: pointer;
+                    line-height: 47px;
+                }
+
+               .gr_hd_seg_3.on, .gr_hd_seg_0.on , .gr_hd_seg_1.on{
+                    border-top: 3px solid mediumslateblue;
+                }
+
+                .md-card{
+                    box-shadow: 0 1px 3px 0 rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 2px 1px -1px rgba(0,0,0,.12);
+                    background-color: #fff;
+                        border-radius: 2px;
+                }
+                    .gr_hd_seg_3:hover, .gr_hd_seg_1:hover,.gr_hd_seg_0:hover  {
+                    background-color: #eee;
+                      border-top: 3px solid mediumslateblue;
+                }
+            </style>
+        </div>
+    </div>
+    <script>
+        (function (w, d, s, g, js, fs) {
+            g = w.gapi || (w.gapi = {});
+            g.analytics = {
+                q: [], ready: function (f) {
+                    this.q.push(f);
+                }
+            };
+            js = d.createElement(s);
+            fs = d.getElementsByTagName(s)[0];
+            js.src = 'https://apis.google.com/js/platform.js';
+            fs.parentNode.insertBefore(js, fs);
+            js.onload = function () {
+                g.load('analytics');
+            };
+        }(window, document, 'script'));
+    </script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+       <script src="http://d3js.org/d3.v3.js"></script>
+    <script>
+        gapi.analytics.ready(function () {
+            console.log("start!!!")
+            /**
+             * Authorize the user with an access token obtained server side.
+             */
+            gapi.analytics.auth.authorize({
+                'serverAuth': {
+                    'access_token': '{{ key }}'
+                }
+            });
+    var dataChart2 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '30daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': 'ga:users',
+                            'dimensions': 'ga:city'
+                        },
+                        chart: {
+                            type: 'GEO',
+                            container: 'gr_ac_2',
+                            'options': {
+                                 region: 'KR', // Western Europe
+                                 displayMode: 'regions',
+                                width:'1000',
+                                height:'550',
+                                resolution:'provinces'
+                            }
+                        }
+                    });
+                    dataChart2.execute();
+                    var dataChart3 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '30daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': 'ga:users,ga:newUsers,ga:sessions,ga:bounceRate,ga:sessionDuration,ga:pageviewsPerSession',
+                            'dimensions': 'ga:city'
+                        },
+                        chart: {
+                            type: 'TABLE',
+                            container: 'chart',
+                            'options': {
+                                 region: 'KR', // Western Europe
+                                width:'1000',
+                            }
+                        }
+                    });
+                    dataChart3.execute();
+
+                var dataChart4 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '7daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': 'ga:sessions',
+                            'dimensions': 'ga:deviceCategory'
+                        },
+                        chart: {
+                            type: 'PIE',
+                            container: 'user_device',
+                            options: {
+                                width:'300',
+                            }
+                        }
+                    });
+                    dataChart4.execute();
+
+                           var dataChart4 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '7daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': 'ga:entrances,ga:pageviews,ga:entranceRate,ga:avgTimeOnPage,ga:exitRate',
+                            'dimensions': 'ga:pagePath'
+                        },
+                        chart: {
+                            type: 'TABLE',
+                            container: 'page',
+                            options: {
+                                width:'1000',
+                                pageSize:'10',
+                            }
+                        }
+                    });
+                    dataChart4.execute();
+
+
+
+                    var dataChart5 = new gapi.analytics.googleCharts.DataChart({
+                        query: {
+                            'ids': 'ga:170819240', // <-- Replace with the ids value for your view.
+                            'start-date': '7daysAgo',
+                            'end-date': 'yesterday',
+                            'metrics': 'ga:users',
+                            'dimensions': 'ga:hour'
+                        },
+                        chart: {
+                            type: 'LINE',
+                            container: 'hour',
+                            options: {
+                                width:'600',
+                            }
+                        }
+                    });
+                    dataChart5.execute();
+        });
+    </script>
+<div id="chart_hour"></div>
+    <script>
+  var CLIENT_ID = '656031130733-jn7mavd42tj9el1fb1ncr9rqt2ds5blh.apps.googleusercontent.com';
+  var SCOPES = ['https://www.googleapis.com/auth/analytics.readonly'];
+  function authorize() {
+      var useImmdiate =  false;
+      var authData = {
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        immediate: useImmdiate
+        };
+    gapi.auth.authorize(authData, function(response) {
+      var authButton = document.getElementById('auth-button');
+      if (response.error) {
+          console.log(response.error)
+      }
+      else {
+        queryAccounts();
+      }
+    });
+  }
+function queryAccounts() {
+  // Load the Google Analytics client library.
+  gapi.client.load('analytics', 'v3').then(function() {
+    gapi.client.analytics.management.accounts.list().then(handleAccounts);
+  });
+}
+
+function handleAccounts(response) {
+  // Handles the response from the accounts list method.
+  if (response.result.items && response.result.items.length) {
+    // Get the first Google Analytics account.
+    var firstAccountId = response.result.items[0].id;
+    // Query for properties.
+    queryProperties(firstAccountId);
+  } else {
+    console.log('No accounts found for this user.');
+  }
+}
+
+function queryProperties(accountId) {
+  // Get a list of all the properties for the account.
+  gapi.client.analytics.management.webproperties.list(
+      {'accountId': accountId})
+    .then(handleProperties)
+    .then(null, function(err) {
+      // Log any errors.
+      console.log(err);
+  });
+}
+
+function handleProperties(response) {
+  if (response.result.items && response.result.items.length) {
+    var firstAccountId = response.result.items[0].accountId;
+    var firstPropertyId = response.result.items[0].id;
+    queryProfiles(firstAccountId, firstPropertyId);
+  } else {
+    console.log('No properties found for this user.');
+  }
+}
+
+function queryProfiles(accountId, propertyId) {
+  // Get a list of all Views (Profiles) for the first property
+  // of the first Account.
+  gapi.client.analytics.management.profiles.list({
+      'accountId': accountId,
+      'webPropertyId': propertyId
+  })
+  .then(handleProfiles)
+  .then(null, function(err) {
+      // Log any errors.
+      console.log(err);
+  });
+}
+function handleProfiles(response) {
+  // Handles the response from the profiles list method.
+  if (response.result.items && response.result.items.length) {
+    // Get the first View (Profile) ID.
+    var firstProfileId = response.result.items[0].id;
+      option.ids =  "ga:"+firstProfileId
+    // Query the Core Reporting API.
+    queryCoreReportingApi(firstProfileId);
+
+  } else {
+    console.log('No views (profiles) found for this user.');
+  }
+}
+
+var row =[]
+var option = {
+              'ids': '',
+              'start-date': '30daysAgo',
+              'end-date': 'yesterday',
+              'metrics': 'ga:users',
+              'dimensions': 'ga:hour,ga:dayOfWeekName'
+        };
+var option = {
+              'ids': '',
+              'start-date': '30daysAgo',
+              'end-date': 'yesterday',
+              'metrics': 'ga:users',
+              'dimensions': 'ga:date'
+        }
+
+var target = "users" ;
+function queryCoreReportingApi(profileId) {
+  // Query the Core Reporting API for the number sessions for
+  // the past seven days.
+    console.log(option)
+        gapi.client.analytics.data.ga.get(option)
+  .then(function(response) {
+          var formattedJson = JSON.stringify(response.result, null, 2);
+          console.log(response.result)
+          row = response.result.rows
+      if (target == "time") {
+          for (var k = 0; k < row.length; k++) {
+              if (k % 7 == 3) {
+                  //일요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(0)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 1) {
+                  //월요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(1)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 5) {
+                  //화요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(2)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 6) {
+                  //수요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(3)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 4) {
+                  //목요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(4)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 0) {
+                  //금요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(5)").css("background-color", get_color(row[k][2]))
+              } else if (k % 7 == 2) {
+                  //토요일
+                  $("table#heatmap>tbody>tr:eq(" + parseInt(k / 7) + ")>td:eq(6)").css("background-color", get_color(row[k][2]))
+              }
+          }
+      }
+      else if (target=="users"){
+              console.log("here")
+var margin = {top: 20, right: 100, bottom: 50, left: 100},
+    width = 660 - margin.left - margin.right,
+    height = 340 - margin.top - margin.bottom;
+var dataset = row = response.result.rows
+
+var xScale = d3.time.scale()
+    .domain( [ parse(d3.min(dataset, function(d){ return d[0]; })),parse( d3.max(dataset, function(d){ return d[0]; }) )])
+    .range([0, width]);
+
+var yScale = d3.scale.linear()
+    .domain([0, d3.max(dataset, function(d){ return d[1]; })])
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom")
+    .innerTickSize(-height)
+    .outerTickSize(0)
+    .tickPadding(10);
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    .innerTickSize(-width)
+    .outerTickSize(0)
+    .tickPadding(10);
+
+var line = d3.svg.line()
+    .x(function(d) { return xScale( parse(d[0])); })
+    .y(function(d) { return yScale(d[1]); });
+
+var con = d3.select("#gr_0").select("svg");
+console.log(con[0]);
+console.log(con[0].localName)
+console.log(con[0]===null)
+          console.log(con[0][0])
+
+if( con[0][0] == null ){
+    var svg = d3.select("#gr_0").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")
+       .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", function(d) {
+                return "rotate(-65)"
+                });
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+  svg.append("path")
+      .data([dataset])
+      .attr("class", "line")
+      .attr("d", line);
+}
+else{
+       var svg = d3.select("#gr_0").select("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")
+       .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", function(d) {
+                return "rotate(-65)"
+                });
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+  svg.append("path")
+      .data([dataset])
+      .attr("class", "line")
+      .attr("d", line);
+}
+
+
+
+
+      }
+  })
+  .then(null, function(err) {
+      console.log(err);
+  });
+}
+
+
+authorize()
+
+  function  get_color(num) {
+
+      num = parseInt(num)
+          if(num === 0)  return "rgba(0,0,0,0.12)";
+          else if( num >= 1 && num < 6){ console.log(num); return "#93d5ed";}
+         else if( num >= 6 && num < 10 ){ console.log(num); return "#45a5f5";}
+         else if( num >= 10 && num < 15 ){ console.log(num); return "#4285f4";}
+         else if( num >= 15   ){ console.log(num); return "#2f5ec4";}
+  }
+function parse(str) {
+    var y = str.substr(0, 4);
+    var m = str.substr(4, 2);
+    var d = str.substr(6, 2);
+    return new Date(y,m-1,d);
+}
+
+</script>
+<style>
+.seg{
+    height:10px;
+    margin: 1.5px;
+}
+.time_bar{
+    font-size: 13px;
+    line-height: 10px;
+}
+</style>
+    <table id="heatmap" style="border-collapse: separate; border-spacing: 2px;">
+    <tbody>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">12오전</td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">2오전</td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">4오전</td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">6 오전</td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">8오전</td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">10오전 </td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+    <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">12오후</td>
+    </tr>
+      <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+      <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">2오후</td>
+    </tr>
+        <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+
+
+              </tr>
+        <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">4오후</td>
+    </tr>
+              <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+              </tr>
+        <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">6오후</td>
+    </tr>
+              <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+              </tr>
+        <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">8오후</td>
+    </tr>
+         <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+      <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar">10오후</td>
+    </tr>
+          <tr class="rt">
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="seg"></td>
+        <td class="time_bar"></td>
+    </tr>
+        <tr>
+            <td class="day_bar">일</td>
+            <td class="day_bar">월</td>
+            <td class="day_bar">화</td>
+            <td class="day_bar">수</td>
+            <td class="day_bar">목</td>
+            <td class="day_bar">금</td>
+            <td class="day_bar">토</td>
+            <td></td>
+        </tr>
+    </tbody>
+    </table>
+
+<style>
+
+  .axis path,
+  .axis line{
+    fill: none;
+    stroke: black;
+  }
+
+  .line{
+    fill: none;
+    stroke: blue;
+    stroke-width: 2px;
+  }
+
+  .tick text{
+    font-size: 12px;
+  }
+
+  .tick line{
+    opacity: 0.2;
+  }
+
+</style>
+
+<script src="https://apis.google.com/js/client.js?onload=authorize"></script>
+{% endblock %}

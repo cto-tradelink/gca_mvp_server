@@ -1,0 +1,617 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_sb_manage_list.css" %}"/>
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+
+
+
+
+
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+            $(".sb_" + getParameter("cat")).removeClass("hidden");
+            if (getParameter("cat") === "all") {
+                $(".sm_l_a").removeClass("hidden")
+            }
+            $('#sort_tbl, #sort_tbl2').DataTable({
+                "order": [[1, "desc"]],
+                "columnDefs": [{orderable: false, targets: [0]},],
+                "iDisplayLength": 50
+            });
+
+
+            $("input").on("click", function () {
+
+            })
+
+            $("#get_down").on("click", function () {
+                var allVals = [];
+                $(".check_target").each(function () {
+                    if ($(this).is(":checked")) allVals.push($(this).val());
+                });
+                console.log(allVals);
+                if (allVals.length != 0) {
+                    location.href = "/get_sbtl2_excel/?id=" + allVals.join(",") + "/"
+                }
+                else {
+                    alert("체크항목이 없습니다.")
+                }
+            })
+
+
+            $("#get_down2").on("click", function () {
+                var allVals = [];
+                $("#sort_tbl2").find(".check_target").each(function () {
+                    if ($(this).is(":checked")) allVals.push($(this).val());
+                });
+                console.log(allVals);
+                if (allVals.length != 0) {
+                    location.href = "/get_sbtl2_excel/?id=" + allVals.join(",") + "/"
+                }
+                else {
+                    alert("체크항목이 없습니다.")
+                }
+            })
+
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+
+            }
+            console.log($("body").css("height"))
+        })
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+
+   {% if not request.user.additionaluserinfo.has_child  %}
+            <style>
+                .sorting {
+                    padding-left: 0px !important;
+                }
+                td.sorting_1 {
+                    background-color: rgba(27, 102, 239, 0.2);
+                }
+                table.dataTable tbody th, table.dataTable tbody td {
+                    padding: 3px 8px !important;
+                }
+            </style>
+            <script>
+                function set_all(target) {
+                    if ($(target).prop("checked") === false) {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+                    }
+                }
+            </script>
+            <div id="sb_con">
+
+            <style>
+                #sb_nav>li:hover, .sb_nav_on{
+                    border-bottom: 2px solid #1b66fe;
+
+                }
+                 #sb_nav>li{
+                     line-height: 29px;
+                 }
+            </style>
+                <div style="width: 1020px;height: 30px; border-bottom: 1px solid #ddd">
+                    <ul id="sb_nav">
+                             <li onclick="location.href='/manager/all/sb_list/?cat=0'" class="sb_nav_on"  style="display: inline-block; margin-right: 10px; cursor: pointer">
+                            공고중
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=1'"  style="display: inline-block; margin-right: 10px; cursor: pointer">
+                            모집 마감
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=2'" style="display: inline-block; margin-right: 10px;  cursor: pointer">
+                            공고 종료
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=3'" style="display: inline-block; margin-right: 10px;  cursor: pointer">
+                            전체 공고문
+                        </li>
+                    </ul>
+                </div>
+                <div id="get_down" style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer">선택한 리스트
+                    다운로드
+                </div>
+                <table id="sort_tbl" style="width: 1000px; table-layout: fixed!important;">
+                    <thead>
+                    <tr>
+                        <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                            <div class="checkbox checkbox-primary" style="width: 30px; ">
+                                <input type="checkbox" id="all_check"
+                                       aria-label="Single checkbox Two" onclick="set_all(this)">
+                                <label></label>
+                            </div>
+                        </th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">공고<br>마감년도</th>
+                        <th style="width: 300px; padding: 0px!important; font-size: 13px;">공고명</th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">게시일</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">기관명</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">사업<br>담당자</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">참여기업수</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">선정자수</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">노출여부</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">공고상태</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for q in qs %}
+                        <tr style="cursor: pointer;">
+                            <td style="width: 20px; padding: 0px!important; font-size: 13px;">
+                                <div class="checkbox checkbox-primary" style="width: 30px;">
+                                    <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                           value="{{ q.id }}"
+                                           aria-label="Single checkbox Two">
+                                    <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                                </div>
+                            </td>
+                            <td style="font-size: 13px; width: 70px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.apply_end|date:"Y" }}
+                            </td>
+                            <td style="font-size: 13px; width:390px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.title }}
+                            </td>
+                            <td style="font-size: 13px;width:90px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.created_at|date:"Y-m-d" }}
+                            </td>
+                            <td style="font-size: 13px;width:90px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.user.department }}
+                            </td>
+                            <td style="font-size: 13px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.user.name }}
+                            </td>
+                            <td style="font-size: 13px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.appliance_set.all.count }}
+                            </td>
+                            <td style="font-size: 13px;width:60px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {% if  q.manage_status == "공고종료" and q.award_set.all.count > 0 %}
+                                    {{ q.award_set.all.count }}
+                                {% else %}
+                                    {{ q.award_set.all.count }}
+                                {% endif %}</td>
+                            <td>
+                                {{ q.is_blind_state }}
+                            </td>
+                            <td style="font-size: 13px; width: 80px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.manage_status }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <style>
+                .sorting {
+                    padding-left: 0px !important;
+                }
+
+                td.sorting_1 {
+                    background-color: rgba(27, 102, 239, 0.2);
+                }
+
+                table.dataTable tbody th, table.dataTable tbody td {
+                    padding: 3px 8px !important;
+                }
+            </style>
+            <script>
+                function set_all(target) {
+                    console.log("here")
+                    if ($(target).prop("checked") === false) {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+                    }
+
+                }
+
+                function set_all2(target) {
+                    if ($(target).prop("checked") == false) {
+                        $("#sort_tbl2").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl2").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl2").find(".check_target").prop("checked", false)
+                        $("#sort_tbl2").find(".check_target:visible").prop("checked", true)
+                    }
+
+                }
+
+                function stop_sb() {
+                    var checkedValues = $("#sort_tbl").find('input:checkbox:checked:visible').map(function () {
+                        if ($(this).attr("id") != "all_check")
+                            return this.value;
+                    }).get();
+
+                    if (checkedValues.length == 0) {
+                        alert("체크한 항목이 없습니다.")
+                        return false;
+                    } else {
+                        $.ajax({
+                            url: '{% url "set_stop" %}',
+                            method: "post",
+                            data: {
+                                "data": checkedValues.join(","),
+                            },
+                            success: function (data) {
+                                console.log(data)
+                                alert("블라인드 처리하였습니다.")
+                                location.reload();
+                            }
+                            ,
+                            error: function (e) {
+                                console.log(e)
+                            }
+                        })
+                    }
+                    console.log(checkedValues)
+
+
+                }
+
+                function start_sb() {
+                    var checkedValues = $("#sort_tbl2").find('input:checkbox:checked:visible').not("#all_check2").map(function () {
+                        if ($(this).attr("id") != "all_check")
+                            return this.value;
+                    }).get();
+
+                    if (checkedValues.length == 0) {
+                        alert("체크한 항목이 없습니다.")
+                        return false
+                    } else {
+                        $.ajax({
+                            url: '{% url "set_start" %}',
+                            method: "post",
+                            data: {
+                                "data": checkedValues.join(","),
+                            },
+                            success: function (data) {
+                                console.log(data)
+                                alert("승인하였습니다.")
+                                location.reload();
+                            }
+                            ,
+                            error: function (e) {
+                                console.log(e)
+                            }
+                        })
+                    }
+                    console.log(checkedValues)
+
+                }
+
+                function delete_sb() {
+                    var checkedValues = $("#sort_tbl2").find('input:checkbox:checked:visible').map(function () {
+                        if ($(this).attr("id") != "all_check2")
+                            return this.value;
+                    }).get();
+
+                    if (checkedValues.length == 0) {
+                        alert("선택한 항목이 없습니다.")
+                        return false
+                    } else {
+                        var result = confirm("선택하신 공고문을 삭제하시겠습니까?")
+                        if (result == false) {
+                            return false
+                        }
+
+                        console.log(checkedValues)
+                        $.ajax({
+                            url: '{% url "delete_sb" %}',
+                            method: "post",
+                            data: {
+                                "data": checkedValues.join(","),
+                            },
+                            success: function (data) {
+                                console.log(data)
+                                location.reload();
+                            }
+                            ,
+                            error: function (e) {
+                                console.log(e)
+                            }
+                        })
+                    }
+
+
+                }
+
+
+                function delete_sb2() {
+                    var checkedValues = $("#sort_tbl").find('input:checkbox:checked:visible').map(function () {
+                        if ($(this).attr("id") != "all_check")
+                            return this.value;
+                    }).get();
+
+                    if (checkedValues.length == 0) {
+                        alert("선택한 항목이 없습니다.")
+                        return false
+                    } else {
+                        var result = confirm("선택하신 공고문을 삭제하시겠습니까?")
+                        if (result == false) {
+                            return false
+                        }
+
+                        console.log(checkedValues)
+                        $.ajax({
+                            url: '{% url "delete_sb" %}',
+                            method: "post",
+                            data: {
+                                "data": checkedValues.join(","),
+                            },
+                            success: function (data) {
+                                console.log(data)
+                                location.reload();
+                            }
+                            ,
+                            error: function (e) {
+                                console.log(e)
+                            }
+                        })
+                    }
+
+
+                }
+
+            </script>
+            <div id="sb_con">
+              {% comment %}  <div style="height: 30px; width:1020px; border-bottom: 1px solid #ddd;  margin-bottom: 20px;font-size: 15px;">
+                    전체 공고문
+                </div>{% endcomment %}
+            <style>
+                #sb_nav>li:hover, .sb_nav_on{
+                    border-bottom: 2px solid #1b66fe;
+
+                }
+                 #sb_nav>li{
+                     line-height: 29px;
+                 }
+            </style>
+                <div style="width: 1020px;height: 30px; border-bottom: 1px solid #ddd">
+                    <ul id="sb_nav">
+                        <li onclick="location.href='/manager/all/sb_list/?cat=0'" class="sb_nav_on" style="display: inline-block; margin-right: 10px; cursor: pointer">
+                            공고중
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=1'" style="display: inline-block; margin-right: 10px; cursor: pointer">
+                            모집 마감
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=2'" style="display: inline-block; margin-right: 10px;  cursor: pointer">
+                            공고 종료
+                        </li>
+                        <li onclick="location.href='/manager/all/sb_list/?cat=3'" style="display: inline-block; margin-right: 10px;  cursor: pointer">
+                            전체 공고문
+                        </li>
+                    </ul>
+                </div>
+                <div id="stop_sb" onclick="stop_sb()"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer; display: inline-block;">
+                    선택한 공고문 블라인드 처리
+                </div>
+                <div id="get_down"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer; display: inline-block; margin-left: 20px;">
+                    선택한 리스트
+                    다운로드
+                </div>
+                <div id="delete_sb2" onclick="delete_sb2()"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer; margin-left: 20px; display: inline-block">
+                    선택한 공고문 삭제
+                </div>
+                <table id="sort_tbl" style="width: 1000px; table-layout: fixed!important;">
+                    <thead>
+                    <tr>
+                        <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                            <div class="checkbox checkbox-primary" style="width: 30px; ">
+                                <input type="checkbox" id="all_check"
+                                       aria-label="Single checkbox Two" onclick="set_all(this)">
+                                <label></label>
+                            </div>
+                        </th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">공고<br>마감년도</th>
+                        <th style="width: 300px; padding: 0px!important; font-size: 13px;">공고명</th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">게시일</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">기관명</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">사업<br>담당자</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">참여기업수</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">선정자수</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">노출여부</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">공고상태</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for q in qs %}
+                             {%  if q.is_blind_state != "블라인드" %}
+                        <tr style="cursor: pointer;">
+                            <td style="width: 20px; padding: 0px!important; font-size: 13px;">
+                                <div class="checkbox checkbox-primary" style="width: 30px;">
+                                    <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                           value="{{ q.id }}"
+                                           aria-label="Single checkbox Two">
+                                    <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                                </div>
+                            </td>
+                            <td style="font-size: 13px; width: 70px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.apply_end|date:"Y" }}
+                            </td>
+                            <td style="font-size: 13px; width:390px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.title }}
+                            </td>
+                            <td style="font-size: 13px;width:90px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.created_at|date:"Y-m-d" }}
+                            </td>
+                            <td style="font-size: 13px;width:90px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.user.department }}
+                            </td>
+                            <td style="font-size: 13px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.user.name }}
+                            </td>
+                            <td style="font-size: 13px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.appliance_set.all.count }}
+                            </td>
+                            <td style="font-size: 13px;width:60px;; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {% if  q.manage_status == "공고종료" and q.award_set.all.count > 0 %}
+                                    {{ q.award_set.all.count }}
+                                {% else %}
+                                    {{ q.award_set.all.count }}
+                                {% endif %}</td>
+                            <td>
+                                {{ q.is_blind_state }}
+                            </td>
+                            <td style="font-size: 13px; width: 80px; cursor: pointer;"
+                                onclick="window.open('{% url "support" id=q.id %}')">
+                                {{ q.manage_status }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div style="height: 30px; width:1020px; border-bottom: 1px solid #ddd;  margin-bottom: 20px;font-size: 15px; margin-top: 40px;">
+                    승인 대기중인 공고문
+                </div>
+                <div id="start_sb" onclick="start_sb()"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer;float:left">선택한 공고문 승인
+                    처리
+                </div>
+                <div id="delete_sb" onclick="delete_sb()"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer;float:left; margin-left: 20px;">
+                    선택한 공고문 삭제
+                </div>
+                <div id="get_down2"
+                     style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer; display: inline-block; margin-left: 20px;">
+                    선택한 리스트
+                    다운로드
+                </div>
+                <table id="sort_tbl2" style="width: 1000px; table-layout: fixed!important;">
+                    <thead>
+                    <tr>
+                        <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                            <div class="checkbox checkbox-primary" style="width: 30px; ">
+                                <input type="checkbox" id="all_check2"
+                                       aria-label="Single checkbox Two" onclick="set_all2(this)">
+                                <label></label>
+                            </div>
+                        </th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">공고<br>마감년도</th>
+                        <th style="width: 300px; padding: 0px!important; font-size: 13px;">공고명</th>
+                        <th style="width: 90px; padding: 0px!important; font-size: 13px;">게시일</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">기관명</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">사업<br>담당자</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">참여기업수</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">선정자수</th>
+                         <th style="width: 80px; padding: 0px!important; font-size: 13px;">노출여부</th>
+                        <th style="width: 80px; padding: 0px!important; font-size: 13px;">공고상태</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for q in qs_b %}
+
+                            <tr style="cursor: pointer;">
+                                <td style="width: 20px;; cursor: pointer; padding: 0px!important; font-size: 13px;">
+                                    <div class="checkbox checkbox-primary" style="width: 30px;">
+                                        <input class="check_target" type="checkbox" id="ch{{ forloop.counter }}"
+                                               value="{{ q.id }}"
+                                               aria-label="Single checkbox Two">
+                                        <label>&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                                    </div>
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px; width: 70px"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.apply_end|date:"Y" }}
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px; width:390px"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.title }}
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px;width:90px"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.created_at|date:"Y-m-d" }}
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px;width:90px"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.user.department }}
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px;"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.user.name }}
+                                </td>
+                                <td style="font-size: 13px;" onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.appliance_set.all.count }}
+                                </td>
+                                <td style="; cursor: pointer;font-size: 13px;width:60px;"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {% if  q.manage_status == "공고종료" and q.award_set.all.count > 0 %}
+                                        {{ q.award_set.all.count }}
+                                    {% else %}
+                                        {{ q.award_set.all.count }}
+                                    {% endif %}</td>
+                              <td>
+                                {{ q.is_blind_state }}
+                            </td>
+                                <td style="; cursor: pointer;font-size: 13px; width: 80px"
+                                    onclick="location.href = '{% url "support" id=q.id %}'">
+                                    {{ q.manage_status }}
+                                </td>
+                            </tr>
+
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+
+
+        {% endif %}
+
+    </div>
+
+
+{% endblock %}

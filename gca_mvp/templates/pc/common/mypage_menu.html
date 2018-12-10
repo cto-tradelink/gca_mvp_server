@@ -1,0 +1,16 @@
+{% load static %}
+
+<div id="app_mypage">
+    <div>
+        <ul>
+            <li class="{% if request.resolver_match.url_name == "mypage" %} on {% endif %}">
+                <a href="{% url "mypage" %}?cat=int"> 내 지원내역 관리</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == "my_profile" or  request.resolver_match.url_name == "my_profile_edit" %} on {% endif %}">
+            <a href="{% url "my_profile" %}" > 내 프로필</a> </li>
+            <li class="{% if request.resolver_match.url_name == "company_profile" %} on {% endif %}">
+                <a href="{% url "company_profile" %}">기업 프로필</a>
+            </li>
+        </ul>
+    </div>
+</div>

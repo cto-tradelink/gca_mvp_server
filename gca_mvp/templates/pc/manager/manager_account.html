@@ -1,0 +1,108 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_account.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+    <script>
+        $(document).ready(function () {
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+        })
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <div id="ttl" style="height: 46px;">
+            <span style="    height: 30px;  line-height: 20px;">내 계정관리</span>
+        </div>
+        <div id="account_con">
+            <table>
+                <tr>
+                    <th>
+                        ID
+                    </th>
+                    <td>
+                        {{ user.username }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        PW
+                    </th>
+                    <td>
+                        ********
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        이름
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.name }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        기관
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.department }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        소속(담당부서)
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.belong_to }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        직급
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.position }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        전화번호
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.tel }}
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        홈페이지
+                    </th>
+                    <td>
+                        {{ user.additionaluserinfo.web }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div onclick="location.href='/manager/account/edit'" id="modify">수정하기</div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/index.css" %}" rel="stylesheet/less">
+{% endblock %}
+{% block content %}
+    <script>
+        $(document).ready(function () {
+            $("#u_login_pass").css("height", $(window).height())
+
+        })
+    </script>
+
+    {% if user.is_authenticated %}
+        <style>
+            #u_login_pass {
+                background-color: #fff;
+                background-color: rgba(255, 225, 48, 0.7);
+            }
+
+            #cp {
+                color: #2b2b2b;
+                font-size: 40px;
+                font-weight: 100;
+            }
+
+            #cp > span {
+                font-weight: 300 !important;
+                color: #2b2b2b;
+                font-size: 40px;
+            }
+
+            #go_reg {
+                width: 150px;
+                height: 29px;
+                border-radius: 17px;
+                background-color: #1b66f4;
+                text-align: center;
+                line-height: 29px;
+                color: #fff;
+                margin-top: 29px;
+                display: inline-block;
+                margin-right: 15px;
+                cursor: pointer;
+            }
+
+            #no {
+                font-size: 15px;
+                color: #2b2b2b;
+            }
+        </style>
+
+
+        <div class="row" id="u_login_pass">
+            <div class="container">
+                <div id="cp" style="margin-top: 283px;">
+                    G-CONNECT에서 <span>회원가입/기업등록</span>을 통해<br>
+                    당신의 기업에게 맞는 지원사업을 찾아보세요.
+                </div>
+                <div id="go_reg" onclick="location.href='{% url "company_profile" %}'">
+                    지금 기업등록하기
+                </div>
+                <a href="{% url "search" %}"><span id="no">그냥 전체 지원사업 볼래요</span></a>
+            </div>
+        </div>
+    {% else %}
+
+        <style>
+            #u_login_pass {
+                background-color: #fff;
+                background-color: rgba(27, 102, 244, 0.7);
+            }
+
+            #cp {
+                color: #fff;
+                font-size: 40px;
+                font-weight: 100;
+            }
+
+            #cp > span {
+                font-weight: 300 !important;
+                color: #fff;
+                font-size: 40px;
+            }
+
+            #go_reg {
+                width: 150px;
+                height: 29px;
+                border-radius: 17px;
+                background-color: #ffffff;
+                text-align: center;
+                line-height: 29px;
+                color: #1b66f4;
+                margin-top: 29px;
+                display: inline-block;
+                margin-right: 15px;
+                cursor: pointer;
+            }
+
+            #no {
+                font-size: 15px;
+                color: #fff;
+            }
+        </style>
+
+
+        <div class="row" id="u_login_pass">
+            <div class="container">
+                <div id="cp" style="margin-top: 283px;">
+                    G-CONNECT에서 <span>회원가입/기업등록</span>을 통해<br>
+                    당신의 기업에게 맞는 지원사업을 찾아보세요.
+                </div>
+                <div id="go_reg" onclick="location.href='{% url "signup" %}'">
+                    지금 회원가입하기
+                </div>
+                <a href="{% url "search" %}"><span id="no">그냥 전체 지원사업 볼래요</span></a>
+            </div>
+        </div>
+
+    {% endif %}
+{% endblock %}

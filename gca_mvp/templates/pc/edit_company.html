@@ -1,0 +1,806 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/new_company.css" %}" rel="stylesheet/less">
+    <link rel="stylesheet/less" href="{% static "css/app_mypage_menu.css" %}">
+    <script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=37048cf5c0f4f2431d304272b91538d2&libraries=services"></script>
+{% endblock %}
+
+{% block content %}
+    <script>
+        $(document).ready(function () {
+
+
+            $("#id_established_date").css("margin-top","4px")
+
+            var email_string = "{{ email_confirm }}"
+            var email_confirm;
+            var email = "{{ form_basic.email.initial }}"
+            console.log(email)
+            $("#id_email").change(function () {
+                if ($(this).val() != email){
+                    $("#cert_email").removeClass("hidden")
+                    email_confirm = false
+                }
+                else {
+                    $("#cert_email").addClass("hidden")
+                    email_confirm = true
+                }
+            })
+            if (email_string == "0") {
+                email_confirm = false;
+            }
+            else {
+                email_confirm = true;
+                $("#cert_email").addClass("hidden")
+            }
+
+            $(".year").find("input").prop("readonly", true)
+
+            var cert = $("#cert_email").detach();
+
+            $("#id_email").parent().append(cert);
+
+            var address = $("#find_address").detach();
+
+            $("#id_address").parent().append(address);
+
+            $("input").keydown(function (key) {
+                if (key.keyCode == 13) {//키가 13이면 실행 (엔터는 13)
+                    return false
+                }
+            })
+            $(".filter").on("click", function () {
+                if ($(this).attr("data-case") != "") {
+                    $("." + $(this).attr("data-case")).removeClass("on")
+                }
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                    console.log($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter_list").val(filter_list.join(","))
+            })
+            try {
+                var filter_list = "{{ filter_list }}".replace("[", "").replace("]", "").split(",");
+                for (var k = 0; k < filter_list.length; k++) {
+                    $("span[data-id='" + filter_list[k].trim() + "']").addClass("on")
+                }
+                $("#filter_list").val(filter_list.join(","));
+                var tag_list = "#" + "{{ tag_list|safe }}".replace("[", "").replace("]", "").replace(/'/gi, '').replace(/ /g,"").split(",").join("#")
+                console.log(tag_list)
+                $("#id_keyword").val(tag_list);
+            }
+            catch (e) {
+                console.log(e)
+            }
+
+            $('#FILE_TAG').on('change', function (evt) {
+                var form = $('#FILE_FORM')[0];
+                var files = evt.target.files;
+                var type = '';
+                var fr = new FileReader();
+                fr.onload = function (event) {
+                    if (type.indexOf("image") == 0) {
+                        document.getElementById('main').innerHTML = "<img src='" + event.target.result + "' />";
+                        var d = event.target.result;
+                        d = d.replace("data:;", "data:" + type + ";");
+                    }
+                }
+                for (var i = 0, f; f = files[i]; i++) {
+                    //Gives name of file : f.name
+                    //Gives type of file : f.type e.g. text/plain or image/png etc
+                    //Gives size of file : f.size (in bytes)
+                    //Gives last modified date : f.lastModifiedDate
+                    var fileCopy = f.slice(0, f.size); //i.e. read entire file, as reading half image file doesn't solve any purpose
+                    type = f.type;
+                    if (f.type.indexOf("image") == 0)
+                        fr.readAsDataURL(fileCopy); //on successful read, fr.onload function will be called and that will populate the result in fileContent container
+                }
+
+                var formData = new FormData(form);
+                formData.append("fileObj", $("#FILE_TAG")[0].files[0]);
+                $.ajax({
+                    url: '{% url 'company_thumbnail' %}',
+                    processData: false,
+                    contentType: false,
+                    data: formData,
+                    type: 'POST',
+                    success: function (result) {
+                        console.log(result)
+                    }
+                });
+            })
+            $(".addy").on("click", function () {
+                get_full_add(this)
+            })
+            var options = {
+                dateFormat: 'yy-mm-dd',
+                prevText: '이전 달',
+                nextText: '다음 달',
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNames: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                changeMonth: true,
+                changeYear: true,
+                yearSuffix: '년',
+                yearRange: "1950:2018"
+            }
+            $("#id_established_date").datepicker(options);
+            $(".fu_y>input").datepicker(options);
+            $("#cert_email").on("click", function () {
+                var target = this
+                if ($("#id_email").val() != "") {
+                    email_string = $("#id_email").val()
+                    var regExp = /[0-9a-zA-Z][_0-9a-zA-Z-]*@[_0-9a-zA-Z-]+(\.[_0-9a-zA-Z-]+){1,2}$/;
+                    if (!email_string.match(regExp)) {
+                        alert("올바른 이메일을 입력해주세요.")
+                    } else {
+                        alert("메일을 발송중입니다. 조금만 기다려주세요.")
+                        $.ajax({
+                            url: '/signup/',
+                            method: "post",
+                            data: {"type": "confirm", "val": $("#id_email").val()},
+                            success: function (data) {
+                                if (data == "ok") {
+                                    alert("인증 메일을 발송하였습니다. 메일함을 확인해주세요.")
+                                    $("#confirmation_code").parent().removeClass("hidden")
+                                    $("#cert_email").text("인증메일 재발송")
+                                }
+                                else {
+                                    alert("메일발송중 오류가 발생하였습니다. 오류가 지속될 경우 사이트 관리자에게 문의하세요.")
+                                }
+                            },
+                            error: function (e) {
+                                console.log(e);
+                                alert("메일발송중 오류가 발생하였습니다. 오류가 지속될 경우 사이트 관리자에게 문의하세요.")
+                            }
+                        })
+                    }
+                } else {
+                    alert("이메일을 입력해 주세요.")
+                }
+            })
+
+            $(document).on('submit', '#form_com', function (ev) {
+
+                if (email_confirm == false) {
+                    alert("이메일 인증을 진행해주세요")
+                    return false
+                }
+
+            });
+            $(document).on("click", "#cert_email2", function () {
+                var target = this
+                $.ajax({
+                    url: '/signup/',
+                    method: "post",
+                    data: {
+                        "type": "confirm2",
+                        "target": $("#id_email").val(),
+                        "confirmation_code": $("#confirmation_code").val()
+                    },
+                    success: function (data) {
+                        console.log(data)
+                        if (data == "ok") {
+                            alert("이메일 인증에 성공하였습니다. 회사 정보 입력을 진행해주세요.")
+                            email_confirm = true
+                            $(target).parent().addClass("hidden")
+                        }
+                        else {
+                            alert("이메일 인증에 실패하였습니다. 인증코드를 확인해주세요.")
+                        }
+                    },
+                    error: function (e) {
+                        console.log(e);
+                    }
+                })
+            })
+            $("#id_keyword").on('keyup', function (e) {
+              var string = $(this).val()
+              string = string.replace(/\r\n|\r|\n/g,"#")
+              string = string.replace(",","#")
+              string = string.replace(" ","#")
+
+              $(this).val(string)
+            })
+
+        })
+
+
+        function get_full_add(target) {
+            new daum.Postcode({
+                oncomplete: function (data) {
+                    var fullAddr = data.address; // 최종 주소 변수
+                    var extraAddr = ''; // 조합형 주소 변수
+                    if (data.addressType === 'R') {
+                        if (data.bname !== '') {
+                            extraAddr += data.bname;
+                        }
+                        if (data.buildingName !== '') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                        }
+                        fullAddr += (extraAddr !== '' ? ' (' + extraAddr + ')' : '');
+                    }
+                    $(target).val(fullAddr)
+                }
+            }).open();
+        }
+
+        function hiiden_form_open(class_name, target) {
+            $("." + class_name + ".hidden").first().removeClass("hidden")
+            if ($("." + class_name + ".hidden").length === 0) {
+                $(target).addClass("hidden");
+            }
+        }
+
+        function clear_address(target) {
+            $(target).parent().find("input").val("")
+            $(target).parent().addClass("hidden")
+            if ($(".address_con.hidden").length != 0) {
+                $("#open_add").removeClass("hidden");
+            }
+        }
+
+        var rev_year_count = -1;
+        var exp_year_count = -1;
+
+        for (var k = 0; k < 3; k++) {
+            if (!$(".exp_year:eq(" + k + ")").hasClass("hidden")) exp_year_count = 1 + exp_year_count
+        }
+        for (var k = 0; k < 3; k++) {
+            if (!$(".rev_year:eq(" + k + ")").hasClass("hidden")) rev_year_count = 1 + rev_year_count
+        }
+
+        function add_revenues(target) {
+            console.log("asdfsafd")
+            if ($("#id_established_date").val() == "" || $("#id_established_date").val() == undefined) {
+                alert("회사 설립일/설립 희망일을 먼저 입력해주세요.")
+            } else {
+                var pre_year = parseInt(new Date().getFullYear())
+                var found_year = parseInt($("#id_established_date").val().split("-")[0])
+                var before_y = $(target).parent().parent().find(".rev_year").not(".hidden").last().find(".year").find("input").val()
+                if (before_y == undefined) {
+                    if (pre_year - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(pre_year - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                } else {
+                    if (parseInt(before_y) - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(parseInt(before_y) - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                }
+            }
+        }
+
+        function add_export(target) {
+            if ($("#id_established_date").val() == "" || $("#id_established_date").val() == undefined) {
+                alert("회사 설립일/설립 희망일을 먼저 입력해주세요.")
+            } else {
+                var pre_year = parseInt(new Date().getFullYear())
+                var found_year = parseInt($("#id_established_date").val().split("-")[0])
+                var before_y = $(target).parent().parent().find(".ex_year").not(".hidden").last().find(".year").find("input").val()
+                if (before_y == undefined) {
+                    if (pre_year - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(pre_year - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                } else {
+                    if (parseInt(before_y) - 1 >= found_year) {
+                        $(target).parent().parent().find(".hidden").first().find(".year").find("input").val(parseInt(before_y) - 1);
+                        $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+                    }
+                }
+            }
+        }
+
+        function add_fund(target) {
+            $(target).parent().parent().find(".hidden").first().removeClass("hidden")
+        }
+
+        function clear_row(target) {
+            console.log(target)
+            $(target).parent().parent().find("input:eq(1)").val("")
+            $(target).parent().parent().find("input:eq(2)").val("")
+            if ($(target).parent().parent().hasClass("fund_year")) {
+                $(target).parent().parent().find("input:eq(0)").val("")
+            }
+            $(target).parent().parent().addClass("hidden")
+        }
+    </script>
+    <style>
+        .ui-datepicker-year {
+            width: 74px !important;
+        }
+
+        .ui-datepicker-month {
+            width: 74px !important;
+        }
+    </style>
+    <div class="container">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a> &gt; <a href="{% url "my_profile" %}">마이페이지</a> > <a id="final" href="#">기업
+            프로필</a>
+        </div>
+        {% include "pc/common/mypage_menu.html" %}
+        <div id="detail_top">
+            <form id="form_com" method="post" enctype="multipart/form-data" action="{{ request.path }}">
+                <div id="main">
+                     {% if user.startup.thumbnail %}
+                    <img src="{{ user.startup.thumbnail.url }}">
+                {% else %}
+                    <img src="{% static "img/default.png" %}">
+                {% endif %}
+                </div>
+                <div id="edit_btn">
+                    <input type="file" id="FILE_TAG" name="FILE_TAG" style="display: none;">
+                    <img onclick="alert('이미지 업로드시 자동 121px*121px 로 리사이징 됩니다.');$('#FILE_TAG').click()" src="{% static "img/ic-edit@2x.png" %}">
+                </div>
+                <div id="name_ttl">{{ user.addtionaluserinfo.name }}</div>
+                <div id="email_ttl">{{ user.username }}</div>
+                {% csrf_token %}
+                <input id="filter_list" type="hidden" name="filter_list">
+                <div class="form_ttl">기본 정보</div>
+                <div class="form_seg" id="basic_info">
+                    {{ form_basic.uid }}
+
+                    <li><label>기업명</label>{{ form_basic.name }}</li>
+                    <li><label style="display: block; float: left">설립일 / <br>설립 희망일</label>{{ form_basic.established_date }}</li>
+                    <li><label>사업분야</label>{{ form_basic.category }}</li>
+                    <li><label style="float: left; margin-top: 10px;">소재지 <img id="open_add"
+                                                                               onclick="hiiden_form_open('address_con',this)"
+                                                                               src="{% static "img/plus.png" %}"
+                                                                               style="width: 17px; margin-top: -6px;margin-left: 9px; cursor: pointer">
+                    </label>
+                        <div style="width: 688px; float: left">
+                            <div class="address_con "> {{ form_basic.address_0_title }} {{ form_basic.address_0 }} {{ form_basic.address_0_detail }}  </div>
+                            <div class="address_con {% if form_basic.address_1.initial == "" or form_basic.address_1.initial == None %} hidden {% endif %}"> {{ form_basic.address_1_title }} {{ form_basic.address_1 }} {{ form_basic.address_1_detail }}<img
+                                    onclick="clear_address(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                    style="width:24px; cursor: pointer; vertical-align: text-bottom"></div>
+                            <div class="address_con {% if form_basic.address_2.initial == "" or  form_basic.address_2.initial == None %} hidden {% endif %}"> {{ form_basic.address_2_title }} {{ form_basic.address_2 }} {{ form_basic.address_2_detail }}<img
+                                    onclick="clear_address(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                    style="width:24px; cursor: pointer; vertical-align: text-bottom"></div>
+                        </div>
+                    </li>
+                    <li><label>대표메일</label>{{ form_basic.email }}</li>
+                    <li class="hidden"><label></label><input id="confirmation_code" placeholder="인증 코드를 입력해주세요">
+                        <div id="cert_email2"
+                             style="text-align: center; line-height: 29px; width: 96px;  height: 29px; border-radius: 17px;  color: #1b66f4;  border: 1px solid #1b66f4;  display: inline-block;  margin-left: 16px;  cursor: pointer;">
+                            인증하기
+                        </div>
+                    </li>
+
+                    <li><label>홈페이지</label>{{ form_basic.website }}</li>
+                    <div id="cert_email">
+                        인증하기
+                    </div>
+                    <li><label>구성원수</label>
+                        <div id="em_con">{{ form_basic.employee_number }}명</div>
+                    </li>
+                </div>
+                <div class="form_ttl">관심있는 지원사업 종류</div>
+                <div class="y_alert">해당정보는 기업정보페이지 공개되지않고, 지원사업검색시 매칭을위한 필터에 활용됩니다.</div>
+                <div class="form_seg" id="basic_info">
+                    {% for filter in  int_sup %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </div>
+                <div class="form_ttl">기업 정보(필터에서 선택)
+                    <span>매칭을 위한 필터 선택</span></div>
+                <table style="clear:both; width: 855px;">
+                    <tr>
+                        <th>
+                            기본장르
+                        </th>
+                        <td colspan="2">
+                            {% for filter in filter_0 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            영역
+                        </th>
+                        <td style="width:383px;">
+                            <span class="cat_label">창작</span>
+                            {% for filter in filter_1 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                            <br>
+                            <span class="cat_label">창업</span>
+                            {% for filter in filter_3 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">신규산업</span>
+                            {% for filter in filter_5 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td style="width:363px;">
+                            <span class="cat_label">IT 관련</span>
+                            {% for filter in filter_2 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">제조/융합</span>
+                            {% for filter in filter_4 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기타</span>
+                            {% for filter in filter_6 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="padding: 0px !important;">
+                            <div class="y_alert">해당정보는 기업정보페이지 공개되지않고, 지원사업검색시 매칭을위한 필터에 활용됩니다.</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            조건
+                        </th>
+                        <td colspan="2">
+                            <span class="cat_label">업력</span>
+                            {% for filter in filter_7 %}
+                                <span class="filter f_sub_y" data-case="f_sub_y"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">소재지</span>
+                            {% for filter in filter_9 %}
+                                <span class="filter f_sub_loc" data-case="f_sub_loc"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업형태</span>
+                            {% for filter in filter_10 %}
+                                <span class="filter f_sub_case" data-case="f_sub_case"
+                                      data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}<br>
+                            <span class="cat_label">기업단계</span>
+                            {% for filter in filter_11 %}
+                                <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+
+                </table>
+
+                <div class="input_con_2" style="margin-top: 20px; min-height: 103px;">
+                    <div class="form_ttl_2">기업 한줄 소개<span>지원사업 리스트와 본문에 가장 강조되어 나타납니다.</span></div>
+                    {{ form_basic_bot.short_desc }}
+                </div>
+                <div class="input_con_2" style="margin-top: 20px;">
+                    <div class="form_ttl_2">해시태그 입력</div>
+                    {{ form_basic_bot.keyword }}
+                </div>
+                <div class="input_con_2" style="margin-top: 20px;">
+                    <div class="form_ttl_2">회사소개</div>
+                    {{ form_basic_bot.desc }}
+                </div>
+                <div class="input_con_2" style="margin-top: 20px;">
+                    <div class="form_ttl_2">서비스/프로덕트 소개</div>
+                    {{ form_basic_bot.service_products }}
+                </div>
+
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">매출액<img  onclick="add_revenues(this)" src="{% static "img/plus.png" %}" style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer">
+                        <span style="font-size: 14px; color: #bbb"> 버튼을 눌러서 매출액 정보를 입력하세요</span>
+                    </div>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                연도
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr class="rev_year  {% if form_basic_bot.revenue_before_0.value != "" and form_basic_bot.revenue_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.revenue_before_year_0 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.revenue_before_0 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class="rev_year  {% if form_basic_bot.revenue_before_1.value != "" and form_basic_bot.revenue_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.revenue_before_year_1 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con"> {{ form_basic_bot.revenue_before_1 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class="rev_year  {% if form_basic_bot.revenue_before_2.value != ""  and form_basic_bot.revenue_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.revenue_before_year_2 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con"> {{ form_basic_bot.revenue_before_2 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">수출액<img onclick="add_export(this)"
+                                                                         src="{% static "img/plus.png" %}"
+                                                                         style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer"><span style="font-size: 14px; color: #bbb"> 버튼을 눌러서 수출액 정보를 입력하세요</span>
+
+                    </div>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                연도
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr>
+                        <tr class="ex_year  {% if form_basic_bot.export_before_0.value != "" and form_basic_bot.export_before_0.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.export_before_year_0 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.export_before_0 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class="ex_year  {% if form_basic_bot.export_before_1.value != ""  and form_basic_bot.export_before_1.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.export_before_year_1 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.export_before_1 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class="ex_year  {% if form_basic_bot.export_before_2.value != ""  and form_basic_bot.export_before_2.value != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ form_basic_bot.export_before_year_2 }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.export_before_2 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">투자유치<img onclick="add_fund(this)"
+                                                                          src="{% static "img/plus.png" %}"
+                                                                          style="margin-top: -4px;; width: 17px; margin-left: 9px;cursor: pointer"> <span style="font-size: 14px; color: #bbb"> 버튼을 눌러서 투자유치 정보를 입력하세요</span>
+                    </div>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                날짜
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 200px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 500px; ">
+                                투자자/투자기관
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_0.value != ""  and form_basic_bot.fund_before_0.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_0 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_0 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_0 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_1.value != ""  and form_basic_bot.fund_before_1.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_1 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_1 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_1 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_2.value != ""  and form_basic_bot.fund_before_2.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_2 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_2 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_2 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_3.value != ""  and form_basic_bot.fund_before_3.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_3 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_3 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_3 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_4.value != ""  and form_basic_bot.fund_before_4.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_4 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_4 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_4 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_5.value != ""  and form_basic_bot.fund_before_5.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_5 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_5 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_5 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_6.value != ""  and form_basic_bot.fund_before_6.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_6 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_6 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_6 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_7.value != ""  and form_basic_bot.fund_before_7.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_7 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_7 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_7 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_8.value != ""  and form_basic_bot.fund_before_8.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_8 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_8 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_8 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if form_basic_bot.fund_before_9.value != "" and form_basic_bot.fund_before_9.value != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ form_basic_bot.fund_before_year_9 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ form_basic_bot.fund_before_9 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ form_basic_bot.fund_before_agent_9 }}</div>
+                            </td>
+                            <td style="text-align: right">
+                                <img
+                                        onclick="clear_row(this)" src="{% static "img/icon-del-fill@2x.png" %}"
+                                        style="width:24px; cursor: pointer; vertical-align: text-bottom">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                {% if request.resolver_match.url_name != "company_profile_new" %}
+                    <button type="submit" id="register" style="margin-bottom: 200px">수정 완료</button>
+                {% else %}
+                    <button type="submit" id="register" style="margin-bottom: 200px">등록하기</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}

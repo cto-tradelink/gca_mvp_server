@@ -1,0 +1,420 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link href="{% static "css/new_company.css" %}" rel="stylesheet/less">
+    <link rel="stylesheet/less" href="{% static "css/app_mypage_menu.css" %}">
+{% endblock %}
+
+{% block content %}
+    <script defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCl4ys9OXgdXtFWNXHGjdJEtFw1i5fzOuA&callback=initMap">
+    </script>
+    <script>
+
+        $(document).ready(function () {
+            var cert = $("#cert_email").detach();
+            $("#id_email").parent().append(cert)
+            $(".edit_btn").click(function () {
+                location.href = "../../../mypage/company_profile/new/"
+            })
+        })
+
+        function initMap() {
+            var loc = new Object();
+            var url = "https://maps.googleapis.com/maps/api/geocode/json?address={{ user.startup.address_0|default:""|remove_spaces }}&key=AIzaSyCl4ys9OXgdXtFWNXHGjdJEtFw1i5fzOuA"
+            console.log("test")
+            $.ajax({
+                async: false,
+                url: url,
+                success: function (data) {
+                    console.log(data["results"][0]["geometry"]["location"]["lng"])
+                    loc.lat = data["results"][0]["geometry"]["location"]["lat"]
+                    loc.lng = data["results"][0]["geometry"]["location"]["lng"]
+                }
+            })
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 14,
+                center: loc
+            });
+            console.log(loc)
+            var marker = new google.maps.Marker({
+                position: loc,
+                map: map
+            });
+            setTimeout(function () {
+                google.maps.event.trigger(map, "resize"); // bug : initialize and must do trigger resize event
+            }, 1000)
+        }
+    </script>
+    <style>
+        .edit_btn {
+            cursor: pointer;
+        }
+
+        #map {
+            width: 363px;
+            height: 244px;
+        }
+    </style>
+    <div class="container" style="min-height: 1000px; margin-bottom: 100px">
+        <div id="brd_cumb">
+            <a href="{% url "index" %}">홈</a> &gt; <a href="{% url "my_profile" %}">마이페이지</a> > <a id="final" href="#">기업
+            프로필</a>
+        </div>
+        {% include "pc/common/mypage_menu.html" %}
+        <div id="detail_top">
+            <div id="main">
+                {% if user.startup.thumbnail %}
+                    <img src="{{ user.startup.thumbnail.url }}">
+                {% else %}
+                    <img src="{% static "img/default.png" %}">
+                {% endif %}
+            </div>
+
+            <div id="name_ttl" style="margin-bottom: 8px;">{{ user.startup.name }}</div>
+            {% for tag in user.startup.tag.all %}
+                <span class="tag">#{{ tag }}</span>
+            {% endfor %}
+
+
+            <form method="post" action="../../../mypage/company_profile/new/">
+                {% csrf_token %}
+                <div id="short_desc">
+                    {{ user.startup.short_desc }}
+                </div>
+                <div class="form_ttl">기업정보 요약
+                </div>
+                <div class="form_seg view">
+                    {% for f in user.startup.filter.all %}
+                        {% if f.cat_0 == "기본장르"  or f.cat_0 == "영역" %}
+                            <span class="filter">{{ f.name }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="hidden_data">
+                    <div class="data_ttl">기업 정보 요약 > 조건</div>
+                    <div class="filter_con">
+                        {% for f in user.startup.filter.all %}
+                            {% if f.cat_0 == "조건" %}
+                                <span class="filter">{{ f.name }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="data_ttl" style="margin-top: 15px;">관심 지원사업</div>
+                    <div class="filter_con">
+                        {% for f in user.startup.filter.all %}
+                            {% if f.cat_0 == "지원형태" %}
+                                <span class="filter">{{ f.name }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="hidden_data_cp">
+                    <img src="{% static "img/ic_visibility_off.png" %}">&nbsp; 해당정보는 일반 유저에게 공개 되지 않습니다. 지원사업 매칭을 위해
+                    활용되는
+                    정보입니다.
+                </div>
+
+                <div class="form_ttl"> 회사소개
+                </div>
+                <div class="form_seg" id="com_desc">
+                    {{ user.startup.desc|safe }}
+                </div>
+                <div class="form_ttl">서비스 / 프로덕트 소개
+                </div>
+                <div class="form_seg" id="ser">
+                    {{ user.startup.service_products|safe }}
+                </div>
+
+
+                <div id="seg_con">
+                    <div id="company_info_0">
+
+                        <div class="form_seg_ttl">기업 정보
+                        </div>
+                        <div id="company_info_con">
+                            <li><label>설립일</label>{% date_format user.startup.established_date|default:"" %}</li>
+                            <li><label>산업분야</label>{{ user.startup.category|default:"" }}</li>
+                            <li><label>홈페이지</label>{{ user.startup.website|default:"" }}</li>
+                            <li><label>대표메일</label>{{ user.startup.email|default:"" }}</li>
+                            <li><label>구성원</label>{{ user.startup.employee_number|default:"" }}</li>
+                        </div>
+                    </div>
+                    <div id="company_info_1">
+                        <div class="form_seg_ttl">위치
+                        </div>
+                        <div id="map">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">매출액
+                    </div>
+                    <style>
+                        .em_con, .em_agent {
+                            border: 1px solid #fff;
+                            color: #2b2b2b;
+                        }
+                    </style>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                연도
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr class="rev_year  {% if user.startup.revenue_before_0 != "" and  user.startup.revenue_before_0 != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.revenue_before_year_0|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.revenue_before_0 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                            </td>
+                        </tr>
+                        <tr class="rev_year  {% if user.startup.revenue_before_1 != "" and user.startup.revenue_before_1 != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.revenue_before_year_1|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con"> {{ user.startup.revenue_before_1 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class="rev_year  {% if user.startup.revenue_before_2 != "" and user.startup.revenue_before_2 != None %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.revenue_before_year_2|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con"> {{ user.startup.revenue_before_2 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">수출액
+                    </div>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                연도
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 600px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr>
+                        <tr class="ex_year  {% if user.startup.export_before_0 != "" %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.export_before_year_0|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.export_before_0 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class="ex_year  {% if user.startup.export_before_1 != "" %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.export_before_year_1|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.export_before_1 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class="ex_year  {% if user.startup.export_before_2 != None and  user.startup.export_before_2 != "" %} {% else %} hidden  {% endif %} ">
+                            <td class="year" style="">
+                                <div class="em_con">{{ user.startup.export_before_year_2|default:"" }}년</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.export_before_2 }}만원</div>
+                            </td>
+                            <td style="text-align: right">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="reve" style="margin-top: 30px;">
+                    <div class="dy_ttl" style="text-align: left">투자유치
+                    </div>
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-right:none ; width: 200px; height: 30px;">
+                                날짜
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 200px; ">
+                                금액
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left: none; border-right:none; width: 500px; ">
+                                투자자/투자기관
+                            </th>
+                            <th style="background-color: #f8f8f8; border: 1px solid #ddd; border-left:none ">
+                            </th>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_0 != "" and  user.startup.fund_before_0 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_0 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_0 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_0 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_1 != ""  and  user.startup.fund_before_1 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_1 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_1 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_1 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_2 != ""  and  user.startup.fund_before_2 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_2 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_2 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_2 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_3 != "" and  user.startup.fund_before_3 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_3 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_3 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_3 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_4 != ""  and  user.startup.fund_before_4 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_4 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_4 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_4 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_5 != ""  and  user.startup.fund_before_5 != None%} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_5 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_5 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_5 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_6 != ""  and  user.startup.fund_before_6 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_6 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_6 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_6 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_7 != ""  and  user.startup.fund_before_7 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_7 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_7 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_7 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_8 != ""  and  user.startup.fund_before_8 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_8 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_8 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_8 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                        <tr class=" fund_year {% if user.startup.fund_before_9 != ""  and  user.startup.fund_before_9 != None %} {% else %} hidden {% endif %}">
+                            <td class="year" style="">
+                                <div class="em_con fu_y">{{ user.startup.fund_before_year_9 }}</div>
+                            </td>
+                            <td>
+                                <div class="em_con">{{ user.startup.fund_before_9 }}만원</div>
+                            </td>
+                            <td>
+                                <div class="em_agent">{{ user.startup.fund_before_agent_9 }}</div>
+                            </td>
+                            <td style="text-align: right">
+
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <button id="modify_company_profile" style="">수정하기</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

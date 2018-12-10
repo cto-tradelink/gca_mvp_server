@@ -1,0 +1,27 @@
+#app_mypage {
+  width: 150px;
+  height: 331px;
+  background-color: #e4ebf2;
+  position: relative;
+  margin-top: 40px;
+  float: left;
+}
+#app_mypage div {
+  overflow: auto;
+  height: auto;
+}
+#app_mypage div ul {
+  padding-left: 0px!important;
+  list-style: none;
+  margin-top: 16px ;
+  margin-left: 16px;
+}
+#app_mypage div ul li {
+  margin-bottom: 23px;
+  font-size: 15px;
+  font-weight: normal;
+  cursor: pointer;
+}
+#app_mypage div ul li.on {
+  color: #1b66f4;
+}

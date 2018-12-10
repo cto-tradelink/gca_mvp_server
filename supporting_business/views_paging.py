@@ -901,6 +901,127 @@ def vue_get_opr_dashboard(request):
 
 
 
+@csrf_exempt
+def mng_vue_get_startup_account(request):
+    check_result = gca_check_session(request)
+    if check_result == False:
+        return HttpResponse(status=401)
+    else:
+        user_id =  check_result
+    startup= Startup.objects.all()
+    result = []
+
+
+    if request.POST.get("kind") == "startup":
+        k=1
+        startup_set=[]
+        for s in startup :
+            temp={}
+            temp["mng_index"]=k
+            k=k+1
+            temp["mng_company_name"] = s.company_name
+            temp["mng_id"] = s.user.username
+            temp["mng_startup_id"] = s.id
+            temp["mng_mark_name"] = s.mark_name
+            temp["mng_mark_tel"] = s.mark_tel
+            temp["mng_mark_email"] = s.mark_email
+            tag_list=[]
+            for t in s.selected_company_filter_list.all():
+                tag_list.append(t.filter_name)
+            temp["mng_tag"] = tag_list
+            try:
+                if "경기" in s.address_0:
+                    local = "경기"
+                elif "서울" in s.address_0:
+                    local = "서울"
+                elif "인천" in s.address_0:
+                    local = "인천"
+                else :
+                    local = "기타"
+            except:
+                local="기타"
+            temp["mng_local"] = local
+            temp["mng_employ_num"] = int(s.company_total_employee) if s.company_total_employee else 0
+            temp["mng_apply_num"] = (Appliance.objects.filter(startup=s)).count()
+            temp["mng_award_num"] = (Award.objects.filter(startup=s)).count()
+            temp["mng_join"] = s.user.date_joined
+            temp["mng_tag"]=[]
+            for t in s.selected_company_filter_list.all():
+                temp["mng_tag"].append(t.filter_name)
+            startup_set.append(copy.deepcopy(temp))
+        result = startup_set
+
+
+    if request.POST.get("kind") == "user":
+        user_ad = AdditionalUserInfo.objects.exclude(auth=4).exclude(auth=5)
+        user_set = []
+        p=1
+        for u in user_ad:
+            try:
+                user = {}
+                user["mng_id"] = u.user.username
+                user["mng_startup_id"] = Startup.objects.get(user=u.user).id
+                user["mng_mark_name"] = Startup.objects.get(user=u.user).mark_name
+                user["mng_mark_tel"] = Startup.objects.get(user=u.user).mark_tel
+                user["mng_facebook"] = Startup.objects.get(user=u.user).company_facebook
+                user["mng_joined"] = u.user.date_joined
+                user["mng_index"]=p
+                p=p+1
+                user_set.append(copy.deepcopy(user))
+            except Exception as e:
+                pass
+        result = user_set
+
+
+    if request.POST.get("kind")=="aw":
+        ## 사업 참여 기업
+        aw_startup_set = Appliance.objects.all().values("startup").distinct()
+        k=1
+        ap_set = []
+        for s in aw_startup_set:
+            aw_st={}
+            startup = Startup.objects.get(id=s["startup"])
+            aw_st["mng_index"] = k
+            k=k+1
+            aw_st["mng_company_name"] = startup.company_name
+            aw_st["mng_mark_name"] = startup.mark_name
+            aw_st["mng_startup_id"] = startup.id
+            aw_st["mng_mark_tel"] = startup.mark_tel
+            tag_list = []
+            for t in startup.selected_company_filter_list.all():
+                tag_list.append(t.filter_name)
+            aw_st["mng_tag"] = tag_list
+            try:
+                if "경기" in startup.address_0:
+                    local = "경기"
+                elif "서울" in startup.address_0:
+                    local = "서울"
+                elif "인천" in startup.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local="기타"
+            aw_st["mng_local"] = local
+            aw_st["mng_support_business_name"] = Appliance.objects.filter(startup=startup).last().support_business.support_business_name
+            if (Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)).count() == 0 :
+                aw_st["mng_awarded"] = "N"
+            else:
+                aw_st["mng_awarded"] = "Y"
+            aw_st["mng_end_date"] = str(Appliance.objects.filter(startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+            ap_set.append(copy.deepcopy(aw_st))
+        result = ap_set
+    print(result)
+    return JsonResponse({"result":result})
+
+
+
+
+
+
+
+
+
 
 
 

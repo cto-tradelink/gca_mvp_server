@@ -1,0 +1,30 @@
+{% extends "pc/common/base_d.html" %}
+{% load static %}
+{% block css %}
+    <link href="{% static "css/mypage.css" %}" rel="stylesheet/less">
+    <style>
+        body {
+            background-color: #fff !important;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+    <div class="container" style="position: relative;">
+        <div id="brd_cumb">
+            <a href="#">홈</a> &gt; <a href="#">마이페이지</a>
+        </div>
+
+        <form method="post" >
+            {% csrf_token %}
+        <div id="pg_ttl">마이페이지</div>
+        <div id="form_con">
+            <div id="con">
+            {{ form.as_ul }}
+                </div>
+        </div>
+        <button type="submit" id="edit">수정 하기</button>
+    </form>
+    </div>
+{% endblock %}

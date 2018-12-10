@@ -1,0 +1,472 @@
+{% load staticfiles %}
+{% load custom_filter %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>{% block title %}G-connect{% endblock %}</title>
+    <meta name="title" content="{% block meta_title %} {% endblock %} "/>
+    <meta name="copyright" content="  "/>
+    <meta name="description" content="{% block meta_description %} {% endblock %} }"/>
+    <meta name="keyword" content="{% block meta_keyword %} {% endblock %} }"/>
+    <meta property="og:title"/>
+    <meta name="cache-control" content="no-cache"/>
+    <meta name="expires" content="0"/>
+    <meta name="pragma" content="no-cache"/>
+    <link href="{% static "css/normalize.css" %}" rel="stylesheet">
+    <link href="{% static "css/_common.css" %}" rel="stylesheet">
+    <link href="{% static "css/bootstrap/bootstrap.css" %}" rel="stylesheet">
+    <link href='//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSans-kr.css' rel='stylesheet' type='text/css'>
+    <link href='//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSans-jp.css' rel='stylesheet' type='text/css'>
+
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+    <style>
+        * {
+            font-family: 'Spoqa Han Sans', 'Sans-serif';
+        }
+
+        body {
+            position: relative;
+        }
+
+        .row {
+            margin-right: 0px !important;
+            margin-left: 0px !important;
+        }
+
+        .container {
+            width: 1020px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .hGoYNN {
+            position: fixed;
+            right: 20px !important;
+            bottom: 41px !important;
+            display: block;
+            overflow: initial;
+            z-index: 10000000;
+        }
+    </style>
+    {% block css %}{% endblock %}
+    <script
+            src="https://code.jquery.com/jquery-1.12.4.js"
+            integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU="
+            crossorigin="anonymous"></script>
+    <script
+            src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"
+            integrity="sha256-0YPKAwZP7Mp3ALMRVB2i8GXeEndvCq3eSl/WsAl1Ryk="
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css"/>
+    <script src="{% static "js/bootstrap/bootstrap.js" %}"></script>
+    <script src="{% static "js/jquery.animateNumber.js" %}"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/2.7.2/less.min.js"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/css/bootstrap-select.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.js"></script>
+    <script type="text/javascript" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="{% static "js/ion.rangeSlider.js" %}"></script>
+    <link rel="stylesheet" href="{% static "css/ion.rangeSlider.css" %}">
+    <link rel="stylesheet" href="{% static "css/ion.rangeSlider.skinFlat.css" %}">
+
+    <script>
+
+
+        var absolute_url = "{{ request.scheme }}://{{ request.META.HTTP_HOST }}{{ request.path }}";
+        var getParameter = function (param) {
+            var returnValue;
+            var url = location.href;
+            var parameters = (url.slice(url.indexOf('?') + 1, url.length)).split('&');
+            for (var i = 0; i < parameters.length; i++) {
+                var varName = parameters[i].split('=')[0];
+                if (varName.toUpperCase() == param.toUpperCase()) {
+                    returnValue = parameters[i].split('=')[1];
+                    return decodeURIComponent(returnValue);
+                }
+            }
+        };
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $(document).ready(function () {
+            var f = function () {
+                debugger;
+            }
+              $("#alarm").mouseenter(function () {
+                $("#noti_abs").css("top", $("#alarm").offset())
+                $("#noti_abs").css("left", $("#alarm").offset())
+                $(".pop_menu").addClass("hidden")
+                if ($("#noti_abs").hasClass("hidden")) {
+                    $("#noti_abs").removeClass("hidden")
+                }
+                else {
+                    $("#noti_abs").addClass("hidden")
+                }
+            })
+            $(".pop_menu").mouseleave(function () {
+                $(".pop_menu").addClass("hidden")
+            })
+
+
+
+            var csrftoken = getCookie('csrftoken');
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+            $("#support_business").hover(function () {
+                $("#pop_menu").removeClass("hidden")
+            })
+            $("#pop_menu").mouseleave(function () {
+                $("#pop_menu").addClass("hidden")
+            })
+            $("#x_btn").on("click", function () {
+                $(this).parent().parent().parent().remove()
+            })
+
+            $("#name").hover(function () {
+                $("#mypage_popup").removeClass("hidden")
+            })
+            $("#mypage_popup").mouseleave(function () {
+                $("#mypage_popup").addClass("hidden")
+            })
+
+            $("#confirm").on("click", function () {
+                $("#rate_panel").addClass("hidden")
+                $("#rate_panel_c").removeClass("hidden")
+            })
+
+            $("#confirm_c").on("click", function () {
+                $("#rate_panel_c").addClass("hidden")
+            })
+            $("#rate_x_btn").on("click", function () {
+                $("#rate_panel").addClass("hidden")
+            })
+
+            $("#rate").on("click", function () {
+                $("#rate_panel").removeClass("hidden")
+            })
+            $("#left_nav").css('height', $(window).height())
+            $(function () {
+
+                $("#rateYo").rateYo({
+                    rating: 3.6,
+                    starWidth: "33px"
+                }).on("rateyo.set", function (e, data) {
+                    //  alert("The rating is set to " + data.rating + "!");
+                    $.ajax({
+                        url: '{% url "rate_page" %}',
+                        method: "post",
+                        data: {
+                            "page": "{{ request.get_full_path  }}",
+                            "user": "{{ request.user.id }}",
+                            "rate": data.rating
+                        },
+                        success: function (data) {
+
+                        },
+                        error: function (e) {
+                            console.log(e)
+                        }
+                    })
+
+                });
+                ;
+
+            });
+            var navi_on = false;
+            $(window).resize(function () {
+                if ($(window).width() < 1410) {
+                    $("#left_nav").css({
+                        "position": "absolute",
+                        "z-index": "999",
+                    })
+                    $("#left_nav").addClass("hidden")
+                    $("#menu_btn").removeClass("hidden")
+                    $("#menu_btn").css("left", "0px")
+                    $(".content").css("padding-left", "00px")
+                    $("#left_nav").css("position", "fixed")
+                    $("#left_nav").css("top", "0px")
+                    $("#left_nav").css("padding-top", "40px")
+                }
+                else {
+                    $("#left_nav").css({
+                        "position": "fixed",
+                        "z-index": "999",
+                    })
+                    $("#menu_btn").addClass("hidden")
+                    $("#left_nav").removeClass("hidden")
+                    $("#left_nav").css("left", "0px")
+                    $(".content").css("padding-left", "150px")
+                }
+            })
+            if ($(window).width() < 1410) {
+                $("#left_nav").css({
+                    "position": "absolute",
+                    "z-index": "999",
+                })
+                $("#left_nav").addClass("hidden")
+                $("#left_nav").css("position", "fixed")
+                $("#left_nav").css("top", "0px")
+                $("#left_nav").css("padding-top", "40px")
+            } else {
+                $("#left_nav").css({
+                    "position": "fixed",
+                    "z-index": "999",
+                })
+                $("#menu_btn").addClass("hidden")
+                $(".content").css("padding-left", "150px")
+            }
+            $(document).on("click", "#menu_btn", function () {
+                console.log("here")
+                if (navi_on) {
+                    $("#left_nav").css("left", "-150px")
+                    $("#left_nav").addClass("hidden")
+                    $("#menu_btn").css("left", "0px")
+
+
+                    navi_on = false
+                }
+                else {
+                    $("#left_nav").css("left", "0px")
+                    $("#left_nav").removeClass("hidden")
+                    $("#menu_btn").css("left", "150px")
+
+                    navi_on = true
+                }
+            })
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+
+            }
+            console.log($("body").css("height"))
+            $("body").append('<div class="row" style="height: 40px; position: absolute; bottom: 0px;width: 100%;   background-color:  #e4ebf2;; ">\n' +
+                '</div>')
+
+            $.ajax({
+
+                url: '{% url "get_alarm_status" %}',
+                method: "post",
+                data: {},
+                success: function (data) {
+
+                    if (data.noti.title.length == 0) {
+                        $("#add_sb").append("<li>추가 된 지원사업이 없습니다.</li>")
+                    }
+
+                    if (data.noti.title.length ==0 ) {
+                        $("#alarm").find("img").attr("src", "{% static "img/icon_noti_line_gray.png" %}")
+                    }
+                    else {
+                        $("#alarm").find("img").attr("src", "{% static "img/icon_noti_line_gray_b.png" %}")
+                    }
+                    var total_sb = []
+
+                    for (var k = 0; k < data.noti.title.length; k++) {
+                        var title = data.noti.title[k]
+                        total_sb.push(data.noti.sbid[k])
+                        if (title.length > 30)
+                            title = title.substr(0, 30) + "..."
+                        $("#add_sb").append("<li><a href='/support/" + data.noti.sbid[k] + "' >" + title + "</a></li>")
+                    }
+
+                    try {
+                        var uni_arr = unique(total_sb);
+                        console.log(uni_arr)
+                        for (var k = 0; k < uni_arr.length; k++) {
+                            $("#result").find(".sm_l[data-id='" + uni_arr[k] + "']").css({
+                                "padding-left": "3px",
+                                "border-left": " 7px solid #f74e4e"
+                            })
+                            $(".sm_cd_hd").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                "padding-left": "3px",
+                                "border-left": " 7px solid #f74e4e"
+                            })
+                            $(".sm_l").find(".int[data-id='" + uni_arr[k] + "']").parent().parent().css({
+                                "width": "1013px",
+                                "border-left": " 7px solid #f74e4e",
+                                "padding-left": "3px"
+                            })
+                            $(".sm_l").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                "width": "177px",
+                            })
+                            $(".sm_l.int").find(".int[data-id='" + uni_arr[k] + "']").parent().parent().css({
+                                "width": "853px",
+                                "border-left": " 7px solid #f74e4e",
+                                "padding-left": "3px"
+                            })
+                            $(".sm_l .int").find(".int[data-id='" + uni_arr[k] + "']").parent().css({
+                                "width": "177px",
+                            })
+                        }
+                    }
+                    catch (e) {
+                        console.log(e)
+                    }
+                },
+                error: function (e) {
+                    console.log(e)
+                }
+            })
+
+        });
+
+
+    </script>
+    {% block js %}{% endblock %}
+    <script>
+        less.pageLoadFinished.then(
+            function () {
+                try{
+                       console.log('completed');
+                if ($(window).height() > $(document).height()) {
+                    $("body").css("min-height", $(window).height() + 50)
+                }
+                else {
+                    $("body").css("min-height", $(document).height() + 50)
+                }
+                console.log($("body").css("height"))
+                $("body").append('<div class="row" style="height: 40px; position: absolute; bottom: 0px;width: 100%; z-index:999;  background-color:  #e4ebf2;; ">\n' +
+                    '</div>')
+                }
+                catch (e){
+                    console.log(e)
+                }
+            }
+        );
+    </script>
+</head>
+<body onload="try{document.refresh();}catch (e){console.log(e)}">
+<div id="header" style="z-index: 1000; position: relative">
+    <div class="row" style="height: 40px;">
+        <nav>
+            <a href="{% url "dashboard" %}">
+                <div id="logo" style="background-color:#e4ebf2 ; margin-top: 10px;height: 22px;"><img
+                        src="{% static "img/top_logo.png" %}"></div>
+            </a>
+            <a href="{% url "index" %}">
+                <div style="margin-top: 11px;" id="gc">G-connect home</div>
+            </a>
+
+
+            <div id="name" style="cursor: pointer; margin-top: 14px;">{{ user.additionaluserinfo.name }}</div>
+            <div id="mypage_popup" class="hidden" style="z-index: 1000; height:80px;top:39px;">
+                <ul>
+                    <li>
+                        <a href="{% url "manager" %}">마이페이지</a>
+                    </li>
+                    <li id="logout_btn" style="color:  #7a7a7a!important;">
+                        <a style="color: #7a7a7a;" href="{% url "logout" %}">로그아웃</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="alarm"
+                 style=" width: 24px;height: 24px; cursor: pointer; margin-right: 11px;margin-top: 10px;float: right">
+                <img style="width: 24px;height: 24px;" src="{% static "img/icon_noti_line_gray_b.png" %}">
+            </div>
+            <div id="noti_abs" class="hidden pop_menu" style="width:394px; position: absolute; top: 45px; right:263px; ">
+                <div id="noti_wnd_stu" style="width: 394px;">
+                    <div class="noti_con" style="background-color: #fff; margin: 0px; display: block">
+                        <ul id="add_sb" style="list-style: none">
+                            <li style="line-height: 25px;color: #fff; background-color: #1b66fe; padding-left: 20px;; padding-top: 10px; width: 392px;;">
+                               {% if request.user.additionaluserinfo.auth == "5" %}
+                                 승인대기중인 지원사업이 추가되었어요
+                                {% else %}
+                                 지원사업이 블라인드 처리되었습니다.
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+<div id="content">
+    <div id="menu_btn"
+         style="width:30px; padding-top:3px;cursor: pointer; height: 30px;position: fixed; z-index: 9999; border-radius: 0px 5px 5px 0px; color: #fff; background-color: #1b66fe; text-align: center;top:40px;">
+        <img src="{% static "img/hamburger-icon.png" %}" style="width: 18px;"></div>
+    {% block content %}
+    {% endblock %}
+</div>
+<div id="rate_panel" class="hidden">
+    <div id="rate_hd">
+        <span>이 페이지가 마음에 드시나요?</span>
+        <img id="rate_x_btn" src="{% static "img/icon-del-fill@2x.png" %}">
+        <div id="rateYo"></div>
+    </div>
+    <div id="confirm">확인</div>
+</div>
+<div id="rate_panel_c" class="hidden">
+    <div id="rate_hd_c">
+        <span>평가해 주셔서 감사합니다.<br>
+사이트 개선에 참고하겠습니다.</span>
+    </div>
+    <div id="confirm_c">닫기</div>
+</div>
+<div id="rate" style="z-index: 9999">
+    <span>평가하기</span>
+    <img src="{% static "img/star.png" %}">
+</div>
+</body>
+<!-- Channel Plugin Scripts -->
+<!-- Channel Plugin Scripts -->
+<script>
+    window.channelPluginSettings = {
+        "pluginKey": "ba916772-1de5-4cb3-a9bd-317926698309"
+    };
+    (function () {
+        var node = document.createElement('div');
+        node.id = 'ch-plugin';
+        document.body.appendChild(node);
+        var async_load = function () {
+            var s = document.createElement('script');
+            s.type = 'text/javascript';
+            s.async = true;
+            s.src = '//cdn.channel.io/plugin/ch-plugin-web.js';
+            s.charset = 'UTF-8';
+            var x = document.getElementsByTagName('script')[0];
+            x.parentNode.insertBefore(s, x);
+        };
+        if (window.attachEvent) {
+            window.attachEvent('onload', async_load);
+        } else {
+            window.addEventListener('DOMContentLoaded', async_load, false);
+        }
+    })();
+</script>
+<!-- End Channel Plugin -->
+<!-- End Channel Plugin -->
+</html>

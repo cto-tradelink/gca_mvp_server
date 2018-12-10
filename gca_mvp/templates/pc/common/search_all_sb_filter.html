@@ -1,0 +1,144 @@
+{% load static %}
+{% load custom_filter %}
+
+
+    <link href="{% static "css/search_support.css" %}" rel="stylesheet">
+<div id="top_con">
+    <div id="seach_text">
+        <input type="text" id="search_bar" placeholder="지원사업을 검색해 보세요.">
+        <div id="search_btn" style="display: inline-block">
+            <img style="width: 15px;height: 15px; margin-top: -5px; margin-left: 10px;"
+                 src="{% static "img/icon-search.png" %}">
+        </div>
+    </div>
+</div>
+<div id="select_filter" class="hidden">
+    <div id="filter_ttl" style="display: inline-block">필터를 선택하세요.</div>
+    <div id="filter_con" style="width: 660px;">
+    </div>
+    <div style="cursor: pointer" id="down_btn_2"><img src="{% static "img/arrow-down.png" %}"></div>
+</div>
+
+<table id="filter_tbl_" style="clear:both;">
+    <tr>
+        <th>
+            기본장르
+        </th>
+        <td colspan="2">
+            {% for filter in filter_0 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}
+        </td>
+    </tr>
+    <tr>
+        <th>
+            영역
+        </th>
+        <td style="width:383px;">
+            <span class="cat_label">창작</span>
+            {% for filter in filter_1 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}
+            <br>
+            <span class="cat_label">창업</span>
+            {% for filter in filter_3 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label">신규산업</span>
+            {% for filter in filter_5 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}
+        </td>
+        <td style="width:363px;">
+            <span class="cat_label">IT 관련</span>
+            {% for filter in filter_2 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label">제조/융합</span>
+            {% for filter in filter_4 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label">기타</span>
+            {% for filter in filter_6 %}
+                <span class="tag" data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}
+        </td>
+    </tr>
+    <tr>
+        <th>
+            조건
+        </th>
+        <td colspan="2">
+            <span class="cat_label">업력</span>
+            {% for filter in filter_7 %}
+                <span class="tag f_sub_y"  data-case="f_sub_y"  data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+
+            <span class="cat_label">소재지</span>
+            {% for filter in filter_9 %}
+                <span class="tag f_sub_loc"  data-case="f_sub_loc"  data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label">기업형태</span>
+            {% for filter in filter_10 %}
+                <span class="tag f_sub_case"  data-case="f_sub_case"  data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label">기업단계</span>
+            {% for filter in filter_11 %}
+                <span class="tag " data-id="{{ filter.id }}">{{ filter.name }}</span>
+            {% endfor %}<br>
+            <span class="cat_label" style="float: left; margin-top: 10px;">구성원</span>
+            <div style="display: inline-block; width: 454px; float: left ">
+                <input type="text" id="range_01" name="example_name" value=""/>
+            </div>
+            <script>
+                $(document).ready(function () {
+                    console.log("asd")
+                    var values = ["제한없음"]
+                    for (var k = 1; k < 100; k++) {
+                        values.push(k + "명 이하")
+                    }
+                    em = getParameter("em")
+                    console.log(em)
+                    if (em === undefined || em === "제한없음" || em==="") {
+                        em = 0
+                        $("#range_01").val("0")
+                    }
+                    values.push("100명 이상")
+                    $("#range_01").ionRangeSlider({
+                        values: values,
+                        type: "single",
+                        min: 0,
+                        max: 100,
+                        from: em,
+                        onFinish:
+                            function (data) {
+                            console.log("in finish")
+                                console.log(data);
+                                em = data.from
+                                $("#range_01").val(data.from)
+                            },
+                        onStart: function (data) {
+                            console.log("rangeslider check")
+                            console.log(em)
+                          $("#range_01").val(em)
+                        },
+                    });
+                    if (em == 0) {
+                        $("#range_01").val("0")
+                    }
+
+                })
+            </script>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3">
+
+            <img id="up_btn"
+                 style=" cursor: pointer; float: right; margin-right: 16px; margin-top: 6px;margin-bottom: 9px;"
+                 src="{% static "img/arrow-up.png" %}">
+            <span id="search_btn_f"
+                  style="padding: 3px 10px; display: inline-block;  color: #fff;  background-color:#1b66fe; font-size: 13px; border-radius: 20px; cursor: pointer; float: right; margin-right: 10px;margin-top: 2px;"> 검색하기</span>
+        </td>
+    </tr>
+</table>

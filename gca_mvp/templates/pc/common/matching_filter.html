@@ -1,0 +1,247 @@
+{% load static %}
+
+
+<div class="row hidden" id="filter_wnd">
+    <div class="container">
+        <table id="filter_tbl" style="clear:both;">
+            <tr>
+                <th>
+                    기본장르
+                </th>
+                <td colspan="2">
+                    {% for filter in filter_0 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    영역
+                </th>
+                <td style="width:383px;">
+                    <span class="cat_label">창작</span>
+                    {% for filter in filter_1 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                    <br>
+                    <span class="cat_label">창업</span>
+                    {% for filter in filter_3 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">신규산업</span>
+                    {% for filter in filter_5 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+                <td style="width:363px;">
+                    <span class="cat_label">IT 관련</span>
+                    {% for filter in filter_2 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">제조/융합</span>
+                    {% for filter in filter_4 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">기타</span>
+                    {% for filter in filter_6 %}
+                        <span class="filter" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr style="border-bottom: none">
+                <th>
+                    조건
+                </th>
+                <td colspan="2">
+                    <span class="cat_label" >업력</span>
+                    {% for filter in filter_7 %}
+                        <span class="filter f_sub f_sub_y " data-case="f_sub_y" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">소재지</span>
+                    {% for filter in filter_9 %}
+                        <span class="filter f_sub f_sub_loc" data-case="f_sub_loc"  data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">기업형태</span>
+                    {% for filter in filter_10 %}
+                        <span class="filter f_sub f_sub_case" data-case="f_sub_case" data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label">기업단계</span>
+                    {% for filter in filter_11 %}
+                        <span class="filter f_sub "  data-id="{{ filter.id }}">{{ filter.name }}</span>
+                    {% endfor %}<br>
+                    <span class="cat_label" style="float: left; margin-top: 10px;">구성원</span>
+                    <div style="display: inline-block; width: 454px; float: left ">
+                        <input type="text" id="range_01" name="example_name" value=""/>
+                    </div>
+                    <script>
+                        $(document).ready(function () {
+                            var values = ["제한없음"]
+                            for (var k = 1; k < 100; k++) {
+                                values.push(k + "명 이하")
+                            }
+
+                            values.push("100명 이상")
+                            $("#range_01").ionRangeSlider({
+                                values: values,
+                                type: "single",
+                                min: 0,
+                                max: 100,
+                                from:{{ user.startup.employee_number|default:"0" }},
+                                onFinish:
+                                    function (data) {
+                                        console.log(data);
+                                        $("#range_01").val(data.from)
+                                    },
+                            });
+                        })
+                    </script>
+
+                </td>
+            </tr>
+
+        </table>
+    </div>
+    <div id="close_filter">
+        <div class="container" style="text-align: center; position: relative">
+            <img id="close_btn" src="{% static "img/arrow-down-copy-4.png" %}">
+            <span style="cursor: pointer" id="save">필터 저장하기</span>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="container" id="menu_item">
+        <div id="nav_con">
+            <table>
+                <tr>
+                    <td><img onclick="location.href='/category/finance/'" style="cursor: pointer;"
+                            {% if "finance" in request.path %}
+                             src="{% static "img/icon-main-1-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-1-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/accel/'" style="cursor: pointer;"
+                            {% if "accel" in request.path %}
+                             src="{% static "img/icon-main-2-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-2-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/edu/'" style="cursor: pointer;"
+                            {% if "edu" in request.path %}
+                             src="{% static "img/icon-main-3-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-3-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/channel/'" style="cursor: pointer;"
+                            {% if "channel" in request.path %}
+                             src="{% static "img/icon-main-4-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-4-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/network/'" style="cursor: pointer;"
+                            {% if "network" in request.path %}
+                             src="{% static "img/icon-main-5-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-5-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/space/'" style="cursor: pointer;"
+                            {% if "space" in request.path %}
+                             src="{% static "img/icon-main-7-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-7-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/piching/'" style="cursor: pointer;"
+                            {% if "piching" in request.path %}
+                             src="{% static "img/icon-main-8-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-8-gray.png" %}"
+                            {% endif %}
+                    ></td>
+
+
+                    <td style="width:38px;"></td>
+                    <td><img onclick="location.href='/category/etc/'" style="cursor: pointer;"
+                            {% if "etc" in request.path %}
+                             src="{% static "img/icon-main-6-copy.png" %}"
+                            {% else %}
+                             src="{% static "img/icon-main-6-gray.png" %}"
+                            {% endif %}
+                    ></td>
+                </tr>
+                <tr>
+                    <td>자금지원</td>
+                    <td></td>
+                    <td>엑셀러레이팅<br>투자연계</td>
+                    <td></td>
+                    <td>교육</td>
+                    <td></td>
+                    <td>판로</td>
+                    <td></td>
+                    <td>네트워킹</td>
+                    <td></td>
+                    <td>공간지원</td>
+                    <td></td>
+                    <td>피칭</td>
+                    <td></td>
+                    <td>기타지원</td>
+                </tr>
+                <tr class="num">
+                    <td {% if "finance" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_0.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "accel" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_1.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "edu" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_2.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "channel" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_3.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "network" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_4.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "space" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_5.count }})
+                    </td>
+                 <td></td>
+                    <td {% if "piching" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_7.count }})
+                    </td>
+                    <td></td>
+                    <td {% if "etc" in request.path %}
+                        style="padding-bottom: 10px; border-bottom: 2px solid #1B66F4" {% endif %}>
+                        ({{ sb_6.count }})
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="view_btn">
+            <div id="list"><img src="{% static "img/icon_list_gray.png" %}"></div>
+            <div id="card"><img src="{% static "img/icon_card.png" %}"></div>
+        </div>
+    </div>
+</div>

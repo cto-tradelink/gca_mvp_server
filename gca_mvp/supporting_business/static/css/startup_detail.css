@@ -1,0 +1,86 @@
+#detail_top {
+  width: 1000px;
+  margin-left: 70px;
+  text-align: center;
+  margin-top: 40px;
+}
+#detail_top img {
+  width: 121px;
+  height: 121px;
+}
+#detail_top div img {
+  width: 27.1px;
+  height: 25.5px;
+  margin-top: -72px;
+  margin-left: 215px;
+}
+#detail_top #startup_ttl {
+  font-size: 25px;
+  font-weight: 500;
+  margin-top: -20px;
+}
+#startup_desc {
+  margin-left: 70px;
+}
+#startup_desc .content {
+  width: 1000px;
+  height: 78px;
+  line-height: 78px;
+  background-color: #f3f3f3;
+  margin-top: 21px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: normal;
+}
+#startup_desc .content span {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: normal;
+}
+#startup_info {
+  margin-left: 70px;
+}
+#startup_info #text_con {
+  float: left;
+}
+#startup_info #text_con .content {
+  width: 700px;
+  height: 244px;
+  background-color: #f3f3f3;
+  margin-top: 21px;
+  font-size: 15px;
+  font-weight: normal;
+  overflow: auto;
+}
+#startup_info #text_con .content table {
+  margin-top: 35px;
+  margin-left: 28px;
+  height: 168px;
+}
+#startup_info #text_con .content table td {
+  padding-left: 40px;
+}
+#startup_info #geo {
+  float: left;
+  margin-left: 19px;
+}
+#startup_info #geo #map {
+  margin-top: 21px;
+  width: 280px;
+  height: 244px;
+  background-color: #f3f3f3;
+}
+#startup_member {
+  float: left;
+  margin-left: 70px;
+}
+#startup_member #member_con {
+  width: 700px;
+  height: 145px;
+  background-color: #f3f3f3;
+}
+.detail_ttl {
+  margin-top: 33px;
+  font-size: 15px;
+  font-weight: normal;
+}

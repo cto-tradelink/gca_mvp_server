@@ -1,0 +1,289 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+{% block css %}
+    <link rel="stylesheet/less" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet/less" href="{% static "css/_sb_manage_list.css" %}"/>
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
+
+    <link rel="stylesheet/less" href="{% static "css/search_support.css" %}">
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+
+        .sorting {
+            padding-left: 0px !important;
+        }
+
+        table.dataTable tbody th, table.dataTable tbody td {
+            padding: 3px 8px !important;
+        }
+
+        #filter_tbl_ {
+            width: 1000px !important;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <script>
+    </script>
+    <script>
+        $(document).ready(function () {
+            try {
+                var filter_url_list = getParameter("filter").split(",")
+                for (var k = 0; k < filter_url_list.length; k++) {
+                    $("span[data-id='" + filter_url_list[k] + "']").addClass("on");
+                }
+            }
+            catch (e) {
+                console.log(e)
+            }
+            $("#seach_text").css("display", "none")
+            $("#top_con").css("display", "none")
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+           $("td > .tag").on("click", function () {
+                if ($(this).hasClass("on")) {
+                    $(this).removeClass("on")
+                } else {
+                    $(this).addClass("on")
+                }
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    if ($(".on:eq(" + k + ")").attr("data-id") != "" && $(".on:eq(" + k + ")").attr("data-id") != undefined)
+                        filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter_list").val(filter_list.join(","))
+            })
+            $("#search_btn_f").on("click", function () {
+                var filter_list = []
+                for (var k = 0; k < $(".on").length; k++) {
+                    if ($(".on:eq(" + k + ")").attr("data-id") != "" && $(".on:eq(" + k + ")").attr("data-id") != undefined)
+                        filter_list.push($(".on:eq(" + k + ")").attr("data-id"))
+                }
+                $("#filter_list").val(filter_list.join(","))
+                location.href = "{% url "startup_sb_manage_all" %}" + "?filter=" + $("#filter_list").val() + "&em=" + em
+            })
+            $('#sort_tbl').DataTable({
+                "iDisplayLength": 50,
+                "columnDefs": [{orderable: false, targets: [0]},],
+                "order": [[1, "desc"]],
+            });
+
+            if ($(window).height() > $(document).height()) {
+                $("body").css("min-height", $(window).height() + 50)
+            }
+
+            else {
+                $("body").css("min-height", $(document).height() + 50)
+
+            }
+            console.log($("body").css("height"))
+
+            $("#get_down").on("click", function () {
+                var allVals = [];
+                $(".check_target").each(function () {
+                    if ($(this).is(":checked")) allVals.push($(this).val());
+                });
+                console.log(allVals);
+                if (allVals.length != 0) {
+                    location.href = "/get_stl_excel/?id=" + allVals.join(",") + "/"
+                }
+                else {
+                    alert("체크 항목이 없습니다.")
+                }
+            })
+        })
+
+        function get_repre(id) {
+            $.ajax({
+                url: '{% url "get_repre" %}',
+                method: "post",
+                data: {
+                    "id": id,
+                },
+                success: function (data) {
+                    console.log(data)
+                    $('#repre').removeClass('hidden')
+                    $("#repre_name").text(data.fields.name)
+                    $("#repre_id").text(data.id)
+                    $("#repre_tel").text(data.fields.tel)
+                    $("#repre_additional_email").text(data.fields.additional_email)
+                }
+                ,
+                error: function (e) {
+                    console.log(e)
+                }
+            })
+        }
+    </script>
+    {% include "pc/manager/common/left_nav.html" %}
+    <div class="content">
+        <style>
+            .sorting {
+                padding-left: 0px !important;
+            }
+
+            table.dataTable tbody th, table.dataTable tbody td {
+                padding: 3px 8px !important;
+            }
+
+            td.sorting_1 {
+                background-color: rgba(27, 102, 239, 0.2);
+            }
+        </style>
+        {% include "pc/manager/common/list_tab.html" %}
+
+        {% include "pc/common/search_all_sb_filter.html" %}
+    <style>
+        #select_filter{
+            width:1000px;
+        }
+        #filter_con{
+            width:827px!important;
+        }
+    </style>
+        <div id="sb_con" style="width:1000px; margin-top: 20px;">
+            <input type="hidden" id="filter_list">
+            <div id="get_down" style="color: #1b66f4;margin-top: 10px; margin-bottom: 20px; cursor: pointer">선택한 리스트
+                다운로드
+            </div>
+            <script>
+                function set_all(target) {
+                    if ($(target).prop("checked") === false) {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", false)
+                    } else {
+                        $("#sort_tbl").find(".check_target").not("#all_check").prop("checked", false)
+                        $("#sort_tbl").find(".check_target").prop("checked", false)
+                        $("#sort_tbl").find(".check_target:visible").prop("checked", true)
+                    }
+
+                }
+            </script>
+            <table id="sort_tbl" style="width: 1000px; border: none;  ">
+                <thead>
+                <tr>
+                    <th style="width: 20px; padding: 0px!important; font-size: 13px;">
+                        <div class="checkbox checkbox-primary" style="width: 10px;">
+                            <input type="checkbox" id="all_check" onclick="set_all(this)">
+                            <label></label>
+                        </div>
+                    </th>
+                    <th style=" padding: 0px!important; font-size: 13px;width:100px;">기업명</th>
+                    <th style=" padding: 0px!important; font-size: 13px;width:120px;">회원아이디</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">대표자명</th>
+                    <th style=" padding: 0px!important; font-size: 13px; width: 100px;">핸드폰 번호</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">추가이메일</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">소재지</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">구성원수</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">매출액</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">수출액</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">투자유치액</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">지원사업<br> 참가횟수</th>
+                    <th style=" padding: 0px!important; font-size: 13px;">지원사업<br> 선정횟수</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for q in qs %}
+                    <tr>
+                        <td style="width: 10px; padding: 0px!important;">
+                            <div class="checkbox checkbox-primary" style="width: 10px;">
+                                <input class="check_target" type="checkbox" id="{{ q.id }}" value="{{ q.id }}">
+                                <label></label>
+                            </div>
+                        </td>
+                        <td style="cursor:pointer;" onclick="window.open('{% url 'startup_detail' id=q.id %}')">
+                            {{ q.name }}
+                        </td>
+                        <td>
+                            {{ q.user.username }}
+                        </td>
+                        <td style="cursor: pointer;" onclick="get_repre({{ q.user.additionaluserinfo.id }})">
+                            {{ q.user.additionaluserinfo.name }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.tel }}
+                        </td>
+                        <td>
+                            {{ q.user.additionaluserinfo.additional_email|default:"" }}
+                        </td>
+                        <td>
+                            {{ q.address_0|local_first }}
+                        </td>
+                        <td>
+                            {{ q.employee_number|default:"" }}
+                        </td>
+                        <td>
+                            {{ q.revenue_before_0 }}
+                        </td>
+                        <td>
+                            {{ q.export_before_0 }}
+                        </td>
+                        <td>
+                            {{ q.fund_before_0 }}
+                        </td>
+                        <td>{{ q.appliance_set.count }}</td>
+                        <td>{{ q.award_set.count }}</td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+    <style>
+        li {
+            list-style: none;
+            line-height: 30px;
+        }
+
+        #repre_ul > li > label {
+            width: 80px;
+            font-weight: normal;
+            text-align: center;
+            margin-right: 20px;
+        }
+
+    </style>
+    <div id="repre" class="hidden"
+         style="width: 400px; height: 240px; position: absolute; margin-left: -200px; left: 50%; border: 1px solid #ddd; top: 400px; background-color: #fff">
+        <div id="repre_hd"
+             style="width: 399px; height: 30px; border-bottom: 1px solid #ddd ; padding-top: 5px; padding-left: 10px;">
+            대표자 정보
+            <img src="{% static "img/icon-del-fill@2x.png" %}"
+                 style="float: right;  margin-right: 5px;width: 20px; cursor: pointer"
+                 onclick="$('#repre').addClass('hidden')">
+        </div>
+        <div id="repre_con" style="width:399px; height :210px; padding-left: 50px;padding-top: 30px;">
+            <ul id="repre_ul">
+                <li>
+                    <label>대표자 명 </label> <span id="repre_name"></span>
+                </li>
+                <li>
+                    <label>ID</label> <span id="repre_id"></span>
+                </li>
+                <li>
+                    <label>핸드폰 번호 </label> <span id="repre_tel"></span>
+                </li>
+                <li>
+                    <label>추가 이메일 </label> <span id="repre_additional_email"></span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+{% endblock %}

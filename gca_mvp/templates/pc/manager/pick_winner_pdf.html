@@ -1,0 +1,250 @@
+{% extends "pc/manager/common/manager_hd.html" %}
+{% load static %}
+{% load custom_filter %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static "css/support.css" %}"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static "css/awesome-bootstrap-checkbox.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/_sb_manage_detail.css" %}"/>
+
+    <style>
+        .desc {
+            color: #2b2b2b;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+    <script>
+        $(document).ready(function () {
+            $("#header").css("display","none")
+
+            $("#down_btn").click(function (e) {
+                $("#down_window").removeClass("hidden");
+                $("#down_window").css("top", e.pageY)
+                $("#down_window").css("left", e.pageX)
+                return false;
+            })
+            $("#close_btn").on("click", function () {
+                $("#down_window").addClass("hidden");
+            })
+
+            $("a[data-for='" + getParameter("cat") + "']").addClass("n_on");
+
+            $("#pick_award").on("click", function () {
+                $("#masking").width($(document).width());
+                $("#masking").height($(document).height());
+                $("#pick_window").removeClass("hidden");
+            })
+            $(".close_btn").on("click", function () {
+                console.log("asdfasfd")
+                $("#masking").width(0);
+                $("#masking").height(0);
+                $("#pick_window").addClass("hidden")
+            })
+            $("#complete").on("click", function () {
+                var winner_list = []
+                $("#wnd_tbl").find("input:checked").each(function () {
+                    var test = $(this).val();
+                    winner_list.push(test)
+                })
+                console.log(winner_list)
+                $.ajax({
+                    url: '',
+                    method: "post",
+                    data: {
+                        "winner_list": winner_list.join(","),
+                        "sp": "{{ sp.id }}",
+                    },
+                    success: function (data) {
+                        console.log(data)
+                        location.reload();
+                    }
+                    ,
+                    error: function (e) {
+                        console.log(e)
+                    }
+                })
+            })
+        })
+    </script>
+
+    <div class="content">
+        <div id="sb_con">
+
+            <a style="cursor: pointer"  class="sm_l_a">
+                <div class="sm_l">
+                    <div class="sm_f">
+                        <div class="l_cp">
+                            <img class="sm_img" src="{% static "img/icon-main-"|add:sp.icon_set|add:"-sp.png" %}">
+                            <div>
+                                {{ sp.short_desc }}
+                            </div>
+                        </div>
+                        <div class="apply_cnt">
+                            <img class="view_cnt_ic"
+                                 src="{% static "img/ic_done.png" %}"> {{ sp.appliance_set.count }}
+                        </div>
+                        <div class="view_cnt">
+                            <img class="view_cnt_ic"
+                                 src="{% static "img/ic_visibility.png" %}"> {{ sp.hit }}
+                        </div>
+                    </div>
+                    <div class="sm_s">
+                        <div class="sb_title">{{ sp.title }}</div>
+                        <div class="sb_due">{{ sp.apply_end|date:"Y n d"|calc_day }}<span>{{ sp.is_past_due }}</span>
+                        </div>
+                        <div class="filter_con">
+                            {% for f in qs.filter.all|slice:":8" %}
+                                <span class="filter">{{ f.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="sm_t">
+                        {{ sp.user.department }}
+                    </div>
+                </div>
+            </a>
+            <div id="applicant_list">
+                <div id="select_hd">
+                    <span>선정자 리스트</span>
+                    <span></span>
+
+                </div>
+                <div id="select_list_con">
+                    <table class="table border-less">
+                        <tr>
+                            <th>
+                                순서
+                            </th>
+                            <th>
+                                기업명
+                            </th>
+                            <th>
+                                업종
+                            </th>
+                            <th>
+                                대표자명
+                            </th>
+                            <th>
+                                사업자 등록번호
+                            </th>
+                            <th>
+                                연락처
+                            </th>
+                            <th>
+                                지원서 제출일
+                            </th>
+                            <th>
+
+                            </th>
+                        </tr>
+                        {% for ap in ap_winner %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ ap.name }}</td>
+                                <td>{{ ap.service_category }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.name }}</td>
+                                <td>{{ ap.business_number }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.tel }}</td>
+                                <td>{{ ap.update_at | date:"Y m d" }}</td>
+                                <td onclick="location.href='{% url "appliance_download" apid=ap.id %}'" class="down">
+
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div id="applicant_hd" style="margin-top: 20px;">
+                    <span>지원자 리스트</span>
+                    <span>공고가 종료되었습니다. 선정 절차를 진행해주세요.</span>
+                    <div class="upward"><img src="{% static "img/arrow-up.png" %}"></div>
+
+
+                </div>
+                <div id="applicant_list_con">
+                    <table class="table border-less">
+                        <th>
+                            순서
+                        </th>
+                        <th>
+                            기업명
+                        </th>
+                        <th>
+                            업종
+                        </th>
+                        <th>
+                            대표자명
+                        </th>
+                        <th>
+                            사업자 등록번호
+                        </th>
+                        <th>
+                            연락처
+                        </th>
+                        <th>
+                            지원서 제출일
+                        </th>
+
+                        {% for ap in ap %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ ap.name }}</td>
+                                <td>{{ ap.service_category }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.name }}</td>
+                                <td>{{ ap.business_number }}</td>
+                                <td>{{ ap.startup.user.additionaluserinfo.tel }}</td>
+                                <td>{{ ap.update_at | date:"Y m d" }}</td>
+
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+            <div id="static">
+                <div id="static_hd">
+                    해당 지원사업 통계(진행중)
+                </div>
+                <div id="static_content">
+                    <div id="cp_0">지원자수</div>
+                    <div id="cp_1">해당공고를 본 유저수</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="masking"></div>
+    <div id="pick_window" class="hidden">
+        <img class="close_btn" style="float: right; margin: 8px;" src="{% static "img/icon_cancel.png" %}">
+        <div id="wnd_content">
+            <div id="wnd_hd"><span>선정자 선택</span></div>
+            <div id="wnd_tbl">
+                <table class="table border-less">
+                    {% for ap in ap %}
+                        <tr>
+                            <td style="width: 40px; text-align: center">
+                                <div class="checkbox checkbox-primary" style="float: right">
+                                    <input type="checkbox" id="singleCheckbox{{ forloop.counter }}" value="{{ ap.id }}"
+                                           aria-label="Single checkbox Two">
+                                    <label></label>
+                                </div>
+                            </td>
+                            <td>{{ ap.name }}</td>
+                            <td>{{ ap.service_category }}</td>
+                            <td>{{ ap.startup.user.additionaluserinfo.name }}</td>
+                            <td>{{ ap.business_number }}</td>
+                            <td>{{ ap.startup.user.additionaluserinfo.tel }}</td>
+                            <td>{{ ap.update_at | date:"Y m d" }}</td>
+                            <td onclick="location.href='{% url "appliance_download" apid=ap.id %}'" class="down">
+                                다운로드
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        <div onclick="" id="complete">선택완료</div>
+        <div id="cancel" class="close_btn">취소</div>
+    </div>
+{% endblock %}
