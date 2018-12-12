@@ -65,6 +65,26 @@ from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, load_backend
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
 from datetime import datetime
+from django.db import reset_queries
+import time
+from django.db import connection
+
+def my_timer(original_function):
+    def wrapper(*args, **kwargs):
+        t1 = time.time()
+        reset_queries()
+        result = original_function(*args, **kwargs)
+        t2 = time.time() - t1
+        time_sql=0.0
+        for q in connection.queries:
+            time_sql = float(q["time"]) + time_sql
+        print( '{} 함수가 실행된 총 시간: {} 초'.format(original_function.__name__, t2))
+        print('db 쿼리 시간 :  {} 초'.format(time_sql))
+        print('쿼리 제외한 연산 시간 :  {} 초'.format(t2 - time_sql))
+
+        return result
+
+    return wrapper
 
 @csrf_exempt
 def is_in_favor_list(target,id, additionaluserinfo_id):
@@ -122,12 +142,13 @@ def gca_check_session(request):
 #----------------------- 매니저 페이징 라우터 ---------------------
 
 #전체 지원사업 라우터
+@my_timer
 @csrf_exempt
 def other_support_business_support_business(request):
     start_index = int(request.POST.get("start_index"))
     size = int(request.POST.get("size"))
-    support_business = SupportBusiness.objects.all().exclude(support_business_status=1).exclude(support_business_status=None)
-    total = len(support_business)
+    support_business = SupportBusiness.objects.exclude(support_business_status__in=[1,None]).select_related("support_business_author")
+    total = (support_business).count()
     try:
         support_business_result = support_business[start_index:start_index+size]
     except Exception as e :
@@ -147,8 +168,9 @@ def other_support_business_support_business(request):
         temp["mng_mng_team"] = s.support_business_author.mng_team
         temp["mng_mng_kikwan"] = s.support_business_author.mng_kikwan
         temp["mng_mng_tel"] = s.support_business_author.mng_tel
-        temp["mng_apply_num"] = len(Appliance.objects.all().filter(support_business=s).filter(is_submit=True))
-        temp["mng_award_num"] = len(Award.objects.all().filter(support_business=s))
+        temp["mng_apply_num"] = (Appliance.objects.filter(support_business=s,is_submit=True)).count()
+        temp["mng_award_num"] = (Award.objects.filter(support_business=s)).count()
+        mng_status=""
         try:
             if s.support_business_status == "1":
                 mng_status = "작성중"
@@ -170,297 +192,16 @@ def other_support_business_support_business(request):
     result["total"] =total
     return JsonResponse(result, safe=False)
 
-
-@csrf_exempt
-def mng_account_kikwan_mng_account(request):
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    acc_set = []
-    k = start_index
-    result={}
-    boss_id = AdditionalUserInfo.objects.get(id = request.POST.get("id")).mng_boss_id
-    account_set = AdditionalUserInfo.objects.all().filter(mng_boss_id=boss_id).order_by("-id")
-    total = len(account_set)
-    try:
-        account_set_result = account_set[start_index:start_index+size]
-    except:
-        account_set_result = ""
-    for ac in account_set_result:
-        temp = {}
-        temp["mng_index"] = k
-        k = k + 1
-        temp["mng_id"] = ac.user.username
-        temp["mng_mng_name"] = ac.mng_name
-        temp["mng_mng_position"] = ac.mng_position
-        temp["mng_mng_bonbu"] = ac.mng_bonbu
-        temp["mng_mng_kikwan"] = ac.mng_kikwan
-        temp["mng_mng_team"] = ac.mng_team
-        temp["mng_mng_tel"] = ac.mng_tel
-        temp["mng_mng_phone"] = ac.mng_phone
-        temp["mng_mng_email"] = ac.mng_email
-        temp["mng_mng_date_joined_ymd"] = ac.mng_date_joined_ymd
-        acc_set.append(copy.deepcopy(temp))
-
-    result["account_set"] = acc_set
-    result["total"]= total
-    return JsonResponse(result, safe=False)
-
-@csrf_exempt
-def user_account_person(request):
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    user_set = []
-    p = start_index
-    result={}
-    result["mng_usr_set"]=[]
-    user_ad = AdditionalUserInfo.objects.all().exclude(auth=4).exclude(auth=5)
-    total = len(user_ad)
-    try:
-        user_ad_result = user_ad[start_index:start_index+size]
-    except Exception as e:
-        print(e)
-        user_ad_result=""
-    for u in user_ad_result:
-        try:
-            user = {}
-            user["mng_id"] = u.user.username
-            user["mng_repre_name"] = Startup.objects.get(user=u.user).repre_name
-            user["mng_repre_tel"] = Startup.objects.get(user=u.user).repre_tel
-            user["mng_joined"] = u.user.date_joined
-            user["mng_index"] = p
-            p = p+ 1
-            print(u.user)
-
-            user_set.append(copy.deepcopy(user))
-
-        except Exception as e:
-            print(e)
-            pass
-    result["mng_usr_set"] = user_set
-    result["total"] = total
-    return JsonResponse(result, safe=False)
-
-@csrf_exempt
-def support_business_detail_appliance(request):
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
-    ap = Appliance.objects.all().filter(support_business=support_business).filter(is_submit=True)
-    total = len(ap)
-    ap_result = ap[start_index:start_index+size]
-    k = start_index
-    result = {}
-    result["appliance"] = []
-    for a in ap_result:
-        temp = {}
-        temp["index"] = k
-        k = k + 1
-        temp["company_name"] = a.company_name
-        temp["company_kind"] = a.company_kind
-        temp["id"] = a.id
-        temp["repre_name"] = a.repre_name
-        temp["repre_email"] = a.repre_email
-
-        temp["repre_tel"] = a.repre_tel
-        temp["appliance_update_at_ymdt"] = a.appliance_update_at_ymdt
-        temp["down_path"] = a.id
-        result["appliance"].append(copy.deepcopy(temp))
-    result["total"] = total
-    return JsonResponse(result, safe=False)
-
-
-@csrf_exempt
-def support_business_detail_favorite(request):
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    support_business_id = request.GET.get("support_business_id")
-    support_business = SupportBusiness.objects.get(id=support_business_id)
-    item = support_business.additionaluserinfo_set.all()
-    item_result = item[start_index:start_index+size]
-    total = len(item)
-    result={}
-    result["favorite"]=[]
-    index = start_index
-    for st in item_result:
-        kind = st.user.startup.selected_company_filter_list
-        kind_l = ""
-        for k in kind.all():
-            if( k.cat_1 =="기업형태"):
-                kind_l = k.filter_name
-        result["favorite"].append({
-            "id":st.user.startup.id,
-            "index":index,
-            "company_name":st.user.startup.company_name,
-            "company_kind":kind_l,
-            "repre_name":st.user.startup.repre_name,
-            "username":st.user.username,
-            "repre_tel" : st.user.startup.repre_tel,
-        })
-        index = index+1
-    result["total"] = total
-
-    return JsonResponse(result,safe=False)
-
-@csrf_exempt
-def support_business_detail_awarded(request):
-    support_business_id = request.GET.get("support_business_id")
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    result={}
-    win_list = Award.objects.filter(support_business_id=support_business_id)
-    total = len(win_list)
-    win_list_result = win_list[start_index:start_index+size]
-    winner = []
-    k = start_index
-    for a_w in win_list_result:
-        ap, created = Appliance.objects.get_or_create(support_business_id=support_business_id, startup=a_w.startup)
-        print(ap)
-        winner.append({
-            "index": k, "company_name": a_w.startup.company_name, "repre_name": a_w.startup.repre_name,
-            "company_kind": a_w.startup.company_kind, "user_id": a_w.startup.user.username,
-            "repre_tel": a_w.startup.repre_tel, "repre_email": a_w.startup.repre_email,
-            "appliance_update_at_ymdt": str(ap.appliance_update_at_ymdt).split("T")[0]
-        })
-        k = k + 1
-    result["awarded"] = winner
-    result["total"] = total
-
-    return JsonResponse(result, safe=False)
-
-@csrf_exempt
-def statics_my_support_business_ing_hit(request):
-    support_business_id = request.GET.get("support_business_id")
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    result = {}
-    support_business = SupportBusiness.objects.get(id=support_business_id)
-    startup_list = []
-    for hit_startup in HitLog.objects.all().filter(support_business=support_business).values("user").distinct():
-        try:
-            startup_list.append(Startup.objects.get(user= AdditionalUserInfo.objects.get(id=hit_startup["user"]).user))
-        except:
-            pass
-    result["total"] = len(startup_list)
-    result["startup_list"] = []
-    k=start_index
-    for startup in startup_list:
-        filter_list = startup.selected_company_filter_list.all()
-        company_kind=""
-        local=""
-        for filter in filter_list:
-            if filter.cat_1 =="기업형태":
-                company_kind = (filter.filter_name)
-            if filter.cat_1 =="소재지":
-                local = (filter.filter_name)
-        result["startup_list"].append({
-            "startup_id":startup.id,
-            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
-            "company_kind": company_kind,
-            "local": local,
-            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel })
-        k = k + 1
-    result["startup_list"] = result["startup_list"][start_index:start_index+size]
-    return JsonResponse(result, safe=False)
-
-@csrf_exempt
-def statics_my_support_business_ing_fav(request):
-    support_business_id = request.GET.get("support_business_id")
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    result = {}
-    support_business = SupportBusiness.objects.get(id=support_business_id)
-    startup_list = []
-    for favored_startup in FavoredSupportBusiness.objects.all().filter(favored_support_business=support_business).values("favored_usr").distinct():
-        startup_list.append( Startup.objects.get(user= AdditionalUserInfo.objects.get(id=favored_startup["favored_usr"]).user))
-    result["total"] = len(startup_list)
-    result["startup_list"] = []
-    k = start_index
-    for startup in startup_list:
-        filter_list = startup.selected_company_filter_list.all()
-        company_kind = ""
-        local = ""
-        for filter in filter_list:
-            if filter.cat_1 == "기업형태":
-                company_kind = (filter.filter_name)
-            if filter.cat_1 == "소재지":
-                local = (filter.filter_name)
-        result["startup_list"].append({
-            "startup_id": startup.id,
-            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
-            "company_kind": company_kind,
-            "local": local,
-            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel})
-        k = k + 1
-    result["startup_list"] = result["startup_list"][start_index:start_index + size]
-    return JsonResponse(result, safe=False)
-
-@csrf_exempt
-def statics_my_support_business_ing_appliance(request):
-    support_business_id = request.GET.get("support_business_id")
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    result = {}
-    support_business = SupportBusiness.objects.get(id=support_business_id)
-    startup_list = []
-    for applied_startup in Appliance.objects.all().filter(support_business=support_business).values(
-            "startup").distinct():
-        startup_list.append(Startup.objects.get(id=applied_startup["startup"]))
-    result["total"] = len(startup_list)
-    result["startup_list"] = []
-    k = start_index
-    for startup in startup_list:
-        filter_list = startup.selected_company_filter_list.all()
-        company_kind = ""
-        local = ""
-        for filter in filter_list:
-            if filter.cat_1 == "기업형태":
-                company_kind = (filter.filter_name)
-            if filter.cat_1 == "소재지":
-                local = (filter.filter_name)
-        result["startup_list"].append({
-            "startup_id": startup.id,
-            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
-            "company_kind": company_kind,
-            "local": local,
-            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel})
-        k = k + 1
-    result["startup_list"] = result["startup_list"][start_index:start_index + size]
-    return JsonResponse(result, safe=False)
-
-
-
-@csrf_exempt
-def statics_my_support_business_ing_appliance(request):
-    support_business_id = request.GET.get("support_business_id")
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    result = {}
-    support_business = SupportBusiness.objects.get(id=support_business_id)
-    startup_list = []
-    for applied_startup in Appliance.objects.all().filter(support_business=support_business).values(
-            "startup").distinct():
-        startup_list.append(Startup.objects.get(id=applied_startup["startup"]))
-    result["total"] = len(startup_list)
-    result["startup_list"] = []
-    k = start_index
-    for startup in startup_list:
-        filter_list = startup.selected_company_filter_list.all()
-        company_kind = ""
-        local = ""
-        for filter in filter_list:
-            if filter.cat_1 == "기업형태":
-                company_kind = (filter.filter_name)
-            if filter.cat_1 == "소재지":
-                local = (filter.filter_name)
-        result["startup_list"].append({
-            "startup_id": startup.id,
-            "index": k, "repre_email": startup.repre_email, "company_name": startup.company_name,
-            "company_kind": company_kind,
-            "local": local,
-            "company_total_employee": startup.company_total_employee, "repre_tel": startup.repre_tel})
-        k = k + 1
-    result["startup_list"] = result["startup_list"][start_index:start_index + size]
-    return JsonResponse(result, safe=False)
+# 수정전
+# 쿼리수 : 31
+# test 함수가 실행된 총 시간: 0.8711519241333008 초
+# db 쿼리 시간 :  0.8280000000000004 초
+# 쿼리 제외한 연산 시간 :  0.04315192413330038 초
+# 수정후
+# 쿼리수 :13
+# test_2 함수가 실행된 총 시간: 0.15365195274353027 초
+# db 쿼리 시간 :  0.15700000000000003 초
+# 쿼리 제외한 연산 시간 :  -0.003348047256469755 초
 
 
 
@@ -501,38 +242,6 @@ def opr_account_kikwan_mng_account(request):
     result["total"] = total
     return JsonResponse(result, safe=False)
 
-@csrf_exempt
-def opr_account_kikwan_all_account(request):
-    start_index = int(request.POST.get("start_index"))
-    size = int(request.POST.get("size"))
-    acc_set = []
-    k = start_index
-    result = {}
-    acc =  AdditionalUserInfo.objects.all().filter(Q(auth="MNG")|Q(auth="OPR")|Q(auth="4")).order_by("-id")
-    result["total"] = len(acc)
-    acc_result = acc[start_index:start_index+size]
-    opr_all_account_set=[]
-    for ac in acc_result:
-        temp = {}
-        temp["opr_index"] = k
-        k = k + 1
-        temp["opr_id"] = ac.user.username
-        temp["opr_mng_name"] = ac.mng_name
-        temp["opr_mng_position"] = ac.mng_position
-        temp["opr_mng_bonbu"] = ac.mng_bonbu
-        temp["opr_mng_kikwan"] = ac.mng_kikwan
-        temp["opr_mng_team"] = ac.mng_team
-        try:
-            temp["opr_mng_sangsa"] = ac.mng_boss.mng_name
-        except:
-            temp["opr_mng_sangsa"] = ""
-        temp["opr_mng_tel"] = ac.mng_tel
-        temp["opr_mng_phone"] = ac.mng_phone
-        temp["opr_mng_email"] = ac.mng_email
-        temp["opr_mng_date_joined_ymd"] = ac.mng_date_joined_ymd
-        opr_all_account_set.append(copy.deepcopy(temp))
-    result["all_account_set"] = opr_all_account_set
-    return JsonResponse(result, safe=False)
 
 import re
 @csrf_exempt
@@ -579,7 +288,7 @@ def startup_list(request):
 @csrf_exempt
 def startup_list_by_or(request):
     filter_list = request.POST.get("filter_list").split(",")
-    result = Startup.objects.all().exclude(company_name="").exclude(company_name=None)
+    result = Startup.objects.exclude(company_name__in=["",None])
     startup_set =[]
     startup_list = []
     for filter in filter_list:
@@ -589,8 +298,8 @@ def startup_list_by_or(request):
             # x 명이 있는 경우에는 구성원을 입력하지 않은 스타트업을 추가해주어야함
             num = int(re.findall('\d+', filter)[0])
             if (num != 0):
-                result = copy.deepcopy(result.filter(company_total_employee__lte=num).exclude(company_name="").exclude(
-                    company_name=None)) | Startup.objects.all().filter(company_total_employee=None)
+                result = copy.deepcopy(result.filter(company_total_employee__lte=num)) | \
+                Startup.objects.filter(company_total_employee=None)
         elif filter != None and filter != "":
             for s in result.filter(selected_company_filter_list__filter_name__in=filter_list):
                 if s not in startup_list:
@@ -608,17 +317,24 @@ def startup_list_by_or(request):
         temp_obj["filter"] = []
         temp_obj["id"] = s.id
         temp_obj["sim"]=0
-        for t in s.selected_company_filter_list.all():
-            if t.filter_name != "" and t.filter_name != None and t.cat_0 != "지원형태" and t.cat_1 != "기업형태":
-                temp_obj["filter"].append(t.filter_name)
-        for f in filter_list:
-            for f_s in s.selected_company_filter_list.all():
-                if f == f_s.filter_name:
-                    temp_obj["sim"] = temp_obj["sim"] + 1
-
+        for t in s.selected_company_filter_list.exclude(cat_0="지원형태",cat_1 = "기업형태" ):
+            temp_obj["filter"].append(t.filter_name)
+        temp_obj["sim"] = s.selected_company_filter_list.filter(filter_name__in=filter_list).count()
         startup_set.append(copy.deepcopy(temp_obj))
 
+
     return JsonResponse(startup_set, safe=False)
+# 수정전
+# 쿼리수 131
+# startup_list_by_or 함수가 실행된 총 시간: 2.089946746826172 초
+# db 쿼리 시간 :  1.9490000000000007 초
+# 쿼리 제외한 연산 시간 :  0.14094674682617114 초
+# 수정후
+# 쿼리수 9
+# startup_list_by_or 함수가 실행된 총 시간: 0.13151216506958008 초
+# db 쿼리 시간 :  0.10200000000000001 초
+# 쿼리 제외한 연산 시간 :  0.02951216506958007 초
+
 @csrf_exempt
 def get_vue_mng_dashboard(request):
     check_result = gca_check_session(request)

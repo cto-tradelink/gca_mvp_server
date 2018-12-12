@@ -1293,6 +1293,9 @@ def vue_get_startup_detail(request):
     else:
         startup = Startup.objects.get(user =AdditionalUserInfo.objects.get(id=request.POST.get("id")).user)
     result = {}
+    result["information"] = {}
+    result["information"]["id"] = startup.id
+    result["information"]["tag"] = []
     result["back_img"] = startup.back_img
     result["logo"] = startup.logo
     result["company_website"] = startup.company_website
@@ -1306,6 +1309,7 @@ def vue_get_startup_detail(request):
     result["select_tag"]= []
     for f in startup.selected_company_filter_list.all():
         result["select_tag"].append(f.filter_name)
+        result["information"]["tag"].append(f.filter_name)
     result["startup_id"] = startup.id
     result["mark_tel"]=startup.mark_tel
     result["company_name"] = startup.company_name
@@ -1314,32 +1318,18 @@ def vue_get_startup_detail(request):
     result["mark_email"] = startup.mark_email
     result["intro_tag"] = []
     result["select_tag"] = []
-    for f in startup.selected_company_filter_list.all():
-        if f.cat_0 != "지원형태" and f.cat_1!="기업형태":
-            print("필터를 넣습니다.")
-            result["intro_tag"].append(f.filter_name)
-            result["select_tag"].append(f.filter_name)
-
+    for f in startup.selected_company_filter_list.exclude(cat_0 = "지원형태",cat_1="기업형태"):
+        result["intro_tag"].append(f.filter_name)
+        result["select_tag"].append(f.filter_name)
     if startup.company_total_employee != "":
         result["intro_tag"].append(startup.company_total_employee + "명 이하")
-
-
-
-    result["information"] = {}
-    result["information"]["id"] = startup.id
-    result["information"]["tag"] = []
     result["support_business_tag"]=[]
-    for f in startup.selected_company_filter_list.all():
-        if f.cat_0=="지원형태":
-            result["support_business_tag"].append(f.filter_name)
+    for f in startup.selected_company_filter_list.filter(cat_0="지원형태"):
+        result["support_business_tag"].append(f.filter_name)
     result["select_tag"]= []
 
-    for f in startup.selected_company_filter_list.all():
-        result["information"]["tag"].append(f.filter_name)
-
-    for t in startup.selected_company_filter_list.all():
-        if t.filter_name != "" and t.filter_name != None:
-            result["information"]["tag"].append(t.filter_name)
+    for t in startup.selected_company_filter_list.exclude(filter_name__in=["",None]):
+        result["information"]["tag"].append(t.filter_name)
     result['information']["company_website"] = startup.company_website
     result["information"]["repre_email"] =  startup.user.username
     result["address_0"] = startup.address_0
@@ -1353,16 +1343,11 @@ def vue_get_startup_detail(request):
     result["pub_tag"]=[]
     for f in startup.selected_company_filter_list.all():
         result["tag"].append(f.filter_name)
-
     if startup.company_total_employee != "" :
         result["pub_tag"].append( startup.company_total_employee +"명 이하")
         result["tag"].append( startup.company_total_employee +"명 이하")
-
-    for f in startup.selected_company_filter_list.all():
-        if f.cat_0!='조건' and f.cat_1 != '기업형태':
-            result["pub_tag"].append(f.filter_name)
-
-
+    for f in startup.selected_company_filter_list.exclude(cat_0='조건',cat_1 = '기업형태' ):
+        result["pub_tag"].append(f.filter_name)
     for service  in startup.service_set.all():
         obj = {}
         obj["service_intro"] = service.service_intro
@@ -1381,15 +1366,12 @@ def vue_get_startup_detail(request):
         obj["company_history_content"] = history.company_history_content
         obj["id"] = history.id
         result["company_history"].append(copy.deepcopy(obj))
-
     result["revenue_before_year_0"] = startup.revenue_before_year_0
     result["revenue_before_year_1"] = startup.revenue_before_year_1
     result["revenue_before_year_2"] = startup.revenue_before_year_2
     result["revenue_before_0"] = startup.revenue_before_0
     result["revenue_before_1"] = startup.revenue_before_1
     result["revenue_before_2"] = startup.revenue_before_2
-
-
     result["export_before_year_0"] = startup.export_before_year_0
     result["export_before_year_1"] = startup.export_before_year_1
     result["export_before_year_2"] = startup.export_before_year_2
@@ -1401,17 +1383,13 @@ def vue_get_startup_detail(request):
     result["export_before_nation_2"] = startup.export_before_nation_2
     result["attached_cert_file"]= startup.attached_cert_file
     result["attached_ip_file"] = startup.attached_ip_file
-
-
     result["invest"] = []
-
     for invest in startup.companyinvest_set.all():
         obj = {}
         obj["company_invest_year"] = invest.company_invest_year
         obj["company_invest_size"] = invest.company_invest_size
         obj["company_invest_agency"] = invest.company_invest_agency
         result["invest"].append(copy.deepcopy(obj))
-
     result["news"] = []
     for news in startup.activity_set.order_by("-company_activity_created_at").all():
         obj = {}
@@ -1419,23 +1397,32 @@ def vue_get_startup_detail(request):
         obj["company_activity_text"] = news.company_activity_text
         obj["company_activity_img"] = news.company_activity_img
         obj["company_activity_youtube"] = news.company_activity_youtube
-        obj["like_num"] = (news.activitylike_set.all()).count()
-        obj["rep_num"] = (news.reply_set.all()).count()
+        obj["like_num"] = (news.activitylike_set).count()
+        obj["rep_num"] = (news.reply_set).count()
         obj["id"] = news.id
-
         obj["rep"] = []
-        for rep in news.reply_set.all():
+        for rep in news.reply_set.select_related("company_activity_author"):
             temp = {}
             # temp["logo"] = rep.activity.startup.clip_thumbnail
             temp["company_activity_text"] = rep.company_activity_text
             temp["company_activity_created_at"] = rep.company_activity_created_at
             temp["rep_author"] = rep.company_activity_author.user.username
             temp["id"] = rep.id
-
             obj["rep"].append(copy.deepcopy(temp))
         result["news"].append(copy.deepcopy(obj))
     print("end")
     return JsonResponse(result)
+# 수정전
+# 쿼리수 : 81
+# vue_get_startup_detail 함수가 실행된 총 시간: 1.6355056762695312 초
+# db 쿼리 시간 :  1.5760000000000007 초
+# 쿼리 제외한 연산 시간 :  0.059505676269530516 초
+# 수정후
+# 53
+# vue_get_startup_detail 함수가 실행된 총 시간: 0.8177502155303955 초
+# db 쿼리 시간 :  0.7750000000000006 초
+# 쿼리 제외한 연산 시간 :  0.04275021553039493 초
+
 
 #-----[체크리스트]------------------------------------------------------------------------------------------------------
 # 대상 : (스타트업 유저)
@@ -4500,13 +4487,13 @@ def vue_get_support_business_appliance(request):
     else:
         user_id =  check_result
     support_business = SupportBusiness.objects.get(id=request.GET.get("support_business"))
-    ap = Appliance.objects.filter(support_business=support_business).filter(is_submit=True)
-    k=1
+    ap = Appliance.objects.filter(support_business=support_business, is_submit=True).select_related("startup")
+    k = 1
     result = []
-    for a in ap :
-        temp={}
+    for a in ap:
+        temp = {}
         temp["index"] = k
-        k=k+1
+        k = k + 1
         temp["company_name"] = a.startup.company_name
         temp["company_kind"] = a.startup.company_kind
         temp["company_id"] = a.startup.id
@@ -4520,6 +4507,16 @@ def vue_get_support_business_appliance(request):
         print(temp)
     print(result)
     return JsonResponse(result,safe=False)
+# 수정전
+# 쿼리수:11
+# vue_get_support_business_appliance 함수가 실행된 총 시간: 0.21616053581237793 초
+# db 쿼리 시간 :  0.187 초
+# 쿼리 제외한 연산 시간 :  0.02916053581237793 초
+# 수정후
+# 쿼리수:2
+# vue_get_support_business_appliance 함수가 실행된 총 시간: 0.053377389907836914 초
+# db 쿼리 시간 :  0.053 초
+# 쿼리 제외한 연산 시간 :  0.00037738990783691556 초
 
 # --------(매니저) 선정자 선택 함수
 # --------postman 확인 완료 - 정상작동
@@ -5441,7 +5438,10 @@ def vue_get_support_business_select_name_by_kikwan_1(request):
     else:
         user_id =  check_result
     support_business_list = []
-    for sp in SupportBusiness.objects.filter( Q(support_business_status="3") ).filter(support_business_apply_end_ymdt__gte=timezone.now()):
+    support_business_list = []
+    for sp in SupportBusiness.objects.filter(support_business_status="3",
+                                             support_business_apply_end_ymdt__gte=timezone.now()).select_related(
+                                                "support_business_author"):
         support_business_list.append({
             "author": sp.support_business_author.mng_name,
             "author_id": sp.support_business_author.id,
@@ -5450,6 +5450,17 @@ def vue_get_support_business_select_name_by_kikwan_1(request):
             "support_business_status": sp.support_business_status
         })
     return JsonResponse(support_business_list, safe=False)
+# 수정전
+# 쿼리수 : 6
+# vue_get_support_business_select_name_by_kikwan_1 함수가 실행된 총 시간: 0.16927003860473633 초
+# db 쿼리 시간 :  0.17 초
+# 쿼리 제외한 연산 시간 :  0.0007299613952636841 초
+# 수정후
+# 쿼리수: 1
+# vue_get_support_business_select_name_by_kikwan_1 함수가 실행된 총 시간: 0.015623331069946289 초
+# db 쿼리 시간 :  0.016 초
+# 쿼리 제외한 연산 시간 :  0.00037666893005371127 초
+
 
 # ------ postman정상작동
 @csrf_exempt
