@@ -246,11 +246,9 @@ def opr_account_kikwan_mng_account(request):
 import re
 @csrf_exempt
 def startup_list(request):
-
     check_result = gca_check_session(request)
     if check_result != False:
         user_auth_id = check_result
-
     filter_list = request.POST.get("filter_list").split(",")
     result = Startup.objects.all().exclude(company_name="").exclude(company_name=None)
     for filter in filter_list:
@@ -280,9 +278,7 @@ def startup_list(request):
         for t in s.selected_company_filter_list.all():
             if t.filter_name != "" and t.filter_name != None and t.cat_0!="지원형태" and t.cat_1!="기업형태":
                 temp_obj["filter"].append(t.filter_name)
-
         result_set.append(copy.deepcopy(temp_obj))
-
     return  JsonResponse(list(result_set), safe=False)
 
 @csrf_exempt
@@ -626,8 +622,6 @@ def mng_vue_get_startup_account(request):
         user_id =  check_result
     startup= Startup.objects.all()
     result = []
-
-
     if request.POST.get("kind") == "startup":
         k=1
         startup_set=[]
@@ -666,8 +660,6 @@ def mng_vue_get_startup_account(request):
                 temp["mng_tag"].append(t.filter_name)
             startup_set.append(copy.deepcopy(temp))
         result = startup_set
-
-
     if request.POST.get("kind") == "user":
         user_ad = AdditionalUserInfo.objects.exclude(auth=4).exclude(auth=5)
         user_set = []
@@ -687,8 +679,6 @@ def mng_vue_get_startup_account(request):
             except Exception as e:
                 pass
         result = user_set
-
-
     if request.POST.get("kind")=="aw":
         ## 사업 참여 기업
         aw_startup_set = Appliance.objects.all().values("startup").distinct()

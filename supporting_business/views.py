@@ -3273,7 +3273,6 @@ def get_support_business_detail(request):
 @my_timer
 def vue_get_filter(request):
     result={}
-
     result["genre_filter"] = []
     for t in SupportBusinessFilter.objects.all():
         if t.cat_0 == "기본장르":
@@ -3301,17 +3300,14 @@ def vue_get_filter(request):
     for t in SupportBusinessFilter.objects.all():
         if t.cat_1 == "창업":
             result["area_founded_filter"].append(t.filter_name)
-
     result["area_newbusiness_filter"] = []
     for t in SupportBusinessFilter.objects.all():
         if t.cat_1 == "신규사업":
             result["area_newbusiness_filter"].append(t.filter_name)
-
     result["area_etc_filter"] = []
     for t in SupportBusinessFilter.objects.all():
         if t.cat_1 == "기타" and t.cat_0 == "영역":
             result["area_etc_filter"].append(t.filter_name)
-
     result["conditions_comtype_filter"] = []
     for t in SupportBusinessFilter.objects.all():
         if t.cat_1 == "기업형태":
@@ -6122,7 +6118,6 @@ def get_favorite_support_business_list(request):
 @csrf_exempt
 @my_timer
 def get_home_info(request):
-
     check_result = gca_check_session(request)
     user_auth_id=""
     if check_result != False:
@@ -6147,28 +6142,21 @@ def get_home_info(request):
         team["id"] = g.id
         result["support_business_set"].append(copy.deepcopy(team))
     result["startup_set"] = []
-
     startup = Startup.objects.exclude(company_name="").exclude(company_name=None).order_by("?")[:3]
-
     for s in startup:
         temp_obj = {}
         temp_obj["company_name"] = s.company_name
         temp_obj["company_short_desc"] = s.company_short_desc
         temp_obj["logo"] = s.logo
-
         temp_obj["is_favored"] = is_in_favor_list("startup", s.id, user_auth_id)
-
         temp_obj["tag"] = []
         temp_obj["id"] = s.id
         temp_obj["filter"] = []
         temp_obj["filter"] = []
-
         for t in s.selected_company_filter_list.all():
             if t.cat_0 != "지원형태" and t.cat_1 != "기업형태":
                 temp_obj["filter"].append(t.filter_name)
-
         result["startup_set"].append(copy.deepcopy(temp_obj))
-
     result["clip"] = []
     for c in Clip.objects.all().order_by("-id")[:3]:
         temp={}
@@ -6188,12 +6176,10 @@ def get_home_info(request):
         # 채널 통계에서 사용되는 레이블과 value
         temp["label"] = c.clip_title
         temp["value"] = c.id
-
         temp["tag"]=[]
         for t in c.clip_filter.all()  :
             temp["tag"].append(t.name)
         result["clip"].append(copy.deepcopy(temp))
-
     result["course"]=[]
     for c in Course.objects.all().order_by("-id")[:3]:
         temp = {}
@@ -6216,7 +6202,6 @@ def get_home_info(request):
         temp["label"] = c.course_title
         temp["value"] = c.id
         temp["is_favored"] = is_in_favor_list("course", c.id, user_auth_id)
-
         temp["course_title"] = c.course_title
         temp["course_rec_dur"] = c.course_rec_dur
         temp["course_created_at"] = c.course_created_at
@@ -6226,7 +6211,6 @@ def get_home_info(request):
         for t in c.course_filter.all():
             temp["course_tag"].append(t.name)
         result["course"].append(copy.deepcopy(temp))
-
     result["path"] = []
     for c in Path.objects.all().order_by("-id"):
         temp = {}
@@ -6246,9 +6230,7 @@ def get_home_info(request):
         temp["path_rec_dur"] = c.path_rec_dur
         temp["label"] = c.path_title
         temp["value"] = c.id
-
         temp["is_favored"] = is_in_favor_list("path", c.id, user_auth_id)
-
         temp["path_total_play"] = c.path_total_play
         temp["path_id"] = c.id
         temp["path_created_at"] = c.path_created_at
@@ -11175,7 +11157,6 @@ def get_usr_filter(request):
                 filter_list.append(f.filter_name)
     if usr_startup.company_total_employee != None and  usr_startup.company_total_employee  !="" and  usr_startup.company_total_employee != "0":
         filter_list.append( str(usr_startup.company_total_employee) +"명 이하")
-                
     return JsonResponse({"result":filter_list})
 
 @csrf_exempt
