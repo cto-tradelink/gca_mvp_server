@@ -24,7 +24,7 @@ class AdditionalUserInfo(models.Model):
     auth = models.CharField(max_length=10, blank=True, null=True, default="")
     is_superuser = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='uploads/user/avatar', null=True, blank=True, default="")
-    startup = models.CharField(max_length=30, blank=True, null=True, default="")
+    own_startup = models.OneToOneField("Startup", blank=True, null=True, default="" , related_name="own_startup")
     agreement = models.BooleanField(default=True)
     repre_name = models.CharField(max_length=30, blank=True, null=True, default="")
     repre_tel = models.CharField(max_length=30, blank=True, null=True, default="")
