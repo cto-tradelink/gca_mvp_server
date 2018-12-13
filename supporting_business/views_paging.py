@@ -721,7 +721,106 @@ def mng_vue_get_startup_account(request):
     return JsonResponse({"result":result})
 
 
+def mng_vue_get_startup_account_diff():
+    startup = Startup.objects.select_related("user").prefetch_related("appliance_set").prefetch_related(
+        "award_set").prefetch_related("selected_company_filter_list")
+    result = []
+    if True:
+        k = 1
+        startup_set = []
+        for s in startup:
+            temp = {}
+            temp["mng_index"] = k
+            k = k + 1
+            temp["mng_company_name"] = s.company_name
+            temp["mng_id"] = s.user.username
+            temp["mng_startup_id"] = s.id
+            temp["mng_mark_name"] = s.mark_name
+            temp["mng_mark_tel"] = s.mark_tel
+            temp["mng_mark_email"] = s.mark_email
+            tag_list = list(s.selected_company_filter_list.values_list("filter_name", flat=True))
+            temp["mng_tag"] = tag_list
+            try:
+                if "경기" in s.address_0:
+                    local = "경기"
+                elif "서울" in s.address_0:
+                    local = "서울"
+                elif "인천" in s.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local = "기타"
+            temp["mng_local"] = local
+            temp["mng_employ_num"] = int(s.company_total_employee) if s.company_total_employee else 0
+            temp["mng_apply_num"] = s.appliance_set.count()  # (Appliance.objects.filter(startup=s)).count()
+            temp["mng_award_num"] = s.award_set.count()  # (Award.objects.filter(startup=s)).count()
+            temp["mng_join"] = s.user.date_joined
 
+            startup_set.append(copy.deepcopy(temp))
+        result = startup_set
+    if True:
+        user_ad = AdditionalUserInfo.objects.filter(auth="USR").prefetch_related("user").prefetch_related("own_startup")
+        user_set = []
+        p = 1
+        for u in user_ad:
+            try:
+                user = {}
+                user["mng_id"] = u.user.username
+                user["mng_startup_id"] = u.own_startup.id
+                user["mng_mark_name"] = u.own_startup.mark_name
+                user["mng_mark_tel"] = u.own_startup.mark_tel
+                user["mng_facebook"] = u.own_startup.company_facebook
+                user["mng_joined"] = u.user.date_joined
+                user["mng_index"] = p
+                p = p + 1
+                user_set.append(copy.deepcopy(user))
+            except Exception as e:
+                pass
+        result = user_set
+    if True:
+        ## 사업 참여 기업
+        aw_startup_set = Appliance.objects.values("startup").distinct()
+        k = 1
+        ap_set = []
+        for s in aw_startup_set:
+            aw_st = {}
+            startup = Startup.objects.filter(id=s["startup"]).prefetch_related("appliance_set").last()
+            # startup = Startup.objects.filter(id=s["startup"]).prefetch_related("appliance_set").last() # 이경우 쿼리사 377개로 증가합니다.
+
+            aw_st["mng_index"] = k
+            k = k + 1
+            aw_st["mng_company_name"] = startup.company_name
+            aw_st["mng_mark_name"] = startup.mark_name
+            aw_st["mng_startup_id"] = startup.id
+            aw_st["mng_mark_tel"] = startup.mark_tel
+            tag_list = []
+            for t in startup.selected_company_filter_list.all():
+                tag_list.append(t.filter_name)
+            aw_st["mng_tag"] = tag_list
+            try:
+                if "경기" in startup.address_0:
+                    local = "경기"
+                elif "서울" in startup.address_0:
+                    local = "서울"
+                elif "인천" in startup.address_0:
+                    local = "인천"
+                else:
+                    local = "기타"
+            except:
+                local = "기타"
+            aw_st["mng_local"] = local
+            aw_st[
+                "mng_support_business_name"] = startup.appliance_set.last().support_business.support_business_name  # Appliance.objects.filter(startup=startup).last().support_business.support_business_name
+            if (startup.award_set.filter(support_business=startup.appliance_set.last().support_business)):
+                aw_st["mng_awarded"] = "N"
+            else:
+                aw_st["mng_awarded"] = "Y"
+            aw_st["mng_end_date"] = \
+            str(startup.appliance_set.last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+            ap_set.append(copy.deepcopy(aw_st))
+        result = ap_set
+    return JsonResponse({"result": result})
 
 
 
