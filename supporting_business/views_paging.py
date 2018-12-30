@@ -124,12 +124,15 @@ def is_in_favor_list(target,id, additionaluserinfo_id):
 
 def gca_check_session(request):
 
-    session_key = request.GET.get("session_key")
+    session_key = request.META.get("HTTP_AUTHORIZATION")
     try:
-        session = Session.objects.get(session_key=session_key)
-        session_data = session.get_decoded()
-        uid = session_data.get('_auth_user_id')
-        user = User.objects.get(id=uid)
+        session = Session.objects.filter(session_key=session_key).first()
+        if session.expire_date > datetime.now():
+            session_data = session.get_decoded()
+            uid = session_data.get('_auth_user_id')
+            user = User.objects.get(id=uid)
+        else:
+            return False
     except:
         return False
     if user.additionaluserinfo and user.is_authenticated():
@@ -192,6 +195,7 @@ def other_support_business_support_business(request):
     result["total"] =total
     return JsonResponse(result, safe=False)
 
+
 # 수정전
 # 쿼리수 : 31
 # test 함수가 실행된 총 시간: 0.8711519241333008 초
@@ -240,8 +244,12 @@ def opr_account_kikwan_mng_account(request):
 
     result["account_set"] = acc_set
     result["total"] = total
-    return JsonResponse(result, safe=False)
-
+    response = JsonResponse(result, safe=False)
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 import re
 @csrf_exempt
@@ -279,7 +287,12 @@ def startup_list(request):
             if t.filter_name != "" and t.filter_name != None and t.cat_0!="지원형태" and t.cat_1!="기업형태":
                 temp_obj["filter"].append(t.filter_name)
         result_set.append(copy.deepcopy(temp_obj))
-    return  JsonResponse(list(result_set), safe=False)
+    response =  JsonResponse(list(result_set), safe=False)
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 @csrf_exempt
 def startup_list_by_or(request):
@@ -341,20 +354,22 @@ def get_vue_mng_dashboard(request):
     result = {}
     support_business_author_id = user_auth_id
     end=""
+    start_pagination = int(request.GET.get("start_index"))
+    end_pagination = int(request.GET.get("start_index"))+int(request.GET.get("page_size"))
     end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
         Q(support_business_status="4") | Q(support_business_status="3")).filter(
         support_business_author_id=support_business_author_id)
     result = []
     end = end_support_business.count()
 
-    if(request.POST.get("kind")=="end"):
+    if(request.GET.get("category")=="end"):
     # 모집 마감된 공고문
         end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
             Q(support_business_status="4") | Q(support_business_status="3")).filter(
-            support_business_author_id=support_business_author_id)
+            support_business_author_id=support_business_author_id).order_by("-support_business_apply_end_ymdt")
         result = []
         end = end_support_business.count()
-        for support_business in end_support_business:
+        for support_business in end_support_business[start_pagination:end_pagination]:
             result_end = {}
             result_end["id"] = support_business.id
             result_end["author_id"] = support_business.support_business_author.id
@@ -382,13 +397,13 @@ def get_vue_mng_dashboard(request):
     blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(
         support_business_author_id=support_business_author_id)
     blind = blind_support_business.count()
-    if request.POST.get("kind")=="blind":
+    if request.GET.get("category")=="blind":
         blind_support_business = SupportBusiness.objects.filter(support_business_status="6").filter(
-            support_business_author_id=support_business_author_id)
+            support_business_author_id=support_business_author_id).order_by("-support_business_update_at_ymdt")
         blind= blind_support_business.count()
         blind_set = []
         result=[]
-        for support_business in blind_support_business:
+        for support_business in blind_support_business[start_pagination:end_pagination]:
             result_end = {}
             result_end["id"] = support_business.id
             result_end["support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
@@ -417,14 +432,14 @@ def get_vue_mng_dashboard(request):
     writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter(
         support_business_author_id=support_business_author_id)
     writing = writing_support_business.count()
-    if request.POST.get("kind")=="writing":
+    if request.GET.get("category")=="writing":
 
         writing_support_business = SupportBusiness.objects.filter(support_business_status="1").filter(
-            support_business_author_id=support_business_author_id)
+            support_business_author_id=support_business_author_id).order_by("-support_business_update_at_ymdt")
         writing = writing_support_business.count()
         writing_set = []
         result=[]
-        for support_business in writing_support_business:
+        for support_business in writing_support_business[start_pagination:end_pagination]:
             result_end = {}
             result_end["id"] = support_business.id
             result_end["support_business_award_date_ymd"] = \
@@ -457,13 +472,13 @@ def get_vue_mng_dashboard(request):
         support_business_apply_end_ymdt__gt=timezone.now())
     ing_set = []
     ing = ing_support_business.count()
-    if request.POST.get("kind")=="ing":
+    if request.GET.get("category")=="ing":
         ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(
             support_business_author_id=support_business_author_id).filter(
-            support_business_apply_end_ymdt__gt=timezone.now())
+            support_business_apply_end_ymdt__gt=timezone.now()).order_by("-support_business_update_at_ymdt")
         ing_set = []
         ing=ing_support_business.count()
-        for support_business in ing_support_business:
+        for support_business in ing_support_business[start_pagination:end_pagination]:
 
             result_end = {}
             result_end["id"] = support_business.id
@@ -485,13 +500,17 @@ def get_vue_mng_dashboard(request):
                     if number == "0.0":
                         number = "0"
                     result_end["comp"] = number + " : 1"
-
                 else:
                     result_end["comp"] = ""
             except:
                 result_end["comp"] = ""
             result.append(copy.deepcopy(result_end))
-    return JsonResponse({"result_set":result,"set_num":{"ing": ing, "blind":blind ,"writing":writing, "end":end }}, safe=False)
+    response = JsonResponse({"result_set":result,"set_num":{"ing": ing, "blind":blind ,"writing":writing, "end":end }}, safe=False)
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 @csrf_exempt
 def vue_get_opr_dashboard(request):
@@ -501,7 +520,8 @@ def vue_get_opr_dashboard(request):
     else:
         user_auth_id = check_result
     mng_list = []
-
+    start_index = int(request.GET.get("start_index"))
+    end_index = int(request.GET.get("page_size")) + (start_index)
     for a in AdditionalUserInfo.objects.get(id=user_auth_id).additionaluserinfo_set.all():
         mng_list.append(a.id)
     result = []
@@ -511,12 +531,12 @@ def vue_get_opr_dashboard(request):
             Q(support_business_status="4") | Q(support_business_status="3")).filter(
             support_business_author_id__in=mng_list).count()
 
-    if(request.POST.get("kind") == "end"):
+    if(request.GET.get("category") == "end"):
         end_support_business = SupportBusiness.objects.filter(support_business_apply_end_ymdt__lt=datetime.now()).filter(
             Q(support_business_status="4") | Q(support_business_status="3")).filter(
-            support_business_author_id__in=mng_list)
+            support_business_author_id__in=mng_list).order_by("-support_business_apply_end_ymdt")
         end_set = []
-        for support_business in end_support_business:
+        for support_business in end_support_business[start_index:end_index]:
             result_end = {}
             result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
             result_end['opr_support_business_name'] = support_business.support_business_name
@@ -548,14 +568,14 @@ def vue_get_opr_dashboard(request):
             result.append(copy.deepcopy(result_end))
 
 
-    wating =  waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter(
+    wating =   SupportBusiness.objects.filter(support_business_status="2").filter(
             support_business_author_id__in=mng_list).count()
-    if(request.POST.get("kind") == "waiting") :
+    if(request.GET.get("category") == "waiting") :
         # 승인 요청중인 공고
         waiting_support_business = SupportBusiness.objects.filter(support_business_status="2").filter(
-            support_business_author_id__in=mng_list)
+            support_business_author_id__in=mng_list).order_by("-support_business_apply_end_ymdt")
         waiting_set = []
-        for support_business in waiting_support_business:
+        for support_business in waiting_support_business[start_index:end_index]:
             result_end = {}
             result_end["opr_id"] = support_business.id
             result_end["opr_support_business_award_date_ymd"] = \
@@ -572,12 +592,12 @@ def vue_get_opr_dashboard(request):
             result.append(copy.deepcopy(result_end))
     ing =  SupportBusiness.objects.filter(support_business_status="3").filter(
             support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list).count()
-    if(request.POST.get("kind") == "ing"):
+    if(request.GET.get("category") == "ing"):
         # 공고중인 공고
         ing_support_business = SupportBusiness.objects.filter(support_business_status="3").filter(
-            support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list)
+            support_business_apply_end_ymdt__gte=timezone.now()).filter(support_business_author_id__in=mng_list).order_by("-support_business_apply_end_ymdt")
         ing_set = []
-        for support_business in ing_support_business:
+        for support_business in ing_support_business[start_index:end_index]:
             result_end = {}
             result_end["opr_id"] = support_business.id
             result_end["opr_support_business_award_date_ymd"] = support_business.support_business_pro_0_open_ymd
@@ -608,7 +628,12 @@ def vue_get_opr_dashboard(request):
                 result_end["opr_comp"] = ""
             result_end["opr_favorite"] = (AdditionalUserInfo.objects.filter(favorite=support_business)).count()
             result.append(copy.deepcopy(result_end))
-    return JsonResponse({ "result_set" : result, "set_num":{"end":end, "ing":ing, "waiting" : wating,} }, safe=False)
+    response = JsonResponse({ "result_set" : result, "set_num":{"end":end, "ing":ing, "waiting" : wating,} }, safe=False)
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 
 
@@ -635,10 +660,9 @@ def mng_vue_get_startup_account(request):
             temp["mng_mark_name"] = s.mark_name
             temp["mng_mark_tel"] = s.mark_tel
             temp["mng_mark_email"] = s.mark_email
-            tag_list=[]
-            for t in s.selected_company_filter_list.all():
-                tag_list.append(t.filter_name)
-            temp["mng_tag"] = tag_list
+            temp["mng_tag"]=[]
+            for f in s.selected_company_filter_list.all():
+                temp["mng_tag"].append(f.filter_name)
             try:
                 if "경기" in s.address_0:
                     local = "경기"
@@ -652,26 +676,23 @@ def mng_vue_get_startup_account(request):
                 local="기타"
             temp["mng_local"] = local
             temp["mng_employ_num"] = int(s.company_total_employee) if s.company_total_employee else 0
-            temp["mng_apply_num"] = (Appliance.objects.filter(startup=s)).count()
-            temp["mng_award_num"] = (Award.objects.filter(startup=s)).count()
+            temp["mng_apply_num"] =    (Appliance.objects.filter(startup=s)).count()
+            temp["mng_award_num"] =  (Award.objects.filter(startup=s)).count()
             temp["mng_join"] = s.user.date_joined
-            temp["mng_tag"]=[]
-            for t in s.selected_company_filter_list.all():
-                temp["mng_tag"].append(t.filter_name)
             startup_set.append(copy.deepcopy(temp))
         result = startup_set
     if request.POST.get("kind") == "user":
-        user_ad = AdditionalUserInfo.objects.exclude(auth=4).exclude(auth=5)
+        user_ad = AdditionalUserInfo.objects.filter(auth="USR").prefetch_related("user").prefetch_related("own_startup")
         user_set = []
         p=1
         for u in user_ad:
             try:
                 user = {}
                 user["mng_id"] = u.user.username
-                user["mng_startup_id"] = Startup.objects.get(user=u.user).id
-                user["mng_mark_name"] = Startup.objects.get(user=u.user).mark_name
-                user["mng_mark_tel"] = Startup.objects.get(user=u.user).mark_tel
-                user["mng_facebook"] = Startup.objects.get(user=u.user).company_facebook
+                user["mng_startup_id"] = u.own_startup.id
+                user["mng_mark_name"] = u.own_startup.mark_name
+                user["mng_mark_tel"] = u.own_startup.mark_tel
+                user["mng_facebook"] = u.own_startup.company_facebook
                 user["mng_joined"] = u.user.date_joined
                 user["mng_index"]=p
                 p=p+1
@@ -681,12 +702,12 @@ def mng_vue_get_startup_account(request):
         result = user_set
     if request.POST.get("kind")=="aw":
         ## 사업 참여 기업
-        aw_startup_set = Appliance.objects.all().values("startup").distinct()
+        aw_startup_set = Appliance.objects.values_list("startup", flat=True).distinct()
         k=1
         ap_set = []
-        for s in aw_startup_set:
+        for startup in Startup.objects.filter(id__in=aw_startup_set).prefetch_related("appliance_set__support_business")\
+        .prefetch_related("selected_company_filter_list").prefetch_related("award_set"):
             aw_st={}
-            startup = Startup.objects.get(id=s["startup"])
             aw_st["mng_index"] = k
             k=k+1
             aw_st["mng_company_name"] = startup.company_name
@@ -709,16 +730,22 @@ def mng_vue_get_startup_account(request):
             except:
                 local="기타"
             aw_st["mng_local"] = local
-            aw_st["mng_support_business_name"] = Appliance.objects.filter(startup=startup).last().support_business.support_business_name
-            if (Award.objects.filter(support_business=Appliance.objects.filter(startup=startup).last().support_business).filter(startup=startup)).count() == 0 :
+            last_appliance =  startup.appliance_set.order_by("-appliance_update_at_ymdt")[0].support_business
+            aw_st["mng_support_business_name"] =last_appliance.support_business_name # Appliance.objects.filter(startup=startup).last().support_business.support_business_name
+            if(startup.award_set.filter(support_business = last_appliance)):
                 aw_st["mng_awarded"] = "N"
             else:
                 aw_st["mng_awarded"] = "Y"
-            aw_st["mng_end_date"] = str(Appliance.objects.filter(startup=startup).last().support_business.support_business_apply_end_ymdt).split(" ")[0]
+            aw_st["mng_end_date"] = str(last_appliance.support_business_apply_end_ymdt).split(" ")[0]
             ap_set.append(copy.deepcopy(aw_st))
         result = ap_set
-    print(result)
-    return JsonResponse({"result":result})
+
+    response = JsonResponse({"result":result})
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 
 def mng_vue_get_startup_account_diff():
@@ -820,7 +847,12 @@ def mng_vue_get_startup_account_diff():
             str(startup.appliance_set.last().support_business.support_business_apply_end_ymdt).split(" ")[0]
             ap_set.append(copy.deepcopy(aw_st))
         result = ap_set
-    return JsonResponse({"result": result})
+    response = JsonResponse({"result": result})
+    try:
+        response["Expires"] = Session.objects.get(session_key=request.META.get("HTTP_AUTHORIZATION")).expire_date
+    except:
+        pass
+    return response
 
 
 

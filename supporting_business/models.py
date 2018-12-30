@@ -135,54 +135,40 @@ class Startup(models.Model):
     established_date = models.DateField(blank=True, null=True, )
     logo = models.CharField(max_length=1000, blank=True, null=True) #파일
     back_img = models.CharField(max_length=1000, blank=True, null=True)#파일
-
     company_short_desc = models.CharField(max_length=1000, blank=True, null=True)
     company_intro = models.CharField(max_length=1000, blank=True, null=True)
-
     company_youtube = models.CharField(max_length=300, blank=True, null=True, default="")
     company_facebook = models.CharField(max_length=300, blank=True, null=True, default="")
     company_instagram = models.CharField(max_length=300, blank=True, null=True, default="")
     company_website = models.CharField(max_length=300, default="", blank=True, null=True, )
-
     address_0 = models.CharField(max_length=400, default="", blank=True, null=True, )
     address_1 = models.CharField(max_length=400, default="", blank=True, null=True, )
-
-
     repre_name = models.CharField(max_length=100, default="", blank=True, null=True, )
     repre_email = models.CharField(max_length=100, default="", blank=True, null=True, )
     repre_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
-
     mark_name = models.CharField(max_length=100, default="", blank=True, null=True, )
     mark_email = models.CharField(max_length=100, default="", blank=True, null=True, )
     mark_tel = models.CharField(max_length=100, default="", blank=True, null=True, )
-
     selected_company_filter_list = models.ManyToManyField("SupportBusinessFilter", blank=True, null=True, db_table='company_filter_with_startup'  )
     company_keyword =  models.CharField(max_length=300, default="", blank=True, null=True, )
-
     company_total_employee  =  models.CharField(max_length=20, blank=True, null=True, default="")
     company_hold_employee =  models.CharField(max_length=20, blank=True, null=True, default="")
     company_assurance_employee  = models.CharField(max_length=20, blank=True, null=True, default="")
-
     revenue_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
     revenue_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
     revenue_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
-
     revenue_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
     revenue_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     revenue_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-
     export_before_year_0 = models.CharField(max_length=5, blank=True, null=True, default="")
     export_before_year_1 = models.CharField(max_length=5, blank=True, null=True, default="")
     export_before_year_2 = models.CharField(max_length=5, blank=True, null=True, default="")
-
     export_before_0 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-
     export_before_nation_0 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_nation_1 = models.CharField(max_length=20, blank=True, null=True, default="")
     export_before_nation_2 = models.CharField(max_length=20, blank=True, null=True, default="")
-
     ip_chk =models.BooleanField(default=True)
     revenue_chk = models.BooleanField(default=True)
     export_chk = models.BooleanField(default=True)
@@ -196,18 +182,78 @@ class Startup(models.Model):
     attached_ppt_file = models.CharField(max_length=500, null=True, blank=True)#파일
     attached_etc_file = models.CharField(max_length=500, null=True, blank=True)#파일
     #tag_string = models.CharField(max_length=1000, blank=True, null=True)
-    
+    field_list = []
+    present_obj = {}
     class Meta:
         verbose_name="스타트업 관리"
         verbose_name_plural="스타트업 관리"
+
+    def __init__(self, *args, **kwargs):
+        super(Startup, self).__init__( *args, **kwargs)
+        data = Startup._meta.get_fields()
+        for da in data:
+            try:
+                if not da.related_model:
+                    self.field_list.append(da.name)
+                    self.present_obj[da.name] = getattr(self, da.name)
+            except Exception as e:
+                print(e)
+                pass
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        changed_set = {}
+        for field in self.field_list:
+            try:
+                if getattr(self, field) != self.present_obj[field] :
+                    changed_set[field] = getattr(self, field)
+            except Exception as e:
+                print(e)
+                pass
+        super(Startup, self).save(force_insert, force_update, *args, **kwargs)
+        try:
+            for field in self.field_list:
+                setattr(self, field, getattr(self, field) )
+        except Exception as e:
+            print(e)
+            pass
+        return changed_set
+
 
 class Service(models.Model):
     startup = models.ForeignKey(Startup)
     service_img = models.CharField(max_length=300, null=True, blank=True, default="")#파일
     service_intro = models.TextField()
-
     service_file = models.CharField(max_length=300, null=True, blank=True, default="")#파일
     service_name = models.CharField(max_length=200, blank=True, null=True)
+    field_list = []
+    present_obj = {}
+    def __init__(self, *args, **kwargs):
+        super(Service, self).__init__(*args, **kwargs)
+        data = Service._meta.get_fields()
+        for da in data:
+            try:
+                if not da.related_model:
+                    self.field_list.append(da.name)
+                    self.present_obj[da.name] = getattr(self, da.name)
+            except Exception as e:
+                print(e)
+                pass
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        changed_set = {}
+        for field in self.field_list:
+            try:
+                if getattr(self, field) != self.present_obj[field]:
+                    changed_set[field] = getattr(self, field)
+            except Exception as e:
+                print(e)
+                pass
+        super(Service, self).save(force_insert, force_update, *args, **kwargs)
+        try:
+            for field in self.field_list:
+                setattr(self, field, getattr(self, field))
+        except Exception as e:
+            print(e)
+            pass
+        return changed_set
 
 
 class CompanyInvest(models.Model):
@@ -215,13 +261,72 @@ class CompanyInvest(models.Model):
     company_invest_year = models.DateField(max_length=5, blank=True, null=True)
     company_invest_size = models.CharField(max_length=10, blank=True, null=True)
     company_invest_agency = models.CharField(max_length=100, blank=True, null=True)
-
+    field_list = []
+    present_obj = {}
+    def __init__(self, *args, **kwargs):
+        super(CompanyInvest, self).__init__(*args, **kwargs)
+        data = CompanyInvest._meta.get_fields()
+        for da in data:
+            try:
+                if not da.related_model:
+                    self.field_list.append(da.name)
+                    self.present_obj[da.name] = getattr(self, da.name)
+            except Exception as e:
+                print(e)
+                pass
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        changed_set = {}
+        for field in self.field_list:
+            try:
+                if getattr(self, field) != self.present_obj[field]:
+                    changed_set[field] = getattr(self, field)
+            except Exception as e:
+                print(e)
+                pass
+        super(CompanyInvest, self).save(force_insert, force_update, *args, **kwargs)
+        try:
+            for field in self.field_list:
+                setattr(self, field, getattr(self, field))
+        except Exception as e:
+            print(e)
+            pass
+        return changed_set
 class Activity(models.Model):
     startup = models.ForeignKey(Startup)
     company_activity_created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     company_activity_text = models.TextField(max_length=1000)
     company_activity_img = models.CharField(max_length=300, blank=True, null=True)#파일
     company_activity_youtube = models.CharField(max_length=300, blank=True, null=True)
+    field_list = []
+    present_obj = {}
+    def __init__(self, *args, **kwargs):
+        super(Activity, self).__init__(*args, **kwargs)
+        data = Activity._meta.get_fields()
+        for da in data:
+            try:
+                if not da.related_model:
+                    self.field_list.append(da.name)
+                    self.present_obj[da.name] = getattr(self, da.name)
+            except Exception as e:
+                print(e)
+                pass
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        changed_set = {}
+        for field in self.field_list:
+            try:
+                if getattr(self, field) != self.present_obj[field]:
+                    changed_set[field] = getattr(self, field)
+            except Exception as e:
+                print(e)
+                pass
+        super(Activity, self).save(force_insert, force_update, *args, **kwargs)
+        try:
+            for field in self.field_list:
+                setattr(self, field, getattr(self, field))
+        except Exception as e:
+            print(e)
+            pass
+        return changed_set
 
 class ActivityLike(models.Model):
     activity = models.ForeignKey(Activity)
@@ -239,7 +344,36 @@ class History(models.Model):
     company_history_year = models.CharField(max_length=10, blank=True, null=True)
     company_history_month = models.CharField(max_length=2, blank=True, null= True)
     company_history_content = models.TextField()
-
+    field_list = []
+    present_obj = {}
+    def __init__(self, *args, **kwargs):
+        super(History, self).__init__(*args, **kwargs)
+        data = History._meta.get_fields()
+        for da in data:
+            try:
+                if not da.related_model:
+                    self.field_list.append(da.name)
+                    self.present_obj[da.name] = getattr(self, da.name)
+            except Exception as e:
+                print(e)
+                pass
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        changed_set = {}
+        for field in self.field_list:
+            try:
+                if getattr(self, field) != self.present_obj[field]:
+                    changed_set[field] = getattr(self, field)
+            except Exception as e:
+                print(e)
+                pass
+        super(History, self).save(force_insert, force_update, *args, **kwargs)
+        try:
+            for field in self.field_list:
+                setattr(self, field, getattr(self, field))
+        except Exception as e:
+            print(e)
+            pass
+        return changed_set
 
 class SupportBusinessFilter(models.Model):
     cat_0 = models.CharField(max_length=100)
@@ -429,7 +563,8 @@ class Alarm(models.Model):
     alarm_category = models.CharField(max_length=2, blank=True, null=True)
     alarm_read = models.BooleanField(default=False)
     alarm_created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-
+    alarm_detail_content = models.TextField(blank=True, null=True)
+    alarm_startup_url = models.CharField(max_length=100, blank=True, null=True)
 
 # class DayUser(models.Model):
 #     count = models.IntegerField(default=0, blank=None, null=None)
@@ -806,3 +941,13 @@ class CourseCountingTable(models.Model):
 class PathCountingTable(models.Model):
     path = models.ForeignKey("Path")
     string_data=models.TextField()
+
+class MainContents(models.Model):
+    support_business = models.TextField(blank=True, null=True)
+    clip = models.TextField(blank=True, null=True)
+    course = models.TextField(blank=True, null=True)
+    path =models.TextField(blank=True, null=True)
+
+class  WriteCSRFTokens(models.Model):
+    csrf_token=models.CharField(max_length=300)
+    expired_at_ymdt = models.DateTimeField()
