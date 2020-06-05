@@ -8,7 +8,7 @@ celery==4.2.1
 colorama==0.3.9
 decorator==4.2.1
 defusedxml==0.5.0
-Django==1.10
+Django==1.11.29
 django-active-login-required==0.1.2
 django-allauth==0.36.0
 django-celery-beat==1.1.1
